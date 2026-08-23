@@ -2,6 +2,23 @@
 
 팀원 한 명이 NUCLEO-F411RE 보드 한 개와 자기 모듈을 맡는다. 세 STM32 프로젝트는 같은 보드를 사용하지만 센서와 핀 설정이 다르므로 각각 따로 생성한다.
 
+## 정확한 보드와 MCU 이름
+
+CubeMX 상단에 다음과 같이 표시되는지 확인한다.
+
+```text
+STM32F411RETx - NUCLEO-F411RE
+```
+
+두 이름은 서로 다른 보드를 뜻하지 않는다.
+
+| CubeMX 표시 | 뜻 |
+|---|---|
+| `STM32F411RETx` | NUCLEO 보드에 장착된 MCU 대상 이름 |
+| `NUCLEO-F411RE` | 개발보드 전체 이름 |
+
+새 프로젝트를 만들 때 `Board Selector`에서 `NUCLEO-F411RE`를 선택한다. 상단에 `STM32F411RETx - NUCLEO-F411RE`가 표시되면 올바른 보드를 선택한 것이다.
+
 ## 생성 위치
 
 | 담당 | CubeMX 프로젝트 위치 | 권장 프로젝트 이름 |
@@ -31,6 +48,37 @@ modules/03-communication/stm32/module03_communication/
 | ESP32-S3 | UART1 TX | `GPIO17` |
 | ESP32-S3 | UART1 RX | `GPIO18` |
 
+### 실제 NUCLEO 보드에서 찾는 이름
+
+CubeMX는 MCU 핀 이름을 표시하지만 NUCLEO 보드의 Arduino 헤더에는 `D8`, `D2`가 적혀 있다.
+
+| CubeMX 핀 | 기능 | 보드에 적힌 이름 | Arduino 커넥터 | Morpho 커넥터 |
+|---|---|---|---|---|
+| `PA9` | `USART1_TX` | `D8` | `CN5` 1번 | `CN10` 21번 |
+| `PA10` | `USART1_RX` | `D2` | `CN9` 3번 | `CN10` 33번 |
+
+보드를 ST-LINK USB 커넥터가 위로 오도록 놓았을 때 오른쪽 Arduino 디지털 헤더에서 찾는다.
+
+```text
+위쪽 CN5 디지털 헤더
+...
+D10
+D9
+D8  ← PA9 / USART1_TX
+
+아래쪽 CN9 디지털 헤더
+D7
+D6
+D5
+D4
+D3
+D2  ← PA10 / USART1_RX
+D1
+D0
+```
+
+따라서 실제 점퍼선은 `D8=TX`, `D2=RX`에 꽂는다. `D8`과 `D2`는 Arduino 헤더 이름이므로 숫자가 서로 떨어져 있어도 정상이다.
+
 연결은 TX와 RX를 서로 교차한다.
 
 ```text
@@ -59,16 +107,17 @@ NUCLEO-F411RE의 USART2 PA2/PA3는 ST-LINK Virtual COM Port를 통한 PC 로그�
 
 1. STM32CubeMX를 실행한다.
 2. `Board Selector`에서 `NUCLEO-F411RE`를 선택한다.
-3. 필요한 센서의 GPIO, ADC, I2C, Timer 등을 설정한다.
-4. `USART1`을 `Asynchronous`로 활성화한다.
-5. CubeMX 핀 배치가 `PA9=USART1_TX`, `PA10=USART1_RX`인지 확인한다.
-6. USART1을 `115200, 8-N-1, Flow control 없음`으로 설정한다.
-7. 필요하면 USART2를 PC 로그용으로 설정한다.
-8. `Project Manager`에서 자기 모듈의 고유한 프로젝트 이름을 입력한다.
-9. 프로젝트 생성 위치가 자기 `stm32/` 폴더 안인지 확인한다.
-10. Toolchain 또는 빌드 형식으로 `CMake`를 선택한다.
-11. 코드를 생성한다.
-12. 생성 직후 아무 기능을 추가하지 않은 상태에서 먼저 빌드한다.
+3. 상단에 `STM32F411RETx - NUCLEO-F411RE`가 표시되는지 확인한다.
+4. 필요한 센서의 GPIO, ADC, I2C, Timer 등을 설정한다.
+5. `USART1`을 `Asynchronous`로 활성화한다.
+6. CubeMX 핀 배치가 `PA9=USART1_TX`, `PA10=USART1_RX`인지 확인한다.
+7. USART1을 `115200, 8-N-1, Flow control 없음`으로 설정한다.
+8. 필요하면 USART2를 PC 로그용으로 설정한다.
+9. `Project Manager`에서 자기 모듈의 고유한 프로젝트 이름을 입력한다.
+10. 프로젝트 생성 위치가 자기 `stm32/` 폴더 안인지 확인한다.
+11. Toolchain 또는 빌드 형식으로 `CMake`를 선택한다.
+12. 코드를 생성한다.
+13. 생성 직후 아무 기능을 추가하지 않은 상태에서 먼저 빌드한다.
 
 ## 생성 후 예상 파일
 
@@ -114,6 +163,7 @@ Release/
 - [ ] 프로젝트가 자기 모듈의 `stm32/` 안에 생성됐는지 확인
 - [ ] `.ioc`, `Core`, `Drivers`와 CMake 파일이 있는지 확인
 - [ ] `USART1`, `PA9 TX`, `PA10 RX`가 설정됐는지 확인
+- [ ] 실제 보드에서 `D8=PA9 TX`, `D2=PA10 RX` 위치를 확인
 - [ ] `PA9/PA10`을 센서나 다른 기능에 중복 배정하지 않았는지 확인
 - [ ] 생성 직후 CMake 빌드가 성공하는지 확인
 - [ ] `build`, `.elf`, `.hex`, `.bin`이 Git에 포함되지 않는지 확인
