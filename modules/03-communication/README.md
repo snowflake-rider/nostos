@@ -2,6 +2,8 @@
 
 STM32와 통신 보드 사이 UART 및 BLE/Bluetooth Mesh를 담당한다.
 
+공통 통신 핀은 STM32 `PA9/PA10`, ESP32-S3 `GPIO17/GPIO18`로 고정한다. 자세한 배선은 [공통 통신 핀 배정](../../common/PIN_ASSIGNMENT.md)을 따른다.
+
 ## 개발 순서
 
 1. STM32 UART 송수신 확인

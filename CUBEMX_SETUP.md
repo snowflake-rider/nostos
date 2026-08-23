@@ -20,17 +20,26 @@ modules/03-communication/stm32/module03_communication/
 
 중요한 것은 각 프로젝트가 자기 모듈 폴더 밖에 파일을 생성하지 않고, 다른 팀원의 CubeMX 프로젝트와 섞이지 않는 것이다.
 
-## 생성하기 전에 팀이 먼저 정할 것
+## 확정된 공통 통신 핀
 
-다음 항목은 세 사람이 공통으로 결정한 뒤 CubeMX를 설정한다.
+세 STM32와 세 ESP32-S3는 모두 같은 UART와 핀을 사용한다.
 
-- STM32와 ESP32-S3 사이에 사용할 UART 장치
-- UART TX/RX 핀
-- UART 속도와 데이터 형식
-- 노드 번호 규칙
-- 공통 메시지 형식
+| 장치 | 기능 | 확정 핀 |
+|---|---|---|
+| STM32F411RE | USART1 TX | `PA9` |
+| STM32F411RE | USART1 RX | `PA10` |
+| ESP32-S3 | UART1 TX | `GPIO17` |
+| ESP32-S3 | UART1 RX | `GPIO18` |
 
-첫 시험의 UART 기본값은 다음을 권장한다.
+연결은 TX와 RX를 서로 교차한다.
+
+```text
+STM32 PA9  USART1_TX → ESP32-S3 GPIO18 UART1_RX
+STM32 PA10 USART1_RX ← ESP32-S3 GPIO17 UART1_TX
+STM32 GND             ↔ ESP32-S3 GND
+```
+
+UART 설정도 공통으로 고정한다.
 
 ```text
 Baud rate: 115200
@@ -42,20 +51,24 @@ Logic level: 3.3V
 필수 연결: TX + RX + GND
 ```
 
-NUCLEO-F411RE의 USART2 PA2/PA3는 ST-LINK Virtual COM Port를 통한 PC 로그에 사용할 수 있다. USART2를 PC 로그용으로 유지하려면 ESP32-S3 통신에는 USART1 또는 USART6 같은 다른 UART 후보를 검토한다. 최종 UART와 핀은 각 센서 핀과 겹치지 않는지 CubeMX에서 확인한 뒤 공통으로 확정한다.
+`PA9`, `PA10`, `GPIO17`, `GPIO18`은 센서, ADC, I2C, PWM이나 다른 GPIO 용도로 사용하지 않는다. 불가피한 충돌이 발견되면 한 모듈만 임의로 바꾸지 않고 세 모듈과 통신 펌웨어의 공통 규격을 함께 변경한다.
+
+NUCLEO-F411RE의 USART2 PA2/PA3는 ST-LINK Virtual COM Port를 통한 PC 로그용으로 남겨 둔다. 공통 핀의 자세한 근거와 배선은 [공통 통신 핀 배정](common/PIN_ASSIGNMENT.md)을 참고한다.
 
 ## CubeMX 생성 순서
 
 1. STM32CubeMX를 실행한다.
 2. `Board Selector`에서 `NUCLEO-F411RE`를 선택한다.
 3. 필요한 센서의 GPIO, ADC, I2C, Timer 등을 설정한다.
-4. 팀에서 정한 ESP32-S3 통신용 UART를 설정한다.
-5. 필요하면 USART2를 PC 로그용으로 설정한다.
-6. `Project Manager`에서 자기 모듈의 고유한 프로젝트 이름을 입력한다.
-7. 프로젝트 생성 위치가 자기 `stm32/` 폴더 안인지 확인한다.
-8. Toolchain 또는 빌드 형식으로 `CMake`를 선택한다.
-9. 코드를 생성한다.
-10. 생성 직후 아무 기능을 추가하지 않은 상태에서 먼저 빌드한다.
+4. `USART1`을 `Asynchronous`로 활성화한다.
+5. CubeMX 핀 배치가 `PA9=USART1_TX`, `PA10=USART1_RX`인지 확인한다.
+6. USART1을 `115200, 8-N-1, Flow control 없음`으로 설정한다.
+7. 필요하면 USART2를 PC 로그용으로 설정한다.
+8. `Project Manager`에서 자기 모듈의 고유한 프로젝트 이름을 입력한다.
+9. 프로젝트 생성 위치가 자기 `stm32/` 폴더 안인지 확인한다.
+10. Toolchain 또는 빌드 형식으로 `CMake`를 선택한다.
+11. 코드를 생성한다.
+12. 생성 직후 아무 기능을 추가하지 않은 상태에서 먼저 빌드한다.
 
 ## 생성 후 예상 파일
 
@@ -100,7 +113,8 @@ Release/
 - [ ] MCU가 `STM32F411RETx`인지 확인
 - [ ] 프로젝트가 자기 모듈의 `stm32/` 안에 생성됐는지 확인
 - [ ] `.ioc`, `Core`, `Drivers`와 CMake 파일이 있는지 확인
-- [ ] UART와 핀이 팀의 공통 결정과 일치하는지 확인
+- [ ] `USART1`, `PA9 TX`, `PA10 RX`가 설정됐는지 확인
+- [ ] `PA9/PA10`을 센서나 다른 기능에 중복 배정하지 않았는지 확인
 - [ ] 생성 직후 CMake 빌드가 성공하는지 확인
 - [ ] `build`, `.elf`, `.hex`, `.bin`이 Git에 포함되지 않는지 확인
 

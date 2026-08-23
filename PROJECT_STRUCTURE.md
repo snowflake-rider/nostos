@@ -11,6 +11,7 @@ stm32-project/
 ├── PROJECT_STRUCTURE.md
 ├── common/
 │   ├── README.md
+│   ├── PIN_ASSIGNMENT.md            # 공통 UART 전용 핀
 │   └── stm32/
 │       ├── include/                 # 공통 헤더
 │       └── src/                     # 공통 구현
@@ -60,6 +61,8 @@ stm32/
 | 비교 시험 | `modules/03-communication/pico2` | Pico 2 WH BLE·Mesh 시험 |
 
 공통 코드는 여러 사람이 동시에 직접 수정하지 않는다. 변경이 필요하면 팀에 알리고 한 사람이 수정한 뒤 다른 모듈에서 확인한다.
+
+세 모듈은 [공통 통신 핀 배정](common/PIN_ASSIGNMENT.md)에 따라 STM32 `PA9/PA10`을 센서에 사용하지 않고 UART 통신 전용으로 비워 둔다.
 
 ## 담당 범위
 
