@@ -7,6 +7,7 @@
 ```text
 stm32-project/
 ├── README.md
+├── CUBEMX_SETUP.md
 ├── PROJECT_STRUCTURE.md
 ├── common/
 │   ├── README.md
@@ -70,3 +71,5 @@ stm32/
 | 팀 공통 | `common/`, `integration/` |
 
 01번과 02번 모듈의 주제가 정해지면 폴더 이름을 실제 모듈 이름으로 바꾼다.
+
+각 팀원이 실제 프로젝트를 생성하는 순서는 [CubeMX 프로젝트 시작 방법](CUBEMX_SETUP.md)을 따른다.

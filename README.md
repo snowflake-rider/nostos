@@ -11,6 +11,7 @@ Module 03: 입력 → STM32 #3 → UART → 통신 보드 #3
 
 ## 문서
 
+- [CubeMX 프로젝트 시작 방법](CUBEMX_SETUP.md)
 - [프로젝트 폴더 구조](PROJECT_STRUCTURE.md)
 - [공통 규칙](common/README.md)
 - [모듈 목록](modules/README.md)
