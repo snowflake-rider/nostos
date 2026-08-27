@@ -1,9 +1,9 @@
 # Modules
 
-각 팀원은 자기 모듈 폴더를 주로 수정한다.
+이 폴더는 개별 센서나 통신 방식을 독립적으로 시험하기 위한 공간입니다. 실제 공용 펌웨어는 `integration/stm32`에서 관리하며, 검증이 끝난 기능은 그 프로젝트의 `MyApp` 계층에 병합합니다.
 
-- `01-sensor-module`: 팀원 1의 STM32 센서 모듈
-- `02-sensor-module`: 팀원 2의 STM32 센서 모듈
-- `03-communication`: STM32 UART, ESP32-S3, Pico 2 WH, Bluetooth Mesh
+- `01-sensor-module`: 센서 기능 실험 자료
+- `02-sensor-module`: 추가 센서 기능 실험 자료
+- `03-communication`: USART 및 향후 통신 장치 실험 자료
 
-01번과 02번 이름은 실제 모듈이 정해지면 변경한다.
+각 폴더의 코드는 공용 펌웨어의 복사본으로 사용하지 않습니다.

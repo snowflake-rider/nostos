@@ -1,21 +1,10 @@
 # Common
 
-세 모듈이 함께 사용하는 규칙과 코드를 관리한다.
+팀 전체가 따르는 메시지와 배선 규칙을 관리합니다.
 
-먼저 [공통 통신 핀 배정](PIN_ASSIGNMENT.md)을 확인한다. STM32 `PA9/PA10`과 ESP32-S3 `GPIO17/GPIO18`은 UART 통신 전용으로 고정한다.
+- 공용 펌웨어: `integration/stm32`
+- 메시지 정의: `integration/stm32/MyApp/common/message_type.h`
+- 기능 설정: `integration/stm32/MyApp/common/app_config.h`
+- USART 핀과 배선: `common/PIN_ASSIGNMENT.md`
 
-## 공통으로 둘 것
-
-- UART 패킷 생성과 파싱
-- 메시지 형식
-- 노드 번호 설정
-- 공통 오류 코드
-- 공통 배선과 전압 규칙
-
-## 공통으로 두지 않을 것
-
-- 특정 센서에서만 사용하는 드라이버
-- 각 모듈의 CubeMX `.ioc`
-- 각 모듈의 GPIO 및 주변장치 초기화 코드
-
-공통 STM32 코드는 `stm32/include/`와 `stm32/src/`에 추가한다.
+공통 메시지 ID나 핀을 변경할 때는 세 보드의 펌웨어와 관련 문서를 함께 수정합니다. 같은 코드를 별도 위치에 복사해 관리하지 않고 `integration/stm32`의 구현을 유일한 기준으로 사용합니다.

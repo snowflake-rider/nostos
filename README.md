@@ -1,28 +1,64 @@
-# STM32 Team Project
+# Bike Swarm Guard
 
-팀원 3명이 NUCLEO-F411RE 보드를 한 개씩 맡아 독립 모듈을 만들고, 마지막에 공통 통신 규칙으로 연결하는 프로젝트다.
+NUCLEO-F411RE 기반 자전거 그룹 주행 안전 프로젝트입니다. 세 팀원이 동일한 통합 STM32 펌웨어를 기준으로 개발하며, 버튼 요청과 센서 이벤트를 공통 메시지로 변환해 LED, 부저, 음성 및 USART 통신에 사용합니다.
+
+## 공용 펌웨어
+
+세 보드가 사용하는 기준 프로젝트는 [`integration/stm32`](integration/stm32)에 있습니다.
 
 ```text
-Module 01: 센서 → STM32 #1 → UART → 통신 보드 #1
-Module 02: 센서 → STM32 #2 → UART → 통신 보드 #2
-Module 03: 입력 → STM32 #3 → UART → 통신 보드 #3
-                                         ))) BLE / Bluetooth Mesh
+integration/stm32/
+├─ Core/                 # STM32CubeMX 생성 코드
+├─ Drivers/              # CMSIS 및 STM32 HAL
+├─ MyApp/
+│  ├─ ap/                # 전체 애플리케이션 실행
+│  ├─ audio/             # MP3와 C 배열 음원
+│  ├─ common/            # 기능 설정과 메시지 ID
+│  ├─ hw/                # 버튼, LED, 부저, 센서, VS1003B
+│  └─ service/           # 메시지, 안전 판단, 오디오, USART
+├─ tools/                # 음원 변환 도구
+├─ bike_swarm_guard.ioc
+└─ CMakeLists.txt
 ```
 
-## 문서
+## 구현된 기능
 
-- [CubeMX 프로젝트 시작 방법](CUBEMX_SETUP.md)
-- [프로젝트 폴더 구조](PROJECT_STRUCTURE.md)
-- [공통 통신 핀 배정](common/PIN_ASSIGNMENT.md)
-- [공통 규칙](common/README.md)
-- [모듈 목록](modules/README.md)
-- [통합 시험](integration/README.md)
+- 버튼 4개 요청: 감속, 가속, 안전·응원, 정지
+- RGB LED 상태 표시
+- 액티브 부저 경고
+- VS1003B MP3 음성 출력
+- MPU6050 낙차 감지 및 10초 확인 시간
+- HC-SR04 50cm 후방 경고(선택 기능)
+- USART1 115200bps 메시지 송수신
+- 로컬 메시지 출력 및 상대 보드 1회 전송
+- 수신 메시지 재전송 방지
 
-## 핵심 원칙
+## 시작하기
 
-- 팀원 한 명이 STM32 보드 한 개와 자기 모듈을 맡는다.
-- 각 `stm32/` 폴더에는 독립적으로 빌드 가능한 전체 CubeMX 프로젝트를 둔다.
-- 센서 드라이버는 각 모듈에서 관리한다.
-- UART, 메시지 형식, 노드 설정처럼 세 모듈이 함께 쓰는 코드와 규칙은 `common/`에서 관리한다.
-- STM32 `PA9/PA10`과 ESP32-S3 `GPIO17/GPIO18`은 공통 UART 통신 전용으로 예약한다.
-- `03-communication`에서 개발한 최종 통신 펌웨어는 세 통신 보드에 공통 적용한다.
+1. 저장소를 clone합니다.
+2. STM32CubeMX에서 `integration/stm32/bike_swarm_guard.ioc`를 엽니다.
+3. STM32Cube 확장 또는 CMake로 `integration/stm32`를 빌드합니다.
+4. NUCLEO-F411RE에 펌웨어를 다운로드합니다.
+
+빌드 결과물은 Git에 포함하지 않습니다. CubeMX 설정과 배선은 [CUBEMX_SETUP.md](CUBEMX_SETUP.md), 폴더 역할은 [PROJECT_STRUCTURE.md](PROJECT_STRUCTURE.md), USART 배선은 [common/PIN_ASSIGNMENT.md](common/PIN_ASSIGNMENT.md)를 확인하세요.
+
+## 기능 설정
+
+`integration/stm32/MyApp/common/app_config.h`에서 센서 기능을 선택할 수 있습니다.
+
+```c
+#define FEATURE_ULTRASONIC_SENSOR 1
+#define FEATURE_FALL_DETECTION 1
+```
+
+값이 `1`이면 사용하고 `0`이면 해당 센서 접근과 메시지 생성을 중지합니다. 현재 공용 기본값은 두 센서 모두 사용입니다.
+
+## 현재 검증 상태
+
+- 기존 버튼, LED, 부저, VS1003B 동작 확인
+- 두 STM32 사이 USART 1바이트 메시지 송수신 확인
+- 센서 보드의 낙차·후방 이벤트를 출력 보드에서 수신 확인
+- 통합 프로젝트 초음파 ON/OFF 빌드 확인
+- 한 보드 전체 센서 배선 및 두 통합 보드 연결 시험 진행 중
+
+세부 시험 항목은 [integration/README.md](integration/README.md)에 기록합니다.

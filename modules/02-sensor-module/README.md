@@ -1,11 +1,3 @@
-# Module 02 - Sensor Module
+# Module 02 - Sensor Experiments
 
-팀원 2가 담당하는 독립 STM32 센서 모듈이다.
-
-- 보드: NUCLEO-F411RE #2
-- 센서: 미정
-- 담당자: 미정
-- 출력: 공통 형식의 UART 메시지
-- 예약 핀: `PA9=USART1_TX`, `PA10=USART1_RX` — 센서에 사용 금지
-
-실제 모듈 주제가 정해지면 폴더와 문서 제목을 변경한다.
+향후 추가 센서와 알고리즘을 독립적으로 시험하는 공간입니다. 검증된 구현은 `integration/stm32`에 병합합니다.

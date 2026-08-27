@@ -1,78 +1,58 @@
 # 프로젝트 폴더 구조
 
-이 문서는 저장소의 폴더 용도와 팀원별 작업 범위를 설명한다.
+## 기준 원칙
+
+- `integration/stm32`가 세 팀원이 함께 사용하는 공용 STM32 펌웨어입니다.
+- 핀과 주변장치 설정은 공용 `bike_swarm_guard.ioc`에서 관리합니다.
+- `modules`는 개별 기능 실험이나 향후 통신 장치 연구 자료를 보관합니다.
+- 빌드 결과물과 개인 IDE 설정은 Git에 포함하지 않습니다.
 
 ## 전체 구조
 
 ```text
 stm32-project/
-├── README.md
-├── CUBEMX_SETUP.md
-├── PROJECT_STRUCTURE.md
-├── common/
-│   ├── README.md
-│   ├── PIN_ASSIGNMENT.md            # 공통 UART 전용 핀
-│   └── stm32/
-│       ├── include/                 # 공통 헤더
-│       └── src/                     # 공통 구현
-├── modules/
-│   ├── README.md
-│   ├── 01-sensor-module/
-│   │   ├── README.md
-│   │   └── stm32/                   # 팀원 1의 전체 CubeMX 프로젝트
-│   ├── 02-sensor-module/
-│   │   ├── README.md
-│   │   └── stm32/                   # 팀원 2의 전체 CubeMX 프로젝트
-│   └── 03-communication/
-│       ├── README.md
-│       ├── stm32/                   # UART 시험용 CubeMX 프로젝트
-│       ├── esp32-s3/                # ESP-IDF 통신 펌웨어
-│       ├── pico2/                   # Pico 2 WH 비교 펌웨어
-│       └── docs/                    # 배선과 시험 결과
-└── integration/
-    └── README.md                    # 세 모듈 통합 시험
+├─ README.md
+├─ CUBEMX_SETUP.md
+├─ PROJECT_STRUCTURE.md
+├─ common/                       # 공통 규칙과 배선 문서
+├─ modules/                      # 개별 기능 실험 공간
+└─ integration/
+   ├─ README.md                  # 통합 시험 기록
+   └─ stm32/                     # 공용 CubeMX/CMake 프로젝트
+      ├─ Core/
+      ├─ Drivers/
+      ├─ MyApp/
+      ├─ cmake/
+      ├─ tools/
+      ├─ bike_swarm_guard.ioc
+      ├─ CMakeLists.txt
+      ├─ CMakePresets.json
+      ├─ STM32F411xx_FLASH.ld
+      └─ startup_stm32f411xe.s
 ```
 
-## 각 STM32 프로젝트
+## MyApp 계층
 
-각 모듈의 `stm32/`에는 STM32CubeMX가 생성한 전체 프로젝트를 넣는다. 세 보드가 모두 NUCLEO-F411RE이더라도 센서와 핀 설정이 다르므로 프로젝트를 하나로 공유하지 않는다.
-
-```text
-stm32/
-├── Core/
-├── Drivers/
-├── cmake/
-├── CMakeLists.txt
-├── CMakePresets.json
-├── module-name.ioc
-├── STM32F411xx_FLASH.ld
-└── startup_stm32f411xe.s
-```
-
-`.ioc`, `Core`, `Drivers`, CMake 설정, 시작 파일과 링커 스크립트는 Git에 포함한다. `build`, `Debug`, `Release`, `.elf`, `.hex`, `.bin` 같은 빌드 결과물은 포함하지 않는다.
-
-## 공통 코드와 개별 코드
-
-| 구분 | 위치 | 예시 |
-|---|---|---|
-| 세 STM32가 함께 사용 | `common/stm32` | UART 패킷, 메시지 파싱, 노드 설정, 오류 코드 |
-| 특정 센서만 사용 | 각 모듈의 `stm32` | DHT11, MPU6050, 초음파 센서 드라이버 |
-| 세 통신 보드가 사용 | `modules/03-communication/esp32-s3` | UART 수신, BLE, Bluetooth Mesh |
-| 비교 시험 | `modules/03-communication/pico2` | Pico 2 WH BLE·Mesh 시험 |
-
-공통 코드는 여러 사람이 동시에 직접 수정하지 않는다. 변경이 필요하면 팀에 알리고 한 사람이 수정한 뒤 다른 모듈에서 확인한다.
-
-세 모듈은 [공통 통신 핀 배정](common/PIN_ASSIGNMENT.md)에 따라 STM32 `PA9/PA10`을 센서에 사용하지 않고 UART 통신 전용으로 비워 둔다.
-
-## 담당 범위
-
-| 담당 | 주 작업 위치 |
+| 위치 | 역할 |
 |---|---|
-| 팀원 1 | `modules/01-sensor-module/` |
-| 팀원 2 | `modules/02-sensor-module/` |
-| 팀원 3 | `modules/03-communication/` |
-| 팀 공통 | `common/`, `integration/` |
+| `MyApp/ap` | 초기화와 super-loop 실행 |
+| `MyApp/common` | 기능 플래그와 공통 메시지 ID |
+| `MyApp/hw` | GPIO 및 하드웨어 드라이버 |
+| `MyApp/service` | 안전 판단, 메시지 라우팅, 출력 정책 |
+| `MyApp/audio` | MP3 원본과 펌웨어용 C 배열 |
 
-01번과 02번 모듈의 주제가 정해지면 폴더 이름을 실제 모듈 이름으로 바꾼다.
+센서와 버튼은 `message_type_t` 메시지를 생성합니다. 로컬 메시지는 자기 보드에서 처리한 뒤 USART로 한 번 전송하고, USART 수신 메시지는 자기 보드에서만 처리하여 무한 재전송을 방지합니다.
 
-각 팀원이 실제 프로젝트를 생성하는 순서는 [CubeMX 프로젝트 시작 방법](CUBEMX_SETUP.md)을 따른다.
+## Git에 포함하는 파일
+
+- `.ioc`, `Core`, `Drivers`, `MyApp`
+- CMake 설정, 시작 파일, 링커 스크립트
+- 음원 원본과 변환된 C/H 파일
+- 배선, 빌드 및 시험 문서
+
+## Git에서 제외하는 파일
+
+- `build`, `Debug`, `Release`
+- `.elf`, `.hex`, `.bin`, `.map`
+- `.settings`, `.vscode`, `.mxproject`
+- 개인 임시 파일

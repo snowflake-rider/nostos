@@ -8,6 +8,11 @@
 **/.cache/
 compile_commands.json
 
+# Local STM32/Codex editor metadata
+**/.settings/
+**/.vscode/
+**/.mxproject
+
 # Firmware output
 *.elf
 *.hex
