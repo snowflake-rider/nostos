@@ -35,6 +35,8 @@ integration/stm32/
 
 ## 시작하기
 
+ESP32 Mesh 연결은 [1차 이벤트 통합 설계](docs/superpowers/specs/2026-08-28-stm32-mesh-event-bridge-design.md)에서 준비합니다. 기존 STM32 이벤트를 먼저 연결한 뒤 센서 수치 공유를 확장하는 순서이며, 현재는 설계 검토 단계입니다. 아래 기존 USART 검증 결과는 Mesh 통합 성공을 뜻하지 않습니다.
+
 1. 저장소를 clone합니다.
 2. STM32CubeMX에서 `integration/stm32/bike_swarm_guard.ioc`를 엽니다.
 3. STM32Cube 확장 또는 CMake로 `integration/stm32`를 빌드합니다.
