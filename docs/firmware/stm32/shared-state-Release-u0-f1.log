@@ -1,0 +1,58 @@
+[0/2] Re-checking globbed directories...
+-- GLOB mismatch!
+The following files were added:
+  +/Users/kafka/Documents/Notion/esp-ble/stm32-project/integration/stm32/MyApp/service/shared_state.c
+[1/2] Re-running CMake...
+Build type: Release
+-- Configuring done (0.0s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/kafka/Documents/Notion/esp-ble/stm32-project/integration/stm32/build/bridge-check-Release-u0-f1
+[0/4] Re-checking globbed directories...
+[1/48] Building ASM object CMakeFiles/bike_swarm_guard.dir/startup_stm32f411xe.s.obj
+[2/48] Building C object CMakeFiles/bike_swarm_guard.dir/Core/Src/sysmem.c.obj
+[3/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/audio/speed_down_request_audio.c.obj
+[4/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/audio/stop_request_audio.c.obj
+[5/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/audio/cheer_up_audio.c.obj
+[6/48] Building C object CMakeFiles/bike_swarm_guard.dir/Core/Src/stm32f4xx_it.c.obj
+[7/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/audio/rear_warning_audio.c.obj
+[8/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/audio/speed_up_request_audio.c.obj
+[9/48] Building C object CMakeFiles/bike_swarm_guard.dir/Core/Src/syscalls.c.obj
+[10/48] Building C object CMakeFiles/bike_swarm_guard.dir/Core/Src/stm32f4xx_hal_msp.c.obj
+[11/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/button.c.obj
+[12/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/rgb_led.c.obj
+[13/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/buzzer.c.obj
+[14/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/ultrasonic.c.obj
+[15/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/ap/app.c.obj
+[16/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/audio_service.c.obj
+[17/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/alert.c.obj
+[18/48] Building C object CMakeFiles/bike_swarm_guard.dir/Core/Src/main.c.obj
+[19/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/message_router.c.obj
+[20/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/message_service.c.obj
+[21/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/mpu6050.c.obj
+[22/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/hw/vs1003b.c.obj
+[23/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/shared_state.c.obj
+[24/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/safety_detector.c.obj
+[25/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/safety_service.c.obj
+[26/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Core/Src/system_stm32f4xx.c.obj
+[27/48] Building C object CMakeFiles/bike_swarm_guard.dir/MyApp/service/uart_service.c.obj
+[28/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c_ex.c.obj
+[29/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ramfunc.c.obj
+[30/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc_ex.c.obj
+[31/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash.c.obj
+[32/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_flash_ex.c.obj
+[33/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_rcc.c.obj
+[34/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr.c.obj
+[35/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma_ex.c.obj
+[36/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_pwr_ex.c.obj
+[37/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_gpio.c.obj
+[38/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal.c.obj
+[39/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_cortex.c.obj
+[40/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_dma.c.obj
+[41/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_exti.c.obj
+[42/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_spi.c.obj
+[43/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_uart.c.obj
+[44/48] Building C object cmake/stm32cubemx/CMakeFiles/STM32_Drivers.dir/__/__/Drivers/STM32F4xx_HAL_Driver/Src/stm32f4xx_hal_i2c.c.obj
+[45/48] Linking C executable bike_swarm_guard.elf
+Memory region         Used Size  Region Size  %age Used
+             RAM:        2224 B       128 KB      1.70%
+           FLASH:      113624 B       512 KB     21.67%

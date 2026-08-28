@@ -1,0 +1,44 @@
+-- Configuring done (0.1s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/kafka/Workspace_AI/nostos/code/communication-module/build-sanitizers
+[1/22] Building C object CMakeFiles/comm_periodic.dir/periodic/comm_periodic.c.o
+[2/22] Building C object CMakeFiles/periodic_demo.dir/periodic/examples/main.c.o
+[3/22] Building C object CMakeFiles/comm_service_demo.dir/service/examples/main.c.o
+[4/22] Building C object CMakeFiles/comm_moving_average.dir/periodic/moving_average.c.o
+[5/22] Building C object CMakeFiles/comm_event_queue.dir/event-driven/comm_event_queue.c.o
+[6/22] Building C object CMakeFiles/comm_service.dir/service/comm.c.o
+[7/22] Building C object CMakeFiles/event_queue_demo.dir/event-driven/examples/main.c.o
+[8/22] Building C object CMakeFiles/test_moving_average.dir/periodic/tests/test_moving_average.c.o
+[9/22] Building C object CMakeFiles/test_periodic.dir/periodic/tests/test_periodic.c.o
+[10/22] Building C object CMakeFiles/test_event_queue.dir/event-driven/tests/test_event_queue.c.o
+[11/22] Building C object CMakeFiles/test_comm.dir/service/tests/test_comm.c.o
+[12/22] Linking C static library libcomm_event_queue.a
+[13/22] Linking C static library libcomm_moving_average.a
+[14/22] Linking C executable test_moving_average
+[15/22] Linking C executable test_event_queue
+[16/22] Linking C executable event_queue_demo
+[17/22] Linking C static library libcomm_periodic.a
+[18/22] Linking C executable test_periodic
+[19/22] Linking C executable periodic_demo
+[20/22] Linking C static library libcomm_service.a
+[21/22] Linking C executable comm_service_demo
+[22/22] Linking C executable test_comm
+Test project /Users/kafka/Workspace_AI/nostos/code/communication-module/build-sanitizers
+    Start 1: event_queue
+1/7 Test #1: event_queue ......................   Passed    0.53 sec
+    Start 2: event_queue_demo
+2/7 Test #2: event_queue_demo .................   Passed    0.37 sec
+    Start 3: moving_average
+3/7 Test #3: moving_average ...................   Passed    0.41 sec
+    Start 4: periodic
+4/7 Test #4: periodic .........................   Passed    0.38 sec
+    Start 5: periodic_demo
+5/7 Test #5: periodic_demo ....................   Passed    0.44 sec
+    Start 6: comm_service
+6/7 Test #6: comm_service .....................   Passed    0.40 sec
+    Start 7: comm_service_demo
+7/7 Test #7: comm_service_demo ................   Passed    0.45 sec
+
+100% tests passed out of 7
+
+Total Test time (real) =   2.98 sec

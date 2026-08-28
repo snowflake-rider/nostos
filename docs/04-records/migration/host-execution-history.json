@@ -1,0 +1,653 @@
+[
+  {
+    "name": "protocol-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/common/protocol",
+      "-B",
+      "code/common/protocol/build-Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug"
+    ],
+    "log": "protocol-Debug-configure.log"
+  },
+  {
+    "name": "protocol-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/common/protocol/build-Debug",
+      "-j",
+      "6"
+    ],
+    "log": "protocol-Debug-build.log"
+  },
+  {
+    "name": "protocol-Debug-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/common/protocol/build-Debug",
+      "--output-on-failure"
+    ],
+    "log": "protocol-Debug-test.log"
+  },
+  {
+    "name": "protocol-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/common/protocol",
+      "-B",
+      "code/common/protocol/build-Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "log": "protocol-Release-configure.log"
+  },
+  {
+    "name": "protocol-Release-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/common/protocol/build-Release",
+      "-j",
+      "6"
+    ],
+    "log": "protocol-Release-build.log"
+  },
+  {
+    "name": "protocol-Release-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/common/protocol/build-Release",
+      "--output-on-failure"
+    ],
+    "log": "protocol-Release-test.log"
+  },
+  {
+    "name": "protocol-sanitizers-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/common/protocol",
+      "-B",
+      "code/common/protocol/build-sanitizers",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DENABLE_SANITIZERS=ON"
+    ],
+    "log": "protocol-sanitizers-configure.log"
+  },
+  {
+    "name": "protocol-sanitizers-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/common/protocol/build-sanitizers",
+      "-j",
+      "6"
+    ],
+    "log": "protocol-sanitizers-build.log"
+  },
+  {
+    "name": "protocol-sanitizers-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/common/protocol/build-sanitizers",
+      "--output-on-failure"
+    ],
+    "log": "protocol-sanitizers-test.log"
+  },
+  {
+    "name": "stm32-host-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/firmware/stm32/host-tests",
+      "-B",
+      "code/firmware/stm32/host-tests/build-Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug"
+    ],
+    "log": "stm32-host-Debug-configure.log"
+  },
+  {
+    "name": "stm32-host-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/firmware/stm32/host-tests/build-Debug",
+      "-j",
+      "6"
+    ],
+    "log": "stm32-host-Debug-build.log"
+  },
+  {
+    "name": "stm32-host-Debug-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/firmware/stm32/host-tests/build-Debug",
+      "--output-on-failure"
+    ],
+    "log": "stm32-host-Debug-test.log"
+  },
+  {
+    "name": "stm32-host-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/firmware/stm32/host-tests",
+      "-B",
+      "code/firmware/stm32/host-tests/build-Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "log": "stm32-host-Release-configure.log"
+  },
+  {
+    "name": "stm32-host-Release-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/firmware/stm32/host-tests/build-Release",
+      "-j",
+      "6"
+    ],
+    "log": "stm32-host-Release-build.log"
+  },
+  {
+    "name": "stm32-host-Release-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/firmware/stm32/host-tests/build-Release",
+      "--output-on-failure"
+    ],
+    "log": "stm32-host-Release-test.log"
+  },
+  {
+    "name": "stm32-host-sanitizers-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/firmware/stm32/host-tests",
+      "-B",
+      "code/firmware/stm32/host-tests/build-sanitizers",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DENABLE_SANITIZERS=ON"
+    ],
+    "log": "stm32-host-sanitizers-configure.log"
+  },
+  {
+    "name": "stm32-host-sanitizers-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/firmware/stm32/host-tests/build-sanitizers",
+      "-j",
+      "6"
+    ],
+    "log": "stm32-host-sanitizers-build.log"
+  },
+  {
+    "name": "stm32-host-sanitizers-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/firmware/stm32/host-tests/build-sanitizers",
+      "--output-on-failure"
+    ],
+    "log": "stm32-host-sanitizers-test.log"
+  },
+  {
+    "name": "comm-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/communication-module",
+      "-B",
+      "code/communication-module/build-Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug"
+    ],
+    "log": "comm-Debug-configure.log"
+  },
+  {
+    "name": "comm-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/communication-module/build-Debug",
+      "-j",
+      "6"
+    ],
+    "log": "comm-Debug-build.log"
+  },
+  {
+    "name": "comm-Debug-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/communication-module/build-Debug",
+      "--output-on-failure"
+    ],
+    "log": "comm-Debug-test.log"
+  },
+  {
+    "name": "comm-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/communication-module",
+      "-B",
+      "code/communication-module/build-Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "log": "comm-Release-configure.log"
+  },
+  {
+    "name": "comm-Release-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/communication-module/build-Release",
+      "-j",
+      "6"
+    ],
+    "log": "comm-Release-build.log"
+  },
+  {
+    "name": "comm-Release-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/communication-module/build-Release",
+      "--output-on-failure"
+    ],
+    "log": "comm-Release-test.log"
+  },
+  {
+    "name": "comm-sanitizers-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/communication-module",
+      "-B",
+      "code/communication-module/build-sanitizers",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DENABLE_SANITIZERS=ON"
+    ],
+    "log": "comm-sanitizers-configure.log",
+    "evidence_note": "Not sanitizer evidence: initial wrong option. Superseded by COMM_ENABLE_SANITIZERS=ON rebuild in logs/comm-real-sanitizers.log."
+  },
+  {
+    "name": "comm-sanitizers-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/communication-module/build-sanitizers",
+      "-j",
+      "6"
+    ],
+    "log": "comm-sanitizers-build.log",
+    "evidence_note": "Not sanitizer evidence: initial wrong option. Superseded by COMM_ENABLE_SANITIZERS=ON rebuild in logs/comm-real-sanitizers.log."
+  },
+  {
+    "name": "comm-sanitizers-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/communication-module/build-sanitizers",
+      "--output-on-failure"
+    ],
+    "log": "comm-sanitizers-test.log",
+    "evidence_note": "Not sanitizer evidence: initial wrong option. Superseded by COMM_ENABLE_SANITIZERS=ON rebuild in logs/comm-real-sanitizers.log."
+  },
+  {
+    "name": "layer8-host-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/layers/layer-8/host-tests",
+      "-B",
+      "code/layers/layer-8/host-tests/build-Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug"
+    ],
+    "log": "layer8-host-Debug-configure.log"
+  },
+  {
+    "name": "layer8-host-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/layers/layer-8/host-tests/build-Debug",
+      "-j",
+      "6"
+    ],
+    "log": "layer8-host-Debug-build.log"
+  },
+  {
+    "name": "layer8-host-Debug-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/layers/layer-8/host-tests/build-Debug",
+      "--output-on-failure"
+    ],
+    "log": "layer8-host-Debug-test.log"
+  },
+  {
+    "name": "layer8-host-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/layers/layer-8/host-tests",
+      "-B",
+      "code/layers/layer-8/host-tests/build-Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "log": "layer8-host-Release-configure.log"
+  },
+  {
+    "name": "layer8-host-Release-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/layers/layer-8/host-tests/build-Release",
+      "-j",
+      "6"
+    ],
+    "log": "layer8-host-Release-build.log"
+  },
+  {
+    "name": "layer8-host-Release-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/layers/layer-8/host-tests/build-Release",
+      "--output-on-failure"
+    ],
+    "log": "layer8-host-Release-test.log"
+  },
+  {
+    "name": "layer8-host-sanitizers-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/layers/layer-8/host-tests",
+      "-B",
+      "code/layers/layer-8/host-tests/build-sanitizers",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DENABLE_SANITIZERS=ON"
+    ],
+    "log": "layer8-host-sanitizers-configure.log"
+  },
+  {
+    "name": "layer8-host-sanitizers-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/layers/layer-8/host-tests/build-sanitizers",
+      "-j",
+      "6"
+    ],
+    "log": "layer8-host-sanitizers-build.log"
+  },
+  {
+    "name": "layer8-host-sanitizers-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/layers/layer-8/host-tests/build-sanitizers",
+      "--output-on-failure"
+    ],
+    "log": "layer8-host-sanitizers-test.log"
+  },
+  {
+    "name": "gps-codec-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/examples/esp32s3/gps-mesh-node/host-tests",
+      "-B",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug"
+    ],
+    "log": "gps-codec-Debug-configure.log"
+  },
+  {
+    "name": "gps-codec-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-Debug",
+      "-j",
+      "6"
+    ],
+    "log": "gps-codec-Debug-build.log"
+  },
+  {
+    "name": "gps-codec-Debug-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-Debug",
+      "--output-on-failure"
+    ],
+    "log": "gps-codec-Debug-test.log"
+  },
+  {
+    "name": "gps-codec-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/examples/esp32s3/gps-mesh-node/host-tests",
+      "-B",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release"
+    ],
+    "log": "gps-codec-Release-configure.log"
+  },
+  {
+    "name": "gps-codec-Release-build",
+    "exit_code": 1,
+    "command": [
+      "cmake",
+      "--build",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-Release",
+      "-j",
+      "6"
+    ],
+    "log": "gps-codec-Release-build.log",
+    "evidence_note": "Original assert/NDEBUG failure. Resolved with -UNDEBUG; see logs/gps-release-fixed.log."
+  },
+  {
+    "name": "gps-codec-sanitizers-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/examples/esp32s3/gps-mesh-node/host-tests",
+      "-B",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-sanitizers",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DENABLE_SANITIZERS=ON"
+    ],
+    "log": "gps-codec-sanitizers-configure.log"
+  },
+  {
+    "name": "gps-codec-sanitizers-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-sanitizers",
+      "-j",
+      "6"
+    ],
+    "log": "gps-codec-sanitizers-build.log"
+  },
+  {
+    "name": "gps-codec-sanitizers-test",
+    "exit_code": 0,
+    "command": [
+      "ctest",
+      "--test-dir",
+      "code/examples/esp32s3/gps-mesh-node/host-tests/build-sanitizers",
+      "--output-on-failure"
+    ],
+    "log": "gps-codec-sanitizers-test.log"
+  },
+  {
+    "name": "fast-check",
+    "exit_code": 0,
+    "command": [
+      "python3",
+      "-m",
+      "unittest",
+      "discover",
+      "-s",
+      "code/layers/layer-8/host-tests",
+      "-p",
+      "test_fast_check.py",
+      "-v"
+    ],
+    "log": "fast-check.log"
+  },
+  {
+    "name": "stm32-Debug-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/firmware/stm32",
+      "-B",
+      "code/firmware/stm32/build/Debug",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Debug",
+      "-DCMAKE_TOOLCHAIN_FILE=cmake/gcc-arm-none-eabi.cmake"
+    ],
+    "log": "stm32-Debug-configure.log"
+  },
+  {
+    "name": "stm32-Debug-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/firmware/stm32/build/Debug",
+      "-j",
+      "8"
+    ],
+    "log": "stm32-Debug-build.log"
+  },
+  {
+    "name": "stm32-Release-configure",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "-S",
+      "code/firmware/stm32",
+      "-B",
+      "code/firmware/stm32/build/Release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DCMAKE_TOOLCHAIN_FILE=cmake/gcc-arm-none-eabi.cmake"
+    ],
+    "log": "stm32-Release-configure.log"
+  },
+  {
+    "name": "stm32-Release-build",
+    "exit_code": 0,
+    "command": [
+      "cmake",
+      "--build",
+      "code/firmware/stm32/build/Release",
+      "-j",
+      "8"
+    ],
+    "log": "stm32-Release-build.log"
+  },
+  {
+    "name": "gpscore-swift",
+    "exit_code": 0,
+    "command": [
+      "swift",
+      "test",
+      "--package-path",
+      "code/apps/ios-gps-mesh/GPSCore"
+    ],
+    "log": "gpscore-swift.log"
+  }
+]

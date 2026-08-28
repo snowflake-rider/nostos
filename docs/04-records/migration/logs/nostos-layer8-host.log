@@ -1,0 +1,102 @@
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/debug
+[1/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_protocol.c.o
+[2/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_bridge.c.o
+[3/12] Building C object CMakeFiles/test_serial_command.dir/Users/kafka/Workspace_AI/nostos/code/firmware/esp32/main/serial_command.c.o
+[4/12] Building C object CMakeFiles/test_event_protocol.dir/test_event_protocol.c.o
+[5/12] Building C object CMakeFiles/test_event_path.dir/test_event_path.c.o
+[6/12] Building C object CMakeFiles/test_serial_command.dir/test_serial_command.c.o
+[7/12] Building C object CMakeFiles/test_event_bridge.dir/test_event_bridge.c.o
+[8/12] Linking C static library libevent_protocol.a
+[9/12] Linking C executable test_serial_command
+[10/12] Linking C executable test_event_protocol
+[11/12] Linking C executable test_event_bridge
+[12/12] Linking C executable test_event_path
+Test project /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/debug
+    Start 1: event_path
+1/4 Test #1: event_path .......................   Passed    0.40 sec
+    Start 2: event_protocol
+2/4 Test #2: event_protocol ...................   Passed    0.41 sec
+    Start 3: event_bridge
+3/4 Test #3: event_bridge .....................   Passed    0.39 sec
+    Start 4: serial_command
+4/4 Test #4: serial_command ...................   Passed    0.47 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =   1.68 sec
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/release
+[1/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_protocol.c.o
+[2/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_bridge.c.o
+[3/12] Building C object CMakeFiles/test_serial_command.dir/Users/kafka/Workspace_AI/nostos/code/firmware/esp32/main/serial_command.c.o
+[4/12] Building C object CMakeFiles/test_event_protocol.dir/test_event_protocol.c.o
+[5/12] Building C object CMakeFiles/test_serial_command.dir/test_serial_command.c.o
+[6/12] Building C object CMakeFiles/test_event_path.dir/test_event_path.c.o
+[7/12] Linking C static library libevent_protocol.a
+[8/12] Linking C executable test_event_protocol
+[9/12] Linking C executable test_serial_command
+[10/12] Linking C executable test_event_path
+[11/12] Building C object CMakeFiles/test_event_bridge.dir/test_event_bridge.c.o
+[12/12] Linking C executable test_event_bridge
+Test project /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/release
+    Start 1: event_path
+1/4 Test #1: event_path .......................   Passed    0.38 sec
+    Start 2: event_protocol
+2/4 Test #2: event_protocol ...................   Passed    0.38 sec
+    Start 3: event_bridge
+3/4 Test #3: event_bridge .....................   Passed    0.42 sec
+    Start 4: serial_command
+4/4 Test #4: serial_command ...................   Passed    0.42 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =   1.61 sec
+-- The C compiler identification is AppleClang 21.0.0.21000101
+-- Detecting C compiler ABI info
+-- Detecting C compiler ABI info - done
+-- Check for working C compiler: /usr/bin/cc - skipped
+-- Detecting C compile features
+-- Detecting C compile features - done
+-- Configuring done (0.6s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/sanitized
+[1/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_bridge.c.o
+[2/12] Building C object CMakeFiles/event_protocol.dir/Users/kafka/Workspace_AI/nostos/code/common/protocol/event_protocol.c.o
+[3/12] Building C object CMakeFiles/test_serial_command.dir/Users/kafka/Workspace_AI/nostos/code/firmware/esp32/main/serial_command.c.o
+[4/12] Building C object CMakeFiles/test_event_protocol.dir/test_event_protocol.c.o
+[5/12] Building C object CMakeFiles/test_serial_command.dir/test_serial_command.c.o
+[6/12] Building C object CMakeFiles/test_event_path.dir/test_event_path.c.o
+[7/12] Building C object CMakeFiles/test_event_bridge.dir/test_event_bridge.c.o
+[8/12] Linking C static library libevent_protocol.a
+[9/12] Linking C executable test_event_bridge
+[10/12] Linking C executable test_serial_command
+[11/12] Linking C executable test_event_protocol
+[12/12] Linking C executable test_event_path
+Test project /Users/kafka/Workspace_AI/nostos/code/firmware/esp32/host-tests/build/sanitized
+    Start 1: event_path
+1/4 Test #1: event_path .......................   Passed    0.57 sec
+    Start 2: event_protocol
+2/4 Test #2: event_protocol ...................   Passed    0.50 sec
+    Start 3: event_bridge
+3/4 Test #3: event_bridge .....................   Passed    0.51 sec
+    Start 4: serial_command
+4/4 Test #4: serial_command ...................   Passed    0.54 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =   2.11 sec

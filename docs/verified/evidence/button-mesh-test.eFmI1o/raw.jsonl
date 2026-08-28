@@ -1,0 +1,460 @@
+{"at": 0.021421, "board": "76", "line": "I (720993) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 0.022085, "board": "76", "line": "I (720993) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 0.022329, "board": "76", "line": "I (720993) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 0.022692, "board": "D6", "line": "I (252781) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 0.022713, "board": "76", "line": "I (720993) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 0.023025, "board": "76", "line": "I (720993) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 0.023329, "board": "D6", "line": "I (252781) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 0.023343, "board": "76", "line": "I (720993) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 0.023633, "board": "D6", "line": "I (252781) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 0.023644, "board": "76", "line": "I (720993) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 0.02391, "board": "D6", "line": "I (252781) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 0.023922, "board": "76", "line": "I (720993) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 0.024142, "board": "76", "line": "I (720993) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 0.024382, "board": "76", "line": "I (720993) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 0.024479, "board": "D6", "line": "I (252781) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 0.024827, "board": "D6", "line": "I (252781) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 0.025026, "board": "D6", "line": "I (252781) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 0.025286, "board": "D6", "line": "I (252781) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 0.025533, "board": "D6", "line": "I (252781) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 0.026374, "board": "D6", "line": "I (252781) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 1.041234, "board": "76", "line": "I (722013) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 1.041788, "board": "76", "line": "I (722013) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 1.042095, "board": "76", "line": "I (722013) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 1.042529, "board": "76", "line": "I (722013) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 1.042707, "board": "76", "line": "I (722013) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 1.042793, "board": "D6", "line": "I (253801) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 1.043011, "board": "76", "line": "I (722013) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 1.043311, "board": "76", "line": "I (722013) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 1.043458, "board": "D6", "line": "I (253801) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 1.043548, "board": "76", "line": "I (722013) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 1.043764, "board": "D6", "line": "I (253801) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 1.043927, "board": "76", "line": "I (722013) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 1.044099, "board": "D6", "line": "I (253801) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 1.044139, "board": "76", "line": "I (722013) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 1.044333, "board": "D6", "line": "I (253801) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 1.044638, "board": "D6", "line": "I (253801) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 1.044995, "board": "D6", "line": "I (253801) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 1.045244, "board": "D6", "line": "I (253801) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 1.045636, "board": "D6", "line": "I (253801) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 1.045747, "board": "D6", "line": "I (253801) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 2.021406, "board": "HOST", "marker": "READY"}
+{"at": 2.081238, "board": "76", "line": "I (723053) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 2.0821, "board": "76", "line": "I (723053) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 2.082514, "board": "76", "line": "I (723053) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 2.082727, "board": "D6", "line": "I (254841) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 2.082875, "board": "76", "line": "I (723053) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 2.083297, "board": "D6", "line": "I (254841) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 2.083334, "board": "76", "line": "I (723053) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 2.083632, "board": "D6", "line": "I (254841) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 2.08367, "board": "76", "line": "I (723053) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 2.084013, "board": "D6", "line": "I (254841) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 2.084034, "board": "76", "line": "I (723053) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 2.084274, "board": "76", "line": "I (723053) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 2.084349, "board": "D6", "line": "I (254841) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 2.084545, "board": "76", "line": "I (723053) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 2.084785, "board": "D6", "line": "I (254841) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 2.084989, "board": "D6", "line": "I (254841) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 2.085014, "board": "76", "line": "I (723053) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 2.085248, "board": "D6", "line": "I (254841) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 2.085493, "board": "D6", "line": "I (254841) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 2.085911, "board": "D6", "line": "I (254841) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 3.121851, "board": "76", "line": "I (724093) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 3.122448, "board": "D6", "line": "I (255881) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 3.122678, "board": "76", "line": "I (724093) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 3.123086, "board": "D6", "line": "I (255881) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 3.123147, "board": "76", "line": "I (724093) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 3.123378, "board": "D6", "line": "I (255881) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 3.123434, "board": "76", "line": "I (724093) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 3.123984, "board": "D6", "line": "I (255881) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 3.124323, "board": "D6", "line": "I (255881) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 3.124386, "board": "76", "line": "I (724093) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 3.124758, "board": "D6", "line": "I (255881) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 3.12501, "board": "76", "line": "I (724093) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 3.125059, "board": "D6", "line": "I (255881) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 3.125197, "board": "76", "line": "I (724093) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 3.125281, "board": "D6", "line": "I (255881) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 3.125457, "board": "76", "line": "I (724093) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 3.125543, "board": "D6", "line": "I (255881) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 3.125735, "board": "76", "line": "I (724093) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 3.125992, "board": "D6", "line": "I (255881) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 3.126045, "board": "76", "line": "I (724093) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 4.161288, "board": "76", "line": "I (725133) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 4.161875, "board": "76", "line": "I (725133) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 4.162232, "board": "76", "line": "I (725133) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 4.162506, "board": "76", "line": "I (725133) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 4.162738, "board": "D6", "line": "I (256921) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 4.163085, "board": "76", "line": "I (725133) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 4.163238, "board": "76", "line": "I (725133) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 4.163789, "board": "D6", "line": "I (256921) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 4.163875, "board": "D6", "line": "I (256921) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 4.163976, "board": "76", "line": "I (725133) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 4.163997, "board": "76", "line": "I (725133) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 4.164027, "board": "D6", "line": "I (256921) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 4.164053, "board": "76", "line": "I (725133) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 4.164184, "board": "76", "line": "I (725133) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 4.164273, "board": "D6", "line": "I (256921) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 4.16459, "board": "D6", "line": "I (256921) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 4.1649, "board": "D6", "line": "I (256921) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 4.165154, "board": "D6", "line": "I (256921) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 4.165407, "board": "D6", "line": "I (256921) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 4.165637, "board": "D6", "line": "I (256921) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 5.181379, "board": "76", "line": "I (726153) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 5.181941, "board": "76", "line": "I (726153) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 5.182361, "board": "76", "line": "I (726153) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 5.182473, "board": "D6", "line": "I (257941) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 5.182547, "board": "76", "line": "I (726153) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 5.182898, "board": "76", "line": "I (726153) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 5.183187, "board": "D6", "line": "I (257941) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 5.183284, "board": "76", "line": "I (726153) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 5.183452, "board": "D6", "line": "I (257941) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 5.183874, "board": "D6", "line": "I (257941) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 5.184196, "board": "D6", "line": "I (257941) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 5.184294, "board": "76", "line": "I (726153) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 5.184519, "board": "D6", "line": "I (257941) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 5.184774, "board": "76", "line": "I (726153) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 5.184841, "board": "D6", "line": "I (257941) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 5.185122, "board": "D6", "line": "I (257941) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 5.185182, "board": "76", "line": "I (726153) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 5.185292, "board": "D6", "line": "I (257941) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 5.185333, "board": "76", "line": "I (726153) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 5.185749, "board": "D6", "line": "I (257941) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 6.202583, "board": "D6", "line": "I (258961) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 6.203093, "board": "D6", "line": "I (258961) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 6.204316, "board": "D6", "line": "I (258961) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 6.20476, "board": "D6", "line": "I (258961) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 6.205014, "board": "D6", "line": "I (258961) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 6.205364, "board": "D6", "line": "I (258961) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 6.205855, "board": "D6", "line": "I (258961) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 6.206118, "board": "D6", "line": "I (258961) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 6.206367, "board": "D6", "line": "I (258961) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 6.206616, "board": "D6", "line": "I (258961) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 6.221341, "board": "76", "line": "I (727193) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 6.221911, "board": "76", "line": "I (727193) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 6.222225, "board": "76", "line": "I (727193) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 6.222502, "board": "76", "line": "I (727193) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 6.222871, "board": "76", "line": "I (727193) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 6.223172, "board": "76", "line": "I (727193) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 6.223462, "board": "76", "line": "I (727193) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 6.223772, "board": "76", "line": "I (727193) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 6.224039, "board": "76", "line": "I (727193) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 6.224276, "board": "76", "line": "I (727193) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 7.241239, "board": "76", "line": "I (728213) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 7.241796, "board": "76", "line": "I (728213) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 7.242142, "board": "76", "line": "I (728213) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 7.2424, "board": "D6", "line": "I (260001) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 7.242487, "board": "76", "line": "I (728213) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 7.242685, "board": "76", "line": "I (728213) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 7.243077, "board": "D6", "line": "I (260001) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 7.243287, "board": "76", "line": "I (728213) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 7.243392, "board": "D6", "line": "I (260001) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 7.243584, "board": "76", "line": "I (728213) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 7.243971, "board": "76", "line": "I (728213) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 7.244256, "board": "76", "line": "I (728213) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 7.244377, "board": "76", "line": "I (728213) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 7.244472, "board": "D6", "line": "I (260001) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 7.245176, "board": "D6", "line": "I (260001) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 7.245486, "board": "D6", "line": "I (260001) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 7.24576, "board": "D6", "line": "I (260001) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 7.24596, "board": "D6", "line": "I (260001) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 7.24621, "board": "D6", "line": "I (260001) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 7.246528, "board": "D6", "line": "I (260001) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 8.261265, "board": "76", "line": "I (729233) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 8.261832, "board": "76", "line": "I (729233) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 8.262607, "board": "D6", "line": "I (261021) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 8.262833, "board": "76", "line": "I (729233) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 8.262949, "board": "76", "line": "I (729233) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 8.263068, "board": "76", "line": "I (729233) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 8.263186, "board": "D6", "line": "I (261021) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 8.263265, "board": "76", "line": "I (729233) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 8.263403, "board": "D6", "line": "I (261021) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 8.263471, "board": "76", "line": "I (729233) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 8.263617, "board": "D6", "line": "I (261021) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 8.263672, "board": "76", "line": "I (729233) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 8.263887, "board": "76", "line": "I (729233) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 8.263976, "board": "D6", "line": "I (261021) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 8.264103, "board": "76", "line": "I (729233) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 8.265068, "board": "D6", "line": "I (261021) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 8.265512, "board": "D6", "line": "I (261021) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 8.265765, "board": "D6", "line": "I (261021) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 8.266005, "board": "D6", "line": "I (261021) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 8.266233, "board": "D6", "line": "I (261021) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 9.301092, "board": "76", "line": "I (730273) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 9.30165, "board": "76", "line": "I (730273) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 9.302197, "board": "76", "line": "I (730273) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 9.3023, "board": "76", "line": "I (730273) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 9.302593, "board": "D6", "line": "I (262061) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 9.302677, "board": "76", "line": "I (730273) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 9.302959, "board": "76", "line": "I (730273) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 9.303129, "board": "D6", "line": "I (262061) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 9.303293, "board": "76", "line": "I (730273) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 9.303542, "board": "D6", "line": "I (262061) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 9.303586, "board": "76", "line": "I (730273) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 9.303836, "board": "76", "line": "I (730273) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 9.303931, "board": "D6", "line": "I (262061) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 9.304089, "board": "76", "line": "I (730273) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 9.304163, "board": "D6", "line": "I (262061) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 9.30475, "board": "D6", "line": "I (262061) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 9.305131, "board": "D6", "line": "I (262061) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 9.3053, "board": "D6", "line": "I (262061) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 9.305547, "board": "D6", "line": "I (262061) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 9.306642, "board": "D6", "line": "I (262061) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 10.322364, "board": "76", "line": "I (731293) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 10.32251, "board": "D6", "line": "I (263081) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 10.323045, "board": "D6", "line": "I (263081) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 10.323105, "board": "76", "line": "I (731293) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 10.323282, "board": "D6", "line": "I (263081) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 10.323357, "board": "76", "line": "I (731293) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 10.323644, "board": "76", "line": "I (731293) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 10.323934, "board": "D6", "line": "I (263081) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 10.324021, "board": "76", "line": "I (731293) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 10.324188, "board": "D6", "line": "I (263081) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 10.324277, "board": "76", "line": "I (731293) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 10.324458, "board": "D6", "line": "I (263081) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 10.324547, "board": "76", "line": "I (731293) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 10.324748, "board": "D6", "line": "I (263081) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 10.324829, "board": "76", "line": "I (731293) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 10.324989, "board": "D6", "line": "I (263081) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 10.325076, "board": "76", "line": "I (731293) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 10.325238, "board": "D6", "line": "I (263081) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 10.325328, "board": "76", "line": "I (731293) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 10.325486, "board": "D6", "line": "I (263081) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 11.361156, "board": "76", "line": "I (732333) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 11.361687, "board": "76", "line": "I (732333) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 11.362076, "board": "76", "line": "I (732333) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 11.362385, "board": "76", "line": "I (732333) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 11.362512, "board": "D6", "line": "I (264121) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 11.362614, "board": "76", "line": "I (732333) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 11.362988, "board": "76", "line": "I (732333) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 11.363104, "board": "D6", "line": "I (264121) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 11.363203, "board": "76", "line": "I (732333) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 11.363286, "board": "D6", "line": "I (264121) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 11.363477, "board": "76", "line": "I (732333) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 11.363726, "board": "D6", "line": "I (264121) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 11.363858, "board": "76", "line": "I (732333) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 11.364012, "board": "76", "line": "I (732333) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 11.364881, "board": "D6", "line": "I (264121) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 11.365219, "board": "D6", "line": "I (264121) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 11.365423, "board": "D6", "line": "I (264121) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 11.365804, "board": "D6", "line": "I (264121) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 11.365932, "board": "D6", "line": "I (264121) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 11.366217, "board": "D6", "line": "I (264121) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 12.401025, "board": "76", "line": "I (733373) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 12.401616, "board": "76", "line": "I (733373) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 12.402165, "board": "76", "line": "I (733373) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 12.402386, "board": "D6", "line": "I (265161) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 12.402449, "board": "76", "line": "I (733373) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 12.402547, "board": "76", "line": "I (733373) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 12.402956, "board": "D6", "line": "I (265161) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 12.403004, "board": "76", "line": "I (733373) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 12.403233, "board": "D6", "line": "I (265161) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 12.403283, "board": "76", "line": "I (733373) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 12.403463, "board": "D6", "line": "I (265161) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 12.403497, "board": "76", "line": "I (733373) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 12.403831, "board": "D6", "line": "I (265161) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 12.403996, "board": "76", "line": "I (733373) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 12.404224, "board": "76", "line": "I (733373) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 12.405156, "board": "D6", "line": "I (265161) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 12.405492, "board": "D6", "line": "I (265161) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 12.405815, "board": "D6", "line": "I (265161) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 12.406094, "board": "D6", "line": "I (265161) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 12.40633, "board": "D6", "line": "I (265161) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 13.441228, "board": "76", "line": "I (734413) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 13.441907, "board": "76", "line": "I (734413) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 13.44213, "board": "76", "line": "I (734413) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 13.442464, "board": "D6", "line": "I (266201) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 13.442652, "board": "76", "line": "I (734413) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 13.44276, "board": "76", "line": "I (734413) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 13.443081, "board": "D6", "line": "I (266201) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 13.443215, "board": "76", "line": "I (734413) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 13.443315, "board": "D6", "line": "I (266201) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 13.443405, "board": "76", "line": "I (734413) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 13.443688, "board": "D6", "line": "I (266201) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 13.443785, "board": "76", "line": "I (734413) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 13.443991, "board": "D6", "line": "I (266201) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 13.444089, "board": "76", "line": "I (734413) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 13.444272, "board": "76", "line": "I (734413) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 13.444363, "board": "D6", "line": "I (266201) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 13.444593, "board": "D6", "line": "I (266201) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 13.444834, "board": "D6", "line": "I (266201) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 13.445058, "board": "D6", "line": "I (266201) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 13.445286, "board": "D6", "line": "I (266201) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 14.461061, "board": "76", "line": "I (735433) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 14.461613, "board": "76", "line": "I (735433) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 14.462292, "board": "D6", "line": "I (267221) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 14.46243, "board": "76", "line": "I (735433) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 14.462531, "board": "76", "line": "I (735433) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 14.462916, "board": "D6", "line": "I (267221) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 14.463047, "board": "76", "line": "I (735433) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 14.463234, "board": "D6", "line": "I (267221) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 14.463359, "board": "76", "line": "I (735433) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 14.463526, "board": "D6", "line": "I (267221) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 14.463604, "board": "76", "line": "I (735433) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 14.463886, "board": "76", "line": "I (735433) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 14.464014, "board": "D6", "line": "I (267221) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 14.464091, "board": "76", "line": "I (735433) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 14.46428, "board": "D6", "line": "I (267221) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 14.464342, "board": "76", "line": "I (735433) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 14.465485, "board": "D6", "line": "I (267221) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 14.465893, "board": "D6", "line": "I (267221) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 14.466128, "board": "D6", "line": "I (267221) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 14.466446, "board": "D6", "line": "I (267221) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 15.482487, "board": "D6", "line": "I (268241) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 15.483068, "board": "D6", "line": "I (268241) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 15.483377, "board": "D6", "line": "I (268241) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 15.483691, "board": "D6", "line": "I (268241) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 15.483953, "board": "D6", "line": "I (268241) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 15.484264, "board": "D6", "line": "I (268241) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 15.48455, "board": "D6", "line": "I (268241) LAYER_8_UART: MESH_RX valid=2 invalid=0 self=0 not_ready=0"}
+{"at": 15.484812, "board": "D6", "line": "I (268241) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 15.485055, "board": "D6", "line": "I (268241) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 15.485299, "board": "D6", "line": "I (268241) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 15.501017, "board": "76", "line": "I (736473) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 15.501583, "board": "76", "line": "I (736473) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 15.501971, "board": "76", "line": "I (736473) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 15.50314, "board": "76", "line": "I (736473) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 15.503711, "board": "76", "line": "I (736473) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 15.504144, "board": "76", "line": "I (736473) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 15.50443, "board": "76", "line": "I (736473) LAYER_8_UART: MESH_RX valid=1071 invalid=0 self=0 not_ready=0"}
+{"at": 15.504696, "board": "76", "line": "I (736473) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 15.504955, "board": "76", "line": "I (736473) LAYER_8_UART: UART_TX accepted=1071 failed=0 full=0 expired=0"}
+{"at": 15.505217, "board": "76", "line": "I (736473) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 16.227889, "board": "STM32", "hex": "13"}
+{"at": 16.231876, "board": "D6", "line": "I (268981) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0"}
+{"at": 16.23205, "board": "D6", "line": "I (268991) LAYER_8_UART: UART_RX id=0x13 result=queued"}
+{"at": 16.246181, "board": "D6", "line": "W (269001) BLE_MESH: No outbound bearer found, inbound bearer 1"}
+{"at": 16.265114, "board": "76", "line": "I (737233) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued"}
+{"at": 16.265334, "board": "76", "line": "I (737233) LAYER_8_UART: UART_TX id=0x13 source=0x0005 api=accepted age_ms=0"}
+{"at": 16.482585, "board": "D6", "line": "I (269241) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 16.484051, "board": "D6", "line": "I (269241) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 16.484533, "board": "D6", "line": "I (269241) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 16.484817, "board": "D6", "line": "I (269241) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 16.485119, "board": "D6", "line": "I (269241) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 16.486062, "board": "D6", "line": "I (269241) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=1 noop=0 invalid=0 hw_errors=0"}
+{"at": 16.48646, "board": "D6", "line": "I (269241) LAYER_8_UART: MESH_RX valid=3 invalid=0 self=1 not_ready=0"}
+{"at": 16.486712, "board": "D6", "line": "I (269241) LAYER_8_UART: MESH_TX accepted=1 failed=0 full=0 expired=0"}
+{"at": 16.48696, "board": "D6", "line": "I (269241) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 16.487191, "board": "D6", "line": "I (269241) LAYER_8_UART: MESH_STACK complete_ok=1 failed=0 peer_ACK=none"}
+{"at": 16.501083, "board": "76", "line": "I (737473) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 16.50192, "board": "76", "line": "I (737473) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 16.502188, "board": "76", "line": "I (737473) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 16.502429, "board": "76", "line": "I (737473) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 16.502712, "board": "76", "line": "I (737473) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 16.503031, "board": "76", "line": "I (737473) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 16.504066, "board": "76", "line": "I (737473) LAYER_8_UART: MESH_RX valid=1072 invalid=0 self=0 not_ready=0"}
+{"at": 16.50469, "board": "76", "line": "I (737473) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 16.50494, "board": "76", "line": "I (737473) LAYER_8_UART: UART_TX accepted=1072 failed=0 full=0 expired=0"}
+{"at": 16.505216, "board": "76", "line": "I (737473) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 16.817842, "board": "STM32", "hex": "13"}
+{"at": 16.820597, "board": "D6", "line": "I (269571) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0"}
+{"at": 16.820694, "board": "D6", "line": "I (269571) LAYER_8_UART: UART_RX id=0x13 result=queued"}
+{"at": 16.827038, "board": "D6", "line": "W (269581) BLE_MESH: No outbound bearer found, inbound bearer 1"}
+{"at": 16.845036, "board": "76", "line": "I (737813) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued"}
+{"at": 16.845247, "board": "76", "line": "I (737813) LAYER_8_UART: UART_TX id=0x13 source=0x0005 api=accepted age_ms=0"}
+{"at": 17.243884, "board": "STM32", "hex": "13"}
+{"at": 17.246696, "board": "D6", "line": "I (270001) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0"}
+{"at": 17.246893, "board": "D6", "line": "I (270001) LAYER_8_UART: UART_RX id=0x13 result=queued"}
+{"at": 17.255673, "board": "D6", "line": "W (270011) BLE_MESH: No outbound bearer found, inbound bearer 1"}
+{"at": 17.276308, "board": "76", "line": "I (738243) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued"}
+{"at": 17.276494, "board": "76", "line": "I (738243) LAYER_8_UART: UART_TX id=0x13 source=0x0005 api=accepted age_ms=1"}
+{"at": 17.501164, "board": "76", "line": "I (738473) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 17.501831, "board": "76", "line": "I (738473) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 17.502194, "board": "76", "line": "I (738473) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 17.502247, "board": "D6", "line": "I (270261) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 17.502413, "board": "76", "line": "I (738473) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 17.502732, "board": "76", "line": "I (738473) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 17.5031, "board": "D6", "line": "I (270261) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 17.503146, "board": "76", "line": "I (738473) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 17.503354, "board": "76", "line": "I (738473) LAYER_8_UART: MESH_RX valid=1074 invalid=0 self=0 not_ready=0"}
+{"at": 17.503519, "board": "D6", "line": "I (270261) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 17.503903, "board": "76", "line": "I (738473) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 17.503958, "board": "D6", "line": "I (270261) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 17.504224, "board": "D6", "line": "I (270261) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 17.504261, "board": "76", "line": "I (738473) LAYER_8_UART: UART_TX accepted=1074 failed=0 full=0 expired=0"}
+{"at": 17.504424, "board": "76", "line": "I (738473) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 17.504485, "board": "D6", "line": "I (270261) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=3 noop=0 invalid=0 hw_errors=0"}
+{"at": 17.50481, "board": "D6", "line": "I (270261) LAYER_8_UART: MESH_RX valid=5 invalid=0 self=3 not_ready=0"}
+{"at": 17.505052, "board": "D6", "line": "I (270261) LAYER_8_UART: MESH_TX accepted=3 failed=0 full=0 expired=0"}
+{"at": 17.505297, "board": "D6", "line": "I (270261) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 17.50555, "board": "D6", "line": "I (270261) LAYER_8_UART: MESH_STACK complete_ok=3 failed=0 peer_ACK=none"}
+{"at": 18.521005, "board": "76", "line": "I (739493) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 18.521584, "board": "76", "line": "I (739493) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 18.522306, "board": "D6", "line": "I (271281) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 18.522767, "board": "76", "line": "I (739493) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 18.522938, "board": "D6", "line": "I (271281) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 18.523199, "board": "76", "line": "I (739493) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 18.523273, "board": "D6", "line": "I (271281) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 18.523494, "board": "76", "line": "I (739493) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 18.523577, "board": "D6", "line": "I (271281) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 18.523901, "board": "D6", "line": "I (271281) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 18.523913, "board": "76", "line": "I (739493) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 18.524105, "board": "76", "line": "I (739493) LAYER_8_UART: MESH_RX valid=1074 invalid=0 self=0 not_ready=0"}
+{"at": 18.524272, "board": "D6", "line": "I (271281) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=3 noop=0 invalid=0 hw_errors=0"}
+{"at": 18.524352, "board": "76", "line": "I (739493) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 18.524437, "board": "D6", "line": "I (271281) LAYER_8_UART: MESH_RX valid=5 invalid=0 self=3 not_ready=0"}
+{"at": 18.524627, "board": "76", "line": "I (739493) LAYER_8_UART: UART_TX accepted=1074 failed=0 full=0 expired=0"}
+{"at": 18.524911, "board": "76", "line": "I (739493) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 18.526306, "board": "D6", "line": "I (271281) LAYER_8_UART: MESH_TX accepted=3 failed=0 full=0 expired=0"}
+{"at": 18.52689, "board": "D6", "line": "I (271281) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 18.52713, "board": "D6", "line": "I (271281) LAYER_8_UART: MESH_STACK complete_ok=3 failed=0 peer_ACK=none"}
+{"at": 19.560865, "board": "76", "line": "I (740533) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 19.561711, "board": "76", "line": "I (740533) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 19.562125, "board": "76", "line": "I (740533) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 19.562263, "board": "D6", "line": "I (272321) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 19.562371, "board": "76", "line": "I (740533) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 19.5628, "board": "D6", "line": "I (272321) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 19.562877, "board": "76", "line": "I (740533) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 19.563095, "board": "76", "line": "I (740533) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 19.563164, "board": "D6", "line": "I (272321) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 19.563386, "board": "76", "line": "I (740533) LAYER_8_UART: MESH_RX valid=1074 invalid=0 self=0 not_ready=0"}
+{"at": 19.56346, "board": "D6", "line": "I (272321) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 19.563641, "board": "76", "line": "I (740533) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 19.563894, "board": "D6", "line": "I (272321) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 19.563921, "board": "76", "line": "I (740533) LAYER_8_UART: UART_TX accepted=1074 failed=0 full=0 expired=0"}
+{"at": 19.564177, "board": "D6", "line": "I (272321) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=3 noop=0 invalid=0 hw_errors=0"}
+{"at": 19.564205, "board": "76", "line": "I (740533) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 19.564376, "board": "D6", "line": "I (272321) LAYER_8_UART: MESH_RX valid=5 invalid=0 self=3 not_ready=0"}
+{"at": 19.564644, "board": "D6", "line": "I (272321) LAYER_8_UART: MESH_TX accepted=3 failed=0 full=0 expired=0"}
+{"at": 19.564916, "board": "D6", "line": "I (272321) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 19.565151, "board": "D6", "line": "I (272321) LAYER_8_UART: MESH_STACK complete_ok=3 failed=0 peer_ACK=none"}
+{"at": 20.600874, "board": "76", "line": "I (741573) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 20.601458, "board": "76", "line": "I (741573) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 20.601915, "board": "76", "line": "I (741573) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 20.602163, "board": "D6", "line": "I (273361) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 20.60222, "board": "76", "line": "I (741573) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 20.602413, "board": "76", "line": "I (741573) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 20.602791, "board": "76", "line": "I (741573) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 20.602869, "board": "D6", "line": "I (273361) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 20.603081, "board": "76", "line": "I (741573) LAYER_8_UART: MESH_RX valid=1074 invalid=0 self=0 not_ready=0"}
+{"at": 20.603153, "board": "D6", "line": "I (273361) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 20.603315, "board": "76", "line": "I (741573) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 20.603559, "board": "76", "line": "I (741573) LAYER_8_UART: UART_TX accepted=1074 failed=0 full=0 expired=0"}
+{"at": 20.60373, "board": "D6", "line": "I (273361) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 20.603807, "board": "76", "line": "I (741573) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 20.604915, "board": "D6", "line": "I (273361) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 20.60535, "board": "D6", "line": "I (273361) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=3 noop=0 invalid=0 hw_errors=0"}
+{"at": 20.605663, "board": "D6", "line": "I (273361) LAYER_8_UART: MESH_RX valid=5 invalid=0 self=3 not_ready=0"}
+{"at": 20.605891, "board": "D6", "line": "I (273361) LAYER_8_UART: MESH_TX accepted=3 failed=0 full=0 expired=0"}
+{"at": 20.606157, "board": "D6", "line": "I (273361) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 20.606387, "board": "D6", "line": "I (273361) LAYER_8_UART: MESH_STACK complete_ok=3 failed=0 peer_ACK=none"}
+{"at": 21.640964, "board": "76", "line": "I (742613) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 21.642192, "board": "D6", "line": "I (274401) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0"}
+{"at": 21.642566, "board": "76", "line": "I (742613) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 21.642968, "board": "D6", "line": "I (274401) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0"}
+{"at": 21.643006, "board": "76", "line": "I (742613) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0"}
+{"at": 21.643218, "board": "D6", "line": "I (274401) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1"}
+{"at": 21.6433, "board": "76", "line": "I (742613) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 21.643526, "board": "D6", "line": "I (274401) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256"}
+{"at": 21.643585, "board": "76", "line": "I (742613) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 21.643887, "board": "D6", "line": "I (274401) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2"}
+{"at": 21.643924, "board": "76", "line": "I (742613) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0"}
+{"at": 21.64431, "board": "76", "line": "I (742613) LAYER_8_UART: MESH_RX valid=1074 invalid=0 self=0 not_ready=0"}
+{"at": 21.644372, "board": "D6", "line": "I (274401) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=3 noop=0 invalid=0 hw_errors=0"}
+{"at": 21.644614, "board": "76", "line": "I (742613) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0"}
+{"at": 21.644683, "board": "D6", "line": "I (274401) LAYER_8_UART: MESH_RX valid=5 invalid=0 self=3 not_ready=0"}
+{"at": 21.6449, "board": "D6", "line": "I (274401) LAYER_8_UART: MESH_TX accepted=3 failed=0 full=0 expired=0"}
+{"at": 21.644948, "board": "76", "line": "I (742613) LAYER_8_UART: UART_TX accepted=1074 failed=0 full=0 expired=0"}
+{"at": 21.645156, "board": "D6", "line": "I (274401) LAYER_8_UART: UART_TX accepted=2 failed=0 full=0 expired=0"}
+{"at": 21.64519, "board": "76", "line": "I (742613) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none"}
+{"at": 21.645421, "board": "D6", "line": "I (274401) LAYER_8_UART: MESH_STACK complete_ok=3 failed=0 peer_ACK=none"}
+{"at": 22.237962, "board": "HOST", "marker": "END", "counts": {"STM32.0x13": 3, "D6.MESH_TX.0x13": 3, "D6.UART_RX.0x13": 3, "76.MESH_RX.0x13": 3}}

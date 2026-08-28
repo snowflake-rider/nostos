@@ -1,0 +1,45 @@
+# Generated build trees and dependency caches
+**/build*/
+**/Build/
+**/Debug/
+**/Release/
+**/.build/
+**/DerivedData/
+**/managed_components/
+**/node_modules/
+**/__pycache__/
+**/.cache/
+**/.venv/
+compile_commands.json
+# Compiler / firmware outputs (source MP3 and C audio arrays are retained)
+*.elf
+*.hex
+*.bin
+*.map
+*.o
+*.obj
+*.d
+*.pyc
+*.tmp
+*.swp
+# Personal editor state
+.DS_Store
+**/.settings/
+**/.vscode/
+**/.mxproject
+**/xcuserdata/
+*.xcuserstate
+# Secrets never belong in this repository
+**/private-network/
+.env
+.env.*
+*.pem
+*.key
+# ESP-IDF's previous generated configuration is disposable; current sdkconfig is tracked.
+sdkconfig.old
+
+# Local ESP-IDF example_init dependency locks embed installation paths.
+dependencies.lock
+
+# C3 reference example selects its target when configuring; this snapshot is generated.
+/code/examples/esp32c3/generic-onoff-node/sdkconfig

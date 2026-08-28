@@ -1,0 +1,7 @@
+Test project /Users/kafka/Workspace_AI/nostos/code/examples/esp32s3/gps-mesh-node/host-tests/build-sanitizers
+    Start 1: gps_wire_receiver_and_serial
+1/1 Test #1: gps_wire_receiver_and_serial .....   Passed    0.48 sec
+
+100% tests passed out of 1
+
+Total Test time (real) =   0.48 sec

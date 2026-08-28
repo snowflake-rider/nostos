@@ -1,0 +1,38 @@
+ESP32-S3 Layer 0 bootloading workflow
+PROJECT_DIR=/Users/kafka/Documents/Notion/esp-ble/layers/layer-0
+RUN_TIMESTAMP=20260827T120458-KST
+
+[2026-08-27 12:04:58 KST] STAGE=toolchain_check
+IDF_INSTALL_DIR=/Users/kafka/esp/esp-idf-v5.5.5
+Checking "python3" ...
+Python 3.14.7
+"python3" has been detected
+Activating ESP-IDF 5.5
+Setting IDF_PATH to '/Users/kafka/esp/esp-idf-v5.5.5'.
+* Checking python version ... 3.14.7
+* Checking python dependencies ... OK
+* Deactivating the current ESP-IDF environment (if any) ... OK
+* Establishing a new ESP-IDF environment ... OK
+* Identifying shell ... bash
+* Detecting outdated tools in system ... OK - no outdated tools found
+* Shell completion ... Autocompletion code generated
+WARNING: Failed to load shell autocompletion for bash version: 3.2.57(1)-release!
+
+Done! You can now compile ESP-IDF projects.
+Go to the project directory and run:
+
+  idf.py build
+ESP-IDF v5.5.5
+esptool.py v4.12.0
+4.12.0
+pyserial=3.5
+
+[2026-08-27 12:05:01 KST] STAGE=serial_device_detection
+Detected USB serial ports:
+  /dev/cu.usbmodem5C4C2165221
+ERROR: Selected serial port does not exist: /dev/cu.layer0-intentional-missing
+
+RESULT=FAIL
+STAGE=serial_device_detection
+EXIT_CODE=1
+LOG_FILE=/Users/kafka/Documents/Notion/esp-ble/layers/layer-0/logs/esp32s3-layer-0-bootload-20260827T120458-KST.log

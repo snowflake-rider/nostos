@@ -1,0 +1,6 @@
+D6 I (17941) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+D6 I (17941) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+D6 I (17941) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+D6 I (17941) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+D6 I (17941) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+DIAG_PRESENT: read-only status available; not a link PASS

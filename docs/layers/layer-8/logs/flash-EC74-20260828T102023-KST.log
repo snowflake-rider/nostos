@@ -1,0 +1,86 @@
+NVS BACKUP BEFORE FLASH
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1101
+Connecting....
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 14:c1:9f:ce:ec:74
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+4096 (16 %)8192 (33 %)12288 (50 %)16384 (66 %)20480 (83 %)24576 (100 %)
+24576 (100 %)
+Read 24576 bytes at 0x00009000 in 0.6 seconds (351.8 kbit/s)...
+Hard resetting via RTS pin...
+
+LAYER 8 FLASH
+esptool.py --chip esp32s3 --port /dev/cu.usbmodem1101 --baud 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x10000 esp32s3_layer_8.bin 0x8000 partition_table/partition-table.bin
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1101
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 14:c1:9f:ce:ec:74
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00005fff...
+Flash will be erased from 0x00010000 to 0x000eefff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+SHA digest in image updated
+Compressed 20848 bytes to 13356...
+Writing at 0x00000000... (100 %)
+Wrote 20848 bytes (13356 compressed) at 0x00000000 in 0.3 seconds (effective 644.9 kbit/s)...
+Hash of data verified.
+Compressed 912016 bytes to 522142...
+Writing at 0x00010000... (3 %)
+Writing at 0x0001d1cb... (6 %)
+Writing at 0x0002cab2... (9 %)
+Writing at 0x00038b16... (12 %)
+Writing at 0x000428ce... (15 %)
+Writing at 0x00048b68... (18 %)
+Writing at 0x0004efc8... (21 %)
+Writing at 0x00054c7d... (25 %)
+Writing at 0x0005aabb... (28 %)
+Writing at 0x0006074a... (31 %)
+Writing at 0x00066d1f... (34 %)
+Writing at 0x0006d3e1... (37 %)
+Writing at 0x00073874... (40 %)
+Writing at 0x000797bb... (43 %)
+Writing at 0x00080209... (46 %)
+Writing at 0x000863bf... (50 %)
+Writing at 0x0008c5a9... (53 %)
+Writing at 0x00092a1e... (56 %)
+Writing at 0x000987f6... (59 %)
+Writing at 0x0009e917... (62 %)
+Writing at 0x000a4d64... (65 %)
+Writing at 0x000aab75... (68 %)
+Writing at 0x000b02b4... (71 %)
+Writing at 0x000b5e90... (75 %)
+Writing at 0x000bbaa2... (78 %)
+Writing at 0x000c1581... (81 %)
+Writing at 0x000c7ba6... (84 %)
+Writing at 0x000cff19... (87 %)
+Writing at 0x000d69a5... (90 %)
+Writing at 0x000dd4d2... (93 %)
+Writing at 0x000e2cfb... (96 %)
+Writing at 0x000e8f0e... (100 %)
+Wrote 912016 bytes (522142 compressed) at 0x00010000 in 5.6 seconds (effective 1296.4 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 105...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (105 compressed) at 0x00008000 in 0.0 seconds (effective 872.3 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...

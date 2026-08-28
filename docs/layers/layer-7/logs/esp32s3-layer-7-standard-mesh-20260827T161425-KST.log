@@ -1,0 +1,38 @@
+ESP32-S3 Layer 7 standard Bluetooth Mesh one-board workflow
+PROJECT_DIR=/Users/kafka/Documents/Notion/esp-ble/layers/layer-7
+ERASE_FLASH=no
+
+[2026-08-27 16:14:25 KST] STAGE=toolchain_check
+Checking "python3" ...
+Python 3.14.7
+"python3" has been detected
+Activating ESP-IDF 5.5
+Setting IDF_PATH to '/Users/kafka/esp/esp-idf-v5.5.5'.
+* Checking python version ... 3.14.7
+* Checking python dependencies ... OK
+* Deactivating the current ESP-IDF environment (if any) ... OK
+* Establishing a new ESP-IDF environment ... OK
+* Identifying shell ... bash
+* Detecting outdated tools in system ... OK - no outdated tools found
+* Shell completion ... Autocompletion code generated
+WARNING: Failed to load shell autocompletion for bash version: 3.2.57(1)-release!
+
+Done! You can now compile ESP-IDF projects.
+Go to the project directory and run:
+
+  idf.py build
+ESP-IDF v5.5.5
+
+[2026-08-27 16:14:27 KST] STAGE=serial_device_detection
+Detected USB serial ports:
+  /dev/cu.usbmodem1101
+  /dev/cu.usbmodem1401
+SELECTED_PORT=/dev/cu.usbmodem1101
+
+[2026-08-27 16:14:27 KST] STAGE=chip_profile
+
+RESULT=FAIL
+STAGE=chip_profile
+EXIT_CODE=2
+PORT=/dev/cu.usbmodem1101
+LOG_FILE=/Users/kafka/Documents/Notion/esp-ble/layers/layer-7/logs/esp32s3-layer-7-standard-mesh-20260827T161425-KST.log

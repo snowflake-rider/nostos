@@ -1,0 +1,9 @@
+test_detects_missing_and_ignores_generated_tree (test_check_repository.RepositoryChecks.test_detects_missing_and_ignores_generated_tree) ... ok
+test_enforces_separation_and_allows_license (test_check_repository.RepositoryChecks.test_enforces_separation_and_allows_license) ... ok
+test_external_and_fragment_links (test_check_repository.RepositoryChecks.test_external_and_fragment_links) ... ok
+test_relative_and_escaped_paths (test_check_repository.RepositoryChecks.test_relative_and_escaped_paths) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.018s
+
+OK

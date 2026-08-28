@@ -1,0 +1,7 @@
+cmake_minimum_required(VERSION 3.16)
+set(IDF_TARGET "esp32s3" CACHE STRING "Layer 8 target")
+if(NOT IDF_TARGET STREQUAL "esp32s3")
+    message(FATAL_ERROR "Layer 8 is for ESP32-S3")
+endif()
+include($ENV{IDF_PATH}/tools/cmake/project.cmake)
+project(esp32s3_layer_8)

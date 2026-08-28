@@ -1,0 +1,13 @@
+Test project /Users/kafka/Workspace_AI/nostos/code/layers/layer-8/host-tests/build-Debug
+    Start 1: event_path
+1/4 Test #1: event_path .......................   Passed    0.36 sec
+    Start 2: event_protocol
+2/4 Test #2: event_protocol ...................   Passed    0.40 sec
+    Start 3: event_bridge
+3/4 Test #3: event_bridge .....................   Passed    0.38 sec
+    Start 4: serial_command
+4/4 Test #4: serial_command ...................   Passed    0.35 sec
+
+100% tests passed out of 4
+
+Total Test time (real) =   1.48 sec

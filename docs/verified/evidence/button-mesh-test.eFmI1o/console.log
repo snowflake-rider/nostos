@@ -1,0 +1,31 @@
+   0.003s CONNECTED STM32 /dev/cu.usbmodem1102
+   0.004s CONNECTED D6 /dev/cu.usbmodem1301
+   0.006s CONNECTED 76 /dev/cu.usbmodem1201
+   2.022s READY: press D10/PB6 once. Observe STM32 -> D6(0x0005) -> 76(0x0003)
+  16.228s STM32 USB_TRACE hex=13
+  16.228s EVENT STM32.0x13 count=1
+  16.232s D6 I (268981) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+  16.232s EVENT D6.MESH_TX.0x13 count=1
+  16.232s D6 I (268991) LAYER_8_UART: UART_RX id=0x13 result=queued
+  16.232s EVENT D6.UART_RX.0x13 count=1
+  16.265s 76 I (737233) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued
+  16.265s EVENT 76.MESH_RX.0x13 count=1
+  16.818s STM32 USB_TRACE hex=13
+  16.818s EVENT STM32.0x13 count=2
+  16.821s D6 I (269571) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+  16.821s EVENT D6.MESH_TX.0x13 count=2
+  16.821s D6 I (269571) LAYER_8_UART: UART_RX id=0x13 result=queued
+  16.821s EVENT D6.UART_RX.0x13 count=2
+  16.845s 76 I (737813) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued
+  16.845s EVENT 76.MESH_RX.0x13 count=2
+  17.244s STM32 USB_TRACE hex=13
+  17.244s EVENT STM32.0x13 count=3
+  17.247s D6 I (270001) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+  17.247s EVENT D6.MESH_TX.0x13 count=3
+  17.247s D6 I (270001) LAYER_8_UART: UART_RX id=0x13 result=queued
+  17.247s EVENT D6.UART_RX.0x13 count=3
+  17.276s 76 I (738243) LAYER_8_UART: MESH_RX source=0x0005 id=0x13 result=queued
+  17.276s EVENT 76.MESH_RX.0x13 count=3
+  22.238s COUNTS={"76.MESH_RX.0x13": 3, "D6.MESH_TX.0x13": 3, "D6.UART_RX.0x13": 3, "STM32.0x13": 3}
+  22.238s FINISHED: raw.jsonl includes all traffic and status; counts alone are not a physical-button assertion.
+  22.241s PORTS_CLOSED

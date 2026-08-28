@@ -1,0 +1,79 @@
+Layer 8 D6 flash verification — 2026-08-28 11:20 KST
+Target only: /dev/cu.usbmodem5C4C2169241, USB bridge serial 5C4C216924
+Live preflash node: ESP32-MESH-D6, Bluetooth MAC 14:c1:9f:ce:f0:d6, primary 0x0005
+Chip MAC 14:c1:9f:ce:f0:d4, ESP32-S3 rev 0.2, embedded PSRAM 8MB, detected flash 16MB
+Private backup: build/preflash-D6.lNtKEX/D6-before-flash.bin
+Backup scope: 0x00000000 through 0x00186fff inclusive; 1601536 bytes. Includes old bootloader, partition table, NVS, phy_init, factory app partition.
+Backup completed with exit 0; existing partition table equals Layer 8 partition table.
+App BIN SHA256: 80454a270c1ec8e10a7cb93929c94e41b01004452fdf877c0f234e18b989cedb
+App ELF SHA256: 4ad872c536217cf531d322cd710ceb4062f6647999f5518fe122e0d308c70785
+Same checked Layer 8 image previously used for 76/B6; no source or configuration edits.
+NVS 0x9000..0xEFFF is outside all flash write/erase ranges below; no erase_flash or factory-reset.
+Flash command exit: 0. Bootloader, app and partition-table each passed hash verification.
+Postflash application boot/status: NOT_VERIFIED; current D6 USB connection is UART bridge, Layer 8 console requires native USB Serial/JTAG.
+Existing 76/B6 devices untouched. No Mesh configuration changes or button/broadcast tests performed.
+
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem5C4C2169241
+Connecting....
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+MAC: 14:c1:9f:ce:f0:d4
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00005fff...
+Flash will be erased from 0x00010000 to 0x000eefff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+SHA digest in image updated
+Compressed 20848 bytes to 13356...
+Writing at 0x00000000... (100 %)
+Wrote 20848 bytes (13356 compressed) at 0x00000000 in 0.5 seconds (effective 329.0 kbit/s)...
+Hash of data verified.
+Compressed 912016 bytes to 522142...
+Writing at 0x00010000... (3 %)
+Writing at 0x0001d1cb... (6 %)
+Writing at 0x0002cab2... (9 %)
+Writing at 0x00038b16... (12 %)
+Writing at 0x000428ce... (15 %)
+Writing at 0x00048b68... (18 %)
+Writing at 0x0004efc8... (21 %)
+Writing at 0x00054c7d... (25 %)
+Writing at 0x0005aabb... (28 %)
+Writing at 0x0006074a... (31 %)
+Writing at 0x00066d1f... (34 %)
+Writing at 0x0006d3e1... (37 %)
+Writing at 0x00073874... (40 %)
+Writing at 0x000797bb... (43 %)
+Writing at 0x00080209... (46 %)
+Writing at 0x000863bf... (50 %)
+Writing at 0x0008c5a9... (53 %)
+Writing at 0x00092a1e... (56 %)
+Writing at 0x000987f6... (59 %)
+Writing at 0x0009e917... (62 %)
+Writing at 0x000a4d64... (65 %)
+Writing at 0x000aab75... (68 %)
+Writing at 0x000b02b4... (71 %)
+Writing at 0x000b5e90... (75 %)
+Writing at 0x000bbaa2... (78 %)
+Writing at 0x000c1581... (81 %)
+Writing at 0x000c7ba6... (84 %)
+Writing at 0x000cff19... (87 %)
+Writing at 0x000d69a5... (90 %)
+Writing at 0x000dd4d2... (93 %)
+Writing at 0x000e2cfb... (96 %)
+Writing at 0x000e8f0e... (100 %)
+Wrote 912016 bytes (522142 compressed) at 0x00010000 in 11.8 seconds (effective 617.1 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 105...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (105 compressed) at 0x00008000 in 0.0 seconds (effective 736.3 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+

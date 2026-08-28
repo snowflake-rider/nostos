@@ -1,0 +1,175 @@
+CAPTURE_START 2026-08-28T10:20:23.257305+09:00
+OPEN EC74 /dev/cu.usbmodem1101 USB_SERIAL=14:C1:9F:CE:EC:74
+OPEN BAB4 /dev/cu.usbmodem1401 USB_SERIAL=44:1B:F6:FF:BA:B4
+[EC74] ESP-ROM:esp32s3-20210327
+[EC74] Build:Mar 27 2021
+[EC74] rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+[EC74] Saved PC:0x4037dd5e
+[BAB4] ESP-ROM:esp32s3-20210327
+[BAB4] Build:Mar 27 2021
+[BAB4] rst:0x15 (USB_UART_CHIP_RESET),boot:0x29 (SPI_FAST_FLASH_BOOT)
+[EC74] SPIWP:0xee
+[EC74] mode:DIO, clock div:1
+[BAB4] Saved PC:0x4037dd5e
+[BAB4] SPIWP:0xee
+[BAB4] mode:DIO, clock div:1
+[EC74] load:0x3fce2820,len:0x1530
+[BAB4] load:0x3fce2820,len:0x1530
+[EC74] load:0x403c8700,len:0xcec
+[BAB4] load:0x403c8700,len:0xcec
+[EC74] load:0x403cb700,len:0x2ef8
+[BAB4] load:0x403cb700,len:0x2ef8
+[EC74] entry 0x403c8920
+[BAB4] entry 0x403c8920
+[EC74] I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[EC74] I (24) boot: compile time Aug 28 2026 10:15:47
+[EC74] I (25) boot: Multicore bootloader
+[EC74] I (25) boot: chip revision: v0.2
+[EC74] I (25) boot: efuse block revision: v1.4
+[EC74] I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[EC74] I (25) boot.esp32s3: SPI Mode       : DIO
+[EC74] I (26) boot.esp32s3: SPI Flash Size : 16MB
+[EC74] I (26) boot: Enabling RNG early entropy source...
+[EC74] I (26) boot: Partition Table:
+[BAB4] I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[EC74] I (26) boot: ## Label            Usage          Type ST Offset   Length
+[BAB4] I (24) boot: compile time Aug 28 2026 10:15:47
+[BAB4] I (25) boot: Multicore bootloader
+[EC74] I (26) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+[BAB4] I (25) boot: chip revision: v0.2
+[BAB4] I (25) boot: efuse block revision: v1.4
+[BAB4] I (25) boot.esp32s3: Boot SPI Speed : 80MHz
+[EC74] I (27) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+[BAB4] I (26) boot.esp32s3: SPI Mode       : DIO
+[BAB4] I (26) boot.esp32s3: SPI Flash Size : 16MB
+[EC74] I (27) boot:  2 factory          factory app      00 00 00010000 00177000
+[BAB4] I (26) boot: Enabling RNG early entropy source...
+[EC74] I (28) boot: End of partition table
+[BAB4] I (26) boot: Partition Table:
+[EC74] I (28) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=2e5a0h (189856) map
+[BAB4] I (26) boot: ## Label            Usage          Type ST Offset   Length
+[BAB4] I (27) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+[BAB4] I (27) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+[BAB4] I (27) boot:  2 factory          factory app      00 00 00010000 00177000
+[BAB4] I (28) boot: End of partition table
+[BAB4] I (28) esp_image: segment 0: paddr=00010020 vaddr=3c0a0020 size=2e5a0h (189856) map
+[EC74] I (63) esp_image: segment 1: paddr=0003e5c8 vaddr=3fc9a100 size=01a50h (  6736) load
+[BAB4] I (63) esp_image: segment 1: paddr=0003e5c8 vaddr=3fc9a100 size=01a50h (  6736) load
+[EC74] I (65) esp_image: segment 2: paddr=00040020 vaddr=42000020 size=95bcch (613324) map
+[BAB4] I (65) esp_image: segment 2: paddr=00040020 vaddr=42000020 size=95bcch (613324) map
+[EC74] I (177) esp_image: segment 3: paddr=000d5bf4 vaddr=3fc9bb50 size=02e3ch ( 11836) load
+[BAB4] I (177) esp_image: segment 3: paddr=000d5bf4 vaddr=3fc9bb50 size=02e3ch ( 11836) load
+[EC74] I (180) esp_image: segment 4: paddr=000d8a38 vaddr=40374000 size=16000h ( 90112) load
+[BAB4] I (180) esp_image: segment 4: paddr=000d8a38 vaddr=40374000 size=16000h ( 90112) load
+[EC74] I (201) esp_image: segment 5: paddr=000eea40 vaddr=50000000 size=00020h (    32) load
+[BAB4] I (201) esp_image: segment 5: paddr=000eea40 vaddr=50000000 size=00020h (    32) load
+[EC74] I (210) boot: Loaded app from partition at offset 0x10000
+[EC74] I (210) boot: Disabling RNG early entropy source...
+[EC74] I (211) cpu_start: Multicore app
+[BAB4] I (210) boot: Loaded app from partition at offset 0x10000
+[BAB4] I (210) boot: Disabling RNG early entropy source...
+[BAB4] I (211) cpu_start: Multicore app
+[EC74] I (220) cpu_start: Pro cpu start user code
+[EC74] I (220) cpu_start: cpu freq: 160000000 Hz
+[EC74] I (220) app_init: Application information:
+[EC74] I (221) app_init: Project name:     esp32s3_layer_8
+[EC74] I (221) app_init: App version:      1
+[EC74] I (221) app_init: Compile time:     Aug 28 2026 10:14:15
+[EC74] I (221) app_init: ELF file SHA256:  4ad872c53...
+[EC74] I (221) app_init: ESP-IDF:          v5.5.5
+[EC74] I (221) efuse_init: Min chip rev:     v0.0
+[EC74] I (222) efuse_init: Max chip rev:     v0.99
+[EC74] I (222) efuse_init: Chip rev:         v0.2
+[EC74] I (222) heap_init: Initializing. RAM available for dynamic allocation:
+[BAB4] I (220) cpu_start: Pro cpu start user code
+[BAB4] I (220) cpu_start: cpu freq: 160000000 Hz
+[BAB4] I (221) app_init: Application information:
+[EC74] I (222) heap_init: At 3FCA5DC0 len 00043950 (270 KiB): RAM
+[BAB4] I (221) app_init: Project name:     esp32s3_layer_8
+[EC74] I (222) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+[BAB4] I (221) app_init: App version:      1
+[EC74] I (223) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+[BAB4] I (221) app_init: Compile time:     Aug 28 2026 10:14:15
+[EC74] I (223) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+[BAB4] I (221) app_init: ELF file SHA256:  4ad872c53...
+[BAB4] I (221) app_init: ESP-IDF:          v5.5.5
+[BAB4] I (222) efuse_init: Min chip rev:     v0.0
+[BAB4] I (222) efuse_init: Max chip rev:     v0.99
+[BAB4] I (222) efuse_init: Chip rev:         v0.2
+[BAB4] I (222) heap_init: Initializing. RAM available for dynamic allocation:
+[EC74] I (224) spi_flash: detected chip: boya
+[BAB4] I (222) heap_init: At 3FCA5DC0 len 00043950 (270 KiB): RAM
+[EC74] I (224) spi_flash: flash io: dio
+[BAB4] I (222) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+[BAB4] I (223) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+[EC74] I (225) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+[BAB4] I (223) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+[EC74] I (225) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+[BAB4] I (224) spi_flash: detected chip: boya
+[BAB4] I (224) spi_flash: flash io: dio
+[BAB4] I (225) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+[EC74] I (227) main_task: Started on CPU0
+[BAB4] I (225) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+[EC74] I (227) main_task: Calling app_main()
+[EC74] I (227) LAYER_8: [LAYER-8] BOOT_START project=esp32s3_layer_8
+[BAB4] I (227) main_task: Started on CPU0
+[BAB4] I (227) main_task: Calling app_main()
+[BAB4] I (227) LAYER_8: [LAYER-8] BOOT_START project=esp32s3_layer_8
+[EC74] I (247) uart: queue free spaces: 16
+[EC74] I (257) LAYER_8_UART: UART1_READY TX=GPIO17 RX=GPIO18 115200/8N1; no periodic task
+[EC74] I (257) BLE_INIT: BT controller compile version [51d9dfd]
+[EC74] I (257) BLE_INIT: Using main XTAL as clock source
+[BAB4] I (247) uart: queue free spaces: 16
+[EC74] I (257) BLE_INIT: Feature Config, ADV:1, BLE_50:0, DTM:1, SCAN:1, CCA:0, SMP:1, CONNECT:1
+[BAB4] I (257) LAYER_8_UART: UART1_READY TX=GPIO17 RX=GPIO18 115200/8N1; no periodic task
+[BAB4] I (257) BLE_INIT: BT controller compile version [51d9dfd]
+[EC74] I (257) BLE_INIT: Bluetooth MAC: 14:c1:9f:ce:ec:76
+[BAB4] I (257) BLE_INIT: Using main XTAL as clock source
+[BAB4] I (257) BLE_INIT: Feature Config, ADV:1, BLE_50:0, DTM:1, SCAN:1, CCA:0, SMP:1, CONNECT:1
+[EC74] I (257) phy_init: phy_version 712,87e8c20e,Apr 13 2026,18:51:10
+[BAB4] I (257) BLE_INIT: Bluetooth MAC: 44:1b:f6:ff:ba:b6
+[BAB4] I (257) phy_init: phy_version 712,87e8c20e,Apr 13 2026,18:51:10
+[BAB4] I (307) phy_init: Saving new calibration data due to checksum failure or outdated calibration data, mode(0)
+[EC74] W (337) LAYER_8_MESH: NO_KEY_INDEX_MAP; configure/re-add AppKey before event TX
+[BAB4] W (347) LAYER_8_MESH: NO_KEY_INDEX_MAP; configure/re-add AppKey before event TX
+[EC74] W (537) BLE_MESH: bt_mesh_proxy_server_prov_disable, Already
+[EC74] I (557) LAYER_8_MESH: PROVISIONED primary=0x0003; Vendor model configuration still required
+[EC74] I (557) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+[EC74] I (557) LAYER_8_CONSOLE: commands=status,on,off,on-unack,off-unack,tx-low,tx-normal; factory-reset DISABLED
+[EC74] I (557) LAYER_8: [LAYER-8] APP_STARTED; UART1 <-> Mesh C001; API acceptance is not peer delivery
+[EC74] I (557) main_task: Returned from app_main()
+[BAB4] W (557) BLE_MESH: bt_mesh_proxy_server_prov_disable, Already
+[BAB4] I (567) LAYER_8_MESH: PROVISIONED primary=0x0004; Vendor model configuration still required
+[BAB4] I (577) LAYER_8_MESH: STATUS name=ESP32-L8-BAB6 primary=0x0004 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=1 onoff_ready=0 state=0
+[BAB4] I (577) LAYER_8_CONSOLE: commands=status,on,off,on-unack,off-unack,tx-low,tx-normal; factory-reset DISABLED
+[BAB4] I (577) LAYER_8: [LAYER-8] APP_STARTED; UART1 <-> Mesh C001; API acceptance is not peer delivery
+[BAB4] I (577) main_task: Returned from app_main()
+HOST->EC74 status
+HOST->BAB4 status
+[BAB4] I (1097) LAYER_8_MESH: STATUS name=ESP32-L8-BAB6 primary=0x0004 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=1 onoff_ready=0 state=0
+[BAB4] I (1097) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+[BAB4] I (1097) LAYER_8_UART: MESH_RX valid=0 invalid=0 self=0 not_ready=0
+[BAB4] I (1097) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+[BAB4] I (1097) LAYER_8_UART: UART_TX accepted=0 failed=0 full=0 expired=0
+[BAB4] I (1097) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+[EC74] I (1117) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+[EC74] I (1117) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+[EC74] I (1117) LAYER_8_UART: MESH_RX valid=0 invalid=0 self=0 not_ready=0
+[EC74] I (1117) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+[EC74] I (1117) LAYER_8_UART: UART_TX accepted=0 failed=0 full=0 expired=0
+[EC74] I (1117) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+HOST->EC74 status
+HOST->BAB4 status
+[EC74] I (4037) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+[EC74] I (4037) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+[EC74] I (4037) LAYER_8_UART: MESH_RX valid=0 invalid=0 self=0 not_ready=0
+[EC74] I (4037) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+[EC74] I (4037) LAYER_8_UART: UART_TX accepted=0 failed=0 full=0 expired=0
+[BAB4] I (4037) LAYER_8_MESH: STATUS name=ESP32-L8-BAB6 primary=0x0004 event_ready=0 net=0xffff app=0x0000 pub=0x0000 sub_C001=0 ttl=0 period=0 retransmit=0 relay=1 onoff_ready=0 state=0
+[EC74] I (4037) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+[BAB4] I (4037) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+[BAB4] I (4037) LAYER_8_UART: MESH_RX valid=0 invalid=0 self=0 not_ready=0
+[BAB4] I (4037) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+[BAB4] I (4037) LAYER_8_UART: UART_TX accepted=0 failed=0 full=0 expired=0
+[BAB4] I (4037) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+CAPTURE_END

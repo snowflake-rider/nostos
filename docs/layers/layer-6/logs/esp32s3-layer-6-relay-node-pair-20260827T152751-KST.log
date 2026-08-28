@@ -1,0 +1,442 @@
+ESP32-S3 Layer 6 two-board relay-node workflow
+PROJECT_DIR=/Users/kafka/Documents/Notion/esp-ble/layers/layer-6
+RUN_TIMESTAMP=20260827T152751-KST
+
+[2026-08-27 15:27:51 KST] STAGE=toolchain_check
+IDF_INSTALL_DIR=/Users/kafka/esp/esp-idf-v5.5.5
+Checking "python3" ...
+Python 3.14.7
+"python3" has been detected
+Activating ESP-IDF 5.5
+Setting IDF_PATH to '/Users/kafka/esp/esp-idf-v5.5.5'.
+* Checking python version ... 3.14.7
+* Checking python dependencies ... OK
+* Deactivating the current ESP-IDF environment (if any) ... OK
+* Establishing a new ESP-IDF environment ... OK
+* Identifying shell ... bash
+* Detecting outdated tools in system ... OK - no outdated tools found
+* Shell completion ... Autocompletion code generated
+WARNING: Failed to load shell autocompletion for bash version: 3.2.57(1)-release!
+
+Done! You can now compile ESP-IDF projects.
+Go to the project directory and run:
+
+  idf.py build
+ESP-IDF v5.5.5
+esptool.py v4.12.0
+4.12.0
+pyserial=3.5
+
+[2026-08-27 15:27:53 KST] STAGE=serial_pair_detection
+Detected USB serial ports:
+  /dev/cu.usbmodem1101
+  /dev/cu.usbmodem1401
+SELECTED_PORT_A=/dev/cu.usbmodem1101
+SELECTED_PORT_B=/dev/cu.usbmodem1401
+
+[2026-08-27 15:27:53 KST] STAGE=pair_chip_profile
+
+PROFILE_BOARD_A port=/dev/cu.usbmodem1101
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1101
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 14:c1:9f:ce:ec:74
+Enabling default SPI flash mode...
+Warning: ESP32-S3 has no Chip ID. Reading MAC instead.
+MAC: 14:c1:9f:ce:ec:74
+Hard resetting via RTS pin...
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1101
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 14:c1:9f:ce:ec:74
+Enabling default SPI flash mode...
+Manufacturer: 68
+Device: 4018
+Detected flash size: 16MB
+Flash type set in eFuse: quad (4 data lines)
+Flash voltage set by eFuse to 3.3V
+Hard resetting via RTS pin...
+
+PROFILE_BOARD_B port=/dev/cu.usbmodem1401
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1401
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 44:1b:f6:ff:ba:b4
+Enabling default SPI flash mode...
+Warning: ESP32-S3 has no Chip ID. Reading MAC instead.
+MAC: 44:1b:f6:ff:ba:b4
+Hard resetting via RTS pin...
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1401
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 44:1b:f6:ff:ba:b4
+Enabling default SPI flash mode...
+Manufacturer: 68
+Device: 4018
+Detected flash size: 16MB
+Flash type set in eFuse: quad (4 data lines)
+Flash voltage set by eFuse to 3.3V
+Hard resetting via RTS pin...
+
+[2026-08-27 15:27:55 KST] STAGE=target_configuration
+Existing sdkconfig target is already esp32s3.
+
+[2026-08-27 15:27:55 KST] STAGE=build_once
+Executing action: all (aliases: build)
+Running ninja in directory /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build
+Executing "ninja all"...
+[1/4] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/partition_table/partition-table.bin /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp32s3_layer_6.bin
+esp32s3_layer_6.bin binary size 0x87f90 bytes. Smallest app partition is 0x177000 bytes. 0xef070 bytes (64%) free.
+[2/4] Performing build step for 'bootloader'
+[1/1] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/bootloader.bin
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[3/4] No install step for 'bootloader'
+[4/4] Completed 'bootloader'
+
+Project build complete. To flash, run:
+ idf.py flash
+or
+ idf.py -p PORT flash
+or
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash --flash_mode dio --flash_size 16MB --flash_freq 80m 0x0 build/bootloader/bootloader.bin 0x8000 build/partition_table/partition-table.bin 0x10000 build/esp32s3_layer_6.bin
+or from the "/Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build" directory
+ python -m esptool --chip esp32s3 -b 460800 --before default_reset --after hard_reset write_flash "@flash_args"
+BUILD_ARTIFACT=build/bootloader/bootloader.bin
+BUILD_ARTIFACT=build/partition_table/partition-table.bin
+BUILD_ARTIFACT=build/esp32s3_layer_6.bin
+
+[2026-08-27 15:27:56 KST] STAGE=flash_board_a
+Executing action: flash
+Running ninja in directory /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build
+Executing "ninja flash"...
+[1/5] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/partition_table/partition-table.bin /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp32s3_layer_6.bin
+esp32s3_layer_6.bin binary size 0x87f90 bytes. Smallest app partition is 0x177000 bytes. 0xef070 bytes (64%) free.
+[2/5] Performing build step for 'bootloader'
+[1/1] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/bootloader.bin
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[3/5] No install step for 'bootloader'
+[4/5] Completed 'bootloader'
+[4/5] cd /Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py && /opt/homebrew/bin/cmake -D IDF_PATH=/Users/kafka/esp/esp-idf-v5.5.5 -D "SERIAL_TOOL=/Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python;;/Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py/esptool/esptool.py;--chip;esp32s3" -D "SERIAL_TOOL_ARGS=--before=default_reset;--after=hard_reset;write_flash;@flash_args" -D WORKING_DIRECTORY=/Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build -P /Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py/run_serial_tool.cmake
+esptool.py --chip esp32s3 -p /dev/cu.usbmodem1101 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x10000 esp32s3_layer_6.bin 0x8000 partition_table/partition-table.bin
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1101
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 14:c1:9f:ce:ec:74
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00005fff...
+Flash will be erased from 0x00010000 to 0x00097fff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+SHA digest in image updated
+Compressed 20832 bytes to 13353...
+Writing at 0x00000000... (100 %)
+Wrote 20832 bytes (13353 compressed) at 0x00000000 in 0.3 seconds (effective 639.0 kbit/s)...
+Hash of data verified.
+Compressed 556944 bytes to 322786...
+Writing at 0x00010000... (5 %)
+Writing at 0x0001d645... (10 %)
+Writing at 0x00028b50... (15 %)
+Writing at 0x000320c0... (20 %)
+Writing at 0x000382ad... (25 %)
+Writing at 0x0003e85f... (30 %)
+Writing at 0x000447d8... (35 %)
+Writing at 0x0004a47d... (40 %)
+Writing at 0x0005056d... (45 %)
+Writing at 0x000565f4... (50 %)
+Writing at 0x0005c7ea... (55 %)
+Writing at 0x000624bf... (60 %)
+Writing at 0x00067e19... (65 %)
+Writing at 0x0006d997... (70 %)
+Writing at 0x0007324d... (75 %)
+Writing at 0x00078df5... (80 %)
+Writing at 0x00081ade... (85 %)
+Writing at 0x00087a7d... (90 %)
+Writing at 0x0008d194... (95 %)
+Writing at 0x00093872... (100 %)
+Wrote 556944 bytes (322786 compressed) at 0x00010000 in 3.4 seconds (effective 1295.0 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 105...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (105 compressed) at 0x00008000 in 0.0 seconds (effective 743.2 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+Done
+
+[2026-08-27 15:28:02 KST] STAGE=flash_board_b
+Executing action: flash
+Running ninja in directory /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build
+Executing "ninja flash"...
+[1/5] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 partition --type app /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/partition_table/partition-table.bin /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/esp32s3_layer_6.bin
+esp32s3_layer_6.bin binary size 0x87f90 bytes. Smallest app partition is 0x177000 bytes. 0xef070 bytes (64%) free.
+[2/5] Performing build step for 'bootloader'
+[1/1] cd /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/esp-idf/esptool_py && /Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python /Users/kafka/esp/esp-idf-v5.5.5/components/partition_table/check_sizes.py --offset 0x8000 bootloader 0x0 /Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build/bootloader/bootloader.bin
+Bootloader binary size 0x5160 bytes. 0x2ea0 bytes (36%) free.
+[3/5] No install step for 'bootloader'
+[4/5] Completed 'bootloader'
+[4/5] cd /Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py && /opt/homebrew/bin/cmake -D IDF_PATH=/Users/kafka/esp/esp-idf-v5.5.5 -D "SERIAL_TOOL=/Users/kafka/.espressif/python_env/idf5.5_py3.14_env/bin/python;;/Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py/esptool/esptool.py;--chip;esp32s3" -D "SERIAL_TOOL_ARGS=--before=default_reset;--after=hard_reset;write_flash;@flash_args" -D WORKING_DIRECTORY=/Users/kafka/Documents/Notion/esp-ble/layers/layer-6/build -P /Users/kafka/esp/esp-idf-v5.5.5/components/esptool_py/run_serial_tool.cmake
+esptool.py --chip esp32s3 -p /dev/cu.usbmodem1401 -b 460800 --before=default_reset --after=hard_reset write_flash --flash_mode dio --flash_freq 80m --flash_size 16MB 0x0 bootloader/bootloader.bin 0x10000 esp32s3_layer_6.bin 0x8000 partition_table/partition-table.bin
+esptool.py v4.12.0
+Serial port /dev/cu.usbmodem1401
+Connecting...
+Chip is ESP32-S3 (QFN56) (revision v0.2)
+Features: WiFi, BLE, Embedded PSRAM 8MB (AP_3v3)
+Crystal is 40MHz
+USB mode: USB-Serial/JTAG
+MAC: 44:1b:f6:ff:ba:b4
+Uploading stub...
+Running stub...
+Stub running...
+Changing baud rate to 460800
+Changed.
+Configuring flash size...
+Flash will be erased from 0x00000000 to 0x00005fff...
+Flash will be erased from 0x00010000 to 0x00097fff...
+Flash will be erased from 0x00008000 to 0x00008fff...
+SHA digest in image updated
+Compressed 20832 bytes to 13353...
+Writing at 0x00000000... (100 %)
+Wrote 20832 bytes (13353 compressed) at 0x00000000 in 0.3 seconds (effective 620.1 kbit/s)...
+Hash of data verified.
+Compressed 556944 bytes to 322786...
+Writing at 0x00010000... (5 %)
+Writing at 0x0001d645... (10 %)
+Writing at 0x00028b50... (15 %)
+Writing at 0x000320c0... (20 %)
+Writing at 0x000382ad... (25 %)
+Writing at 0x0003e85f... (30 %)
+Writing at 0x000447d8... (35 %)
+Writing at 0x0004a47d... (40 %)
+Writing at 0x0005056d... (45 %)
+Writing at 0x000565f4... (50 %)
+Writing at 0x0005c7ea... (55 %)
+Writing at 0x000624bf... (60 %)
+Writing at 0x00067e19... (65 %)
+Writing at 0x0006d997... (70 %)
+Writing at 0x0007324d... (75 %)
+Writing at 0x00078df5... (80 %)
+Writing at 0x00081ade... (85 %)
+Writing at 0x00087a7d... (90 %)
+Writing at 0x0008d194... (95 %)
+Writing at 0x00093872... (100 %)
+Wrote 556944 bytes (322786 compressed) at 0x00010000 in 3.6 seconds (effective 1235.6 kbit/s)...
+Hash of data verified.
+Compressed 3072 bytes to 105...
+Writing at 0x00008000... (100 %)
+Wrote 3072 bytes (105 compressed) at 0x00008000 in 0.0 seconds (effective 695.3 kbit/s)...
+Hash of data verified.
+
+Leaving...
+Hard resetting via RTS pin...
+Done
+
+[2026-08-27 15:28:09 KST] STAGE=pair_direct_and_forward_verification
+Waiting up to 90 seconds for both boards to prove origin TX, bilateral direct RX, and forwarding...
+[A] ESP-ROM:esp32s3-20210327
+[B] g 27 2026 1ESP-ROM:esp32s3-20210327
+[A] Build:Mar 27 2021
+[B] Build:Mar 27 2021
+[A] rst:0x15 (USB_UART_CHIP_RESET),boot:0x8 (SPI_FAST_FLASH_BOOT)
+[B] rst:0x15 (USB_UART_CHIP_RESET),boot:0x28 (SPI_FAST_FLASH_BOOT)
+[A] Saved PC:0x4037dc46
+[B] Saved PC:0x40048841
+[A] SPIWP:0xee
+[B] SPIWP:0xee
+[A] mode:DIO, clock div:1
+[B] mode:DIO, clock div:1
+[A] load:0x3fce2820,len:0x14f0
+[B] load:0x3fce2820,len:0x14f0
+[A] load:0x403c8700,len:0xd24
+[B] load:0x403c8700,len:0xd24
+[A] load:0x403cb700,len:0x2eec
+[B] load:0x403cb700,len:0x2eec
+[A] entry 0x403c8924
+[B] entry 0x403c8924
+[A] I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[B] I (24) boot: ESP-IDF v5.5.5 2nd stage bootloader
+[A] I (24) boot: compile time Aug 27 2026 15:23:33
+[B] I (24) boot: compile time Aug 27 2026 15:23:33
+[A] I (25) boot: Multicore bootloader
+[B] I (25) boot: Multicore bootloader
+[A] I (25) boot: chip revision: v0.2
+[B] I (25) boot: chip revision: v0.2
+[A] I (27) boot: efuse block revision: v1.4
+[B] I (28) boot: efuse block revision: v1.4
+[A] I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+[B] I (31) boot.esp32s3: Boot SPI Speed : 80MHz
+[A] I (35) boot.esp32s3: SPI Mode       : DIO
+[B] I (35) boot.esp32s3: SPI Mode       : DIO
+[A] I (39) boot.esp32s3: SPI Flash Size : 16MB
+[B] I (39) boot.esp32s3: SPI Flash Size : 16MB
+[A] I (43) boot: Enabling RNG early entropy source...
+[B] I (43) boot: Enabling RNG early entropy source...
+[A] I (47) boot: Partition Table:
+[B] I (47) boot: Partition Table:
+[A] I (50) boot: ## Label            Usage          Type ST Offset   Length
+[B] I (50) boot: ## Label            Usage          Type ST Offset   Length
+[A] I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+[B] I (56) boot:  0 nvs              WiFi data        01 02 00009000 00006000
+[A] I (62) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+[B] I (63) boot:  1 phy_init         RF data          01 01 0000f000 00001000
+[A] I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+[B] I (69) boot:  2 factory          factory app      00 00 00010000 00177000
+[A] I (76) boot: End of partition table
+[B] I (76) boot: End of partition table
+[A] I (79) esp_image: segment 0: paddr=00010020 vaddr=3c060020 size=1a7d8h (108504) map
+[B] I (79) esp_image: segment 0: paddr=00010020 vaddr=3c060020 size=1a7d8h (108504) map
+[A] I (106) esp_image: segment 1: paddr=0002a800 vaddr=3fc99200 size=041d0h ( 16848) load
+[B] I (106) esp_image: segment 1: paddr=0002a800 vaddr=3fc99200 size=041d0h ( 16848) load
+[A] I (110) esp_image: segment 2: paddr=0002e9d8 vaddr=40374000 size=01640h (  5696) load
+[B] I (110) esp_image: segment 2: paddr=0002e9d8 vaddr=40374000 size=01640h (  5696) load
+[A] I (112) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=54468h (345192) map
+[B] I (112) esp_image: segment 3: paddr=00030020 vaddr=42000020 size=54468h (345192) map
+[B] I (181) esp_image: segment 4: paddr=00084490 vaddr=40375640 size=13ab4h ( 80564) load
+[A] I (180) esp_image: segment 4: paddr=00084490 vaddr=40375640 size=13ab4h ( 80564) load
+[B] I (199) esp_image: segment 5: paddr=00097f4c vaddr=50000000 size=00020h (    32) load
+[A] I (199) esp_image: segment 5: paddr=00097f4c vaddr=50000000 size=00020h (    32) load
+[B] I (208) boot: Loaded app from partition at offset 0x10000
+[A] I (208) boot: Loaded app from partition at offset 0x10000
+[B] I (208) boot: Disabling RNG early entropy source...
+[A] I (208) boot: Disabling RNG early entropy source...
+[B] I (218) cpu_start: Multicore app
+[A] I (218) cpu_start: Multicore app
+[B] I (227) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+[A] I (226) cpu_start: GPIO 44 and 43 are used as console UART I/O pins
+[B] I (227) cpu_start: Pro cpu start user code
+[A] I (227) cpu_start: Pro cpu start user code
+[B] I (228) cpu_start: cpu freq: 160000000 Hz
+[A] I (227) cpu_start: cpu freq: 160000000 Hz
+[B] I (229) app_init: Application information:
+[A] I (229) app_init: Application information:
+[B] I (233) app_init: Project name:     esp32s3_layer_6
+[A] I (232) app_init: Project name:     esp32s3_layer_6
+[B] I (237) app_init: App version:      1
+[A] I (237) app_init: App version:      1
+[B] I (241) app_init: Compile time:     Aug 27 2026 15:23:20
+[A] I (240) app_init: Compile time:     Aug 27 2026 15:23:20
+[B] I (246) app_init: ELF file SHA256:  afb746261...
+[A] I (246) app_init: ELF file SHA256:  afb746261...
+[B] I (250) app_init: ESP-IDF:          v5.5.5
+[A] I (250) app_init: ESP-IDF:          v5.5.5
+[B] I (254) efuse_init: Min chip rev:     v0.0
+[A] I (254) efuse_init: Min chip rev:     v0.0
+[B] I (258) efuse_init: Max chip rev:     v0.99 
+[A] I (257) efuse_init: Max chip rev:     v0.99 
+[B] I (262) efuse_init: Chip rev:         v0.2
+[A] I (261) efuse_init: Chip rev:         v0.2
+[B] I (266) heap_init: Initializing. RAM available for dynamic allocation:
+[A] I (265) heap_init: Initializing. RAM available for dynamic allocation:
+[B] I (272) heap_init: At 3FCA0448 len 000492C8 (292 KiB): RAM
+[A] I (272) heap_init: At 3FCA0448 len 000492C8 (292 KiB): RAM
+[B] I (277) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+[A] I (277) heap_init: At 3FCE9710 len 00005724 (21 KiB): RAM
+[B] I (282) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+[A] I (282) heap_init: At 3FCF0000 len 00008000 (32 KiB): DRAM
+[B] I (287) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+[A] I (287) heap_init: At 600FE000 len 00001FE8 (7 KiB): RTCRAM
+[B] I (294) spi_flash: detected chip: boya
+[A] I (293) spi_flash: detected chip: boya
+[B] I (296) spi_flash: flash io: dio
+[A] I (296) spi_flash: flash io: dio
+[B] I (299) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+[A] I (299) sleep_gpio: Configure to isolate all GPIO pins in sleep state
+[B] I (306) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+[A] I (305) sleep_gpio: Enable automatic switching of GPIO sleep configuration
+[B] I (321) main_task: Started on CPU0
+[A] I (321) main_task: Started on CPU0
+[B] I (321) main_task: Calling app_main()
+[A] I (321) main_task: Calling app_main()
+[B] I (331) LAYER_6: [LAYER-6] BOOT_SUCCESS target=esp32s3 idf=v5.5.5
+[A] I (331) LAYER_6: [LAYER-6] BOOT_SUCCESS target=esp32s3 idf=v5.5.5
+[B] I (341) LAYER_6: [LAYER-6] NVS_READY
+[A] I (341) LAYER_6: [LAYER-6] NVS_READY
+[B] I (341) BLE_INIT: BT controller compile version [51d9dfd]
+[A] I (341) BLE_INIT: BT controller compile version [51d9dfd]
+[B] I (341) BLE_INIT: Using main XTAL as clock source
+[A] I (341) BLE_INIT: Using main XTAL as clock source
+[B] I (351) BLE_INIT: Feature Config, ADV:1, BLE_50:0, DTM:1, SCAN:1, CCA:0, SMP:1, CONNECT:1
+[A] I (351) BLE_INIT: Feature Config, ADV:1, BLE_50:0, DTM:1, SCAN:1, CCA:0, SMP:1, CONNECT:1
+[B] I (351) BLE_INIT: Bluetooth MAC: 44:1b:f6:ff:ba:b6
+[A] I (351) BLE_INIT: Bluetooth MAC: 14:c1:9f:ce:ec:76
+[B] I (361) phy_init: phy_version 712,87e8c20e,Apr 13 2026,18:51:10
+[A] I (361) phy_init: phy_version 712,87e8c20e,Apr 13 2026,18:51:10
+[B] I (411) LAYER_6: [LAYER-6] BLE_CONTROLLER_ENABLED
+[A] I (411) LAYER_6: [LAYER-6] BLE_CONTROLLER_ENABLED
+[B] I (421) LAYER_6: [LAYER-6] BLUEDROID_ENABLED
+[A] I (421) LAYER_6: [LAYER-6] BLUEDROID_ENABLED
+[B] I (421) LAYER_6: [LAYER-6] NODE_READY id=B6 name=ESP32-L6-B6 mac=44:1b:f6:ff:ba:b6
+[A] I (421) LAYER_6: [LAYER-6] NODE_READY id=76 name=ESP32-L6-76 mac=14:c1:9f:ce:ec:76
+[B] I (421) LAYER_6: [LAYER-6] ORIGIN_STAGGER delay_ms=850
+[A] I (421) LAYER_6: [LAYER-6] ORIGIN_STAGGER delay_ms=1050
+[B] I (1271) LAYER_6: [LAYER-6] SCAN_PARAMS_READY
+[B] I (1271) LAYER_6: [LAYER-6] SCANNING_STARTED mode=active
+[B] I (1271) LAYER_6: [LAYER-6] ADV_DATA_READY name=ESP32-L6-B6
+[B] I (1271) LAYER_6: [LAYER-6] GATT_SERVICE_READY
+[A] I (1481) LAYER_6: [LAYER-6] SCAN_PARAMS_READY
+[B] I (1281) LAYER_6: [LAYER-6] ADVERTISING_STARTED node=B6 name=ESP32-L6-B6 type=connectable
+[A] I (1481) LAYER_6: [LAYER-6] SCANNING_STARTED mode=active
+[B] I (1281) LAYER_6: [LAYER-6] PACKET_TX_ORIGIN local=B6 origin=B6 seq=1 ttl=2 recipient=FF len=5 payload=HELLO crc=ok
+[A] I (1481) LAYER_6: [LAYER-6] ADV_DATA_READY name=ESP32-L6-76
+[B] I (1291) LAYER_6: [LAYER-6] GATT_SERVER_READY
+[A] I (1481) LAYER_6: [LAYER-6] GATT_SERVICE_READY
+[B] I (1301) LAYER_6: [LAYER-6] DUAL_ROLE_READY node=B6 name=ESP32-L6-B6 adv=yes scan=yes
+[A] I (1491) LAYER_6: [LAYER-6] ADVERTISING_STARTED node=76 name=ESP32-L6-76 type=connectable
+[B] I (1491) LAYER_6: [LAYER-6] PACKET_RX_DIRECT local=B6 origin=76 via=76 seq=1 ttl=2 recipient=FF len=5 payload=HELLO duplicate=no crc=ok rssi=-30
+[A] I (1491) LAYER_6: [LAYER-6] PACKET_TX_ORIGIN local=76 origin=76 seq=1 ttl=2 recipient=FF len=5 payload=HELLO crc=ok
+[A] I (1501) LAYER_6: [LAYER-6] GATT_SERVER_READY
+[A] I (1511) LAYER_6: [LAYER-6] DUAL_ROLE_READY node=76 name=ESP32-L6-76 adv=yes scan=yes
+[B] I (1641) LAYER_6: [LAYER-6] PACKET_FORWARD_QUEUED local=B6 origin=76 seq=1 ttl=1 delay_ms=152
+[A] I (1661) LAYER_6: [LAYER-6] PACKET_RX_DIRECT local=76 origin=B6 via=B6 seq=1 ttl=2 recipient=FF len=5 payload=HELLO duplicate=no crc=ok rssi=-33
+[B] I (1801) LAYER_6: [LAYER-6] ADVERTISING_STOPPED status=0
+[A] I (1811) LAYER_6: [LAYER-6] PACKET_FORWARD_QUEUED local=76 origin=B6 seq=1 ttl=1 delay_ms=152
+[B] I (1801) LAYER_6: [LAYER-6] ADVERTISING_STARTED node=B6 name=ESP32-L6-B6 type=connectable
+[A] I (1851) LAYER_6: [LAYER-6] PACKET_RX_RELAYED local=76 origin=76 via=B6 seq=1 ttl=1 recipient=FF len=5 payload=HELLO duplicate=yes crc=ok rssi=-31
+[B] I (1801) LAYER_6: [LAYER-6] PACKET_TX_FORWARD local=B6 origin=76 seq=1 ttl=1 recipient=FF len=5 payload=HELLO crc=ok
+[A] I (2011) LAYER_6: [LAYER-6] ADVERTISING_STOPPED status=0
+[A] I (2011) LAYER_6: [LAYER-6] ADVERTISING_STARTED node=76 name=ESP32-L6-76 type=connectable
+[A] I (2011) LAYER_6: [LAYER-6] PACKET_TX_FORWARD local=76 origin=B6 seq=1 ttl=1 recipient=FF len=5 payload=HELLO crc=ok
+[B] I (2311) LAYER_6: [LAYER-6] RELAY_NODE_ACTIVE heartbeat=1 node=B6 gatt=yes advertising=yes scanning=yes connected=no seq=1 origin_tx=1 forward_tx=1 rx_new=1 rx_relayed_paths=0 logical_duplicates=0 rx_drops=0 tx_drops=0 tx_queued=0 last_origin=76 last_rssi=-30
+[B] I (2391) LAYER_6: [LAYER-6] PACKET_RX_RELAYED local=B6 origin=B6 via=76 seq=1 ttl=1 recipient=FF len=5 payload=HELLO duplicate=yes crc=ok rssi=-30
+[A] I (2521) LAYER_6: [LAYER-6] RELAY_NODE_ACTIVE heartbeat=1 node=76 gatt=yes advertising=yes scanning=yes connected=no seq=1 origin_tx=1 forward_tx=1 rx_new=1 rx_relayed_paths=1 logical_duplicates=1 rx_drops=0 tx_drops=0 tx_queued=0 last_origin=B6 last_rssi=-33
+BOARD_A_NODE=76
+BOARD_B_NODE=B6
+BIDIRECTIONAL_DIRECT_RX=yes
+BIDIRECTIONAL_FORWARD_TX=yes
+
+RESULT=PASS
+STAGE=complete
+PAIR_ADV_SCAN=PASS
+PAIR_GATT_SERVER=PASS
+PAIR_ORIGIN_TX=PASS
+PAIR_DIRECT_RX=PASS
+PAIR_FORWARD_TX=PASS
+PAIR_PACKET_CRC=PASS
+TRIPLET_RELAY=NOT_VERIFIED
+PORT_A=/dev/cu.usbmodem1101
+PORT_B=/dev/cu.usbmodem1401
+LOG_FILE=/Users/kafka/Documents/Notion/esp-ble/layers/layer-6/logs/esp32s3-layer-6-relay-node-pair-20260827T152751-KST.log

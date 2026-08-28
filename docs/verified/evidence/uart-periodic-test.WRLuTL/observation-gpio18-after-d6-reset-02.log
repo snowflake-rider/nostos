@@ -1,0 +1,204 @@
+  0.003s STM32: USB_ID=066DFF485277504867161930 path=/dev/cu.usbmodem1102
+  0.004s D6: USB_ID=14:C1:9F:CE:F0:D4 path=/dev/cu.usbmodem1301
+  0.006s 76: USB_ID=14:C1:9F:CE:EC:74 path=/dev/cu.usbmodem1201
+  0.006s HOST: BASELINE: status-only; background Mesh is not STM32 UART proof
+  0.011s 76: I (308723) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+  0.011s D6: I (18791) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+  0.011s 76: I (308723) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+  0.012s D6: I (18791) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+  0.012s 76: I (308723) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+  0.012s D6: I (18791) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+  0.012s 76: I (308723) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+  0.012s D6: I (18791) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+  0.013s 76: I (308723) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+  0.013s D6: I (18791) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+  0.013s 76: I (308723) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+  0.013s D6: I (18791) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+  0.013s 76: I (308723) LAYER_8_UART: MESH_RX valid=786 invalid=0 self=0 not_ready=0
+  0.013s D6: I (18791) LAYER_8_UART: MESH_RX valid=50 invalid=0 self=0 not_ready=0
+  0.014s 76: I (308723) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+  0.014s 76: I (308723) LAYER_8_UART: UART_TX accepted=786 failed=0 full=0 expired=0
+  0.014s D6: I (18791) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+  0.014s 76: I (308723) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+  0.014s D6: I (18791) LAYER_8_UART: UART_TX accepted=50 failed=0 full=0 expired=0
+  0.014s D6: I (18791) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+  2.018s HOST: RESET finite STM32 test
+      -------------------------------------------------------------------
+                        STM32CubeProgrammer v2.23.0                  
+      -------------------------------------------------------------------
+
+ST-LINK SN  : 066DFF485277504867161930
+ST-LINK FW  : V2J47M34
+Board       : NUCLEO-F411RE
+Voltage     : 3.26V
+SWD freq    : 4000 KHz
+Connect mode: Under Reset
+Reset mode  : Hardware reset
+Device ID   : 0x431
+Revision ID : Rev A
+Device name : STM32F411xC/E
+NVM size    : 512 KBytes
+Device type : MCU
+Device CPU  : Cortex-M4
+BL Version  : 0xD0
+
+
+MCU Reset
+
+Software reset is performed
+
+  2.492s D6: I (21271) LAYER_8_UART: MESH_TX id=0x31 source=0x0005 api=accepted age_ms=0
+  2.492s D6: I (21271) LAYER_8_UART: UART_RX id=0x31 result=queued
+  2.493s D6: I (21271) LAYER_8_UART: UART_RX id=0x12 result=queued
+  2.493s D6: I (21271) LAYER_8_UART: UART_RX id=0x10 result=queued
+  2.501s D6: I (21281) LAYER_8_UART: MESH_TX id=0x12 source=0x0005 api=accepted age_ms=8
+  2.507s D6: W (21281) BLE_MESH: No outbound bearer found, inbound bearer 1
+  2.516s D6: I (21291) LAYER_8_UART: MESH_TX id=0x10 source=0x0005 api=accepted age_ms=21
+  2.520s D6: W (21291) BLE_MESH: No outbound bearer found, inbound bearer 1
+  2.532s D6: I (21311) LAYER_8_UART: MESH_TX id=0x10 source=0x0005 api=accepted age_ms=0
+  2.532s D6: I (21311) LAYER_8_UART: UART_RX id=0x10 result=queued
+  2.537s D6: W (21311) BLE_MESH: No outbound bearer found, inbound bearer 1
+  2.546s D6: W (21321) BLE_MESH: No outbound bearer found, inbound bearer 1
+  5.421s D6: I (24201) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+  5.421s 76: I (314133) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+  5.421s D6: I (24201) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+  5.422s D6: I (24201) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+  5.422s 76: I (314133) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+  5.422s D6: I (24201) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+  5.422s 76: I (314133) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+  5.422s D6: I (24201) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+  5.422s 76: I (314133) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+  5.423s D6: I (24201) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=4 noop=103 invalid=27 hw_errors=0
+  5.423s D6: I (24201) LAYER_8_UART: MESH_RX valid=62 invalid=0 self=4 not_ready=0
+  5.423s 76: I (314133) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+  5.423s D6: I (24201) LAYER_8_UART: MESH_TX accepted=4 failed=0 full=0 expired=0
+  5.423s 76: I (314133) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+  5.423s 76: I (314133) LAYER_8_UART: MESH_RX valid=798 invalid=0 self=0 not_ready=0
+  5.423s D6: I (24201) LAYER_8_UART: UART_TX accepted=58 failed=0 full=0 expired=0
+  5.423s 76: I (314133) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+  5.424s D6: I (24201) LAYER_8_UART: MESH_STACK complete_ok=4 failed=0 peer_ACK=none
+  5.424s 76: I (314133) LAYER_8_UART: UART_TX accepted=798 failed=0 full=0 expired=0
+  5.424s 76: I (314133) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+  8.341s STM32: USB_TRACE hex=13
+  8.344s D6: I (27121) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+  8.344s D6: I (27121) LAYER_8_UART: UART_RX id=0x13 result=queued
+  8.354s D6: W (27131) BLE_MESH: No outbound bearer found, inbound bearer 1
+  9.337s STM32: USB_TRACE hex=13
+  9.340s D6: I (28111) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+  9.340s D6: I (28121) LAYER_8_UART: UART_RX id=0x13 result=queued
+  9.355s D6: W (28131) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 10.333s STM32: USB_TRACE hex=13
+ 10.335s D6: I (29111) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 10.335s D6: I (29111) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 10.344s D6: W (29121) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 10.421s 76: I (319133) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 10.421s D6: I (29201) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 10.422s D6: I (29201) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 10.422s 76: I (319133) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 10.422s 76: I (319133) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+ 10.422s D6: I (29201) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+ 10.423s 76: I (319133) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 10.423s D6: I (29201) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 10.423s D6: I (29201) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 10.423s 76: I (319133) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 10.423s 76: I (319133) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+ 10.423s D6: I (29201) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=7 noop=103 invalid=27 hw_errors=0
+ 10.424s 76: I (319133) LAYER_8_UART: MESH_RX valid=815 invalid=0 self=0 not_ready=0
+ 10.424s D6: I (29201) LAYER_8_UART: MESH_RX valid=79 invalid=0 self=7 not_ready=0
+ 10.424s 76: I (319133) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+ 10.424s D6: I (29201) LAYER_8_UART: MESH_TX accepted=7 failed=0 full=0 expired=0
+ 10.424s 76: I (319133) LAYER_8_UART: UART_TX accepted=815 failed=0 full=0 expired=0
+ 10.424s D6: I (29201) LAYER_8_UART: UART_TX accepted=72 failed=0 full=0 expired=0
+ 10.424s 76: I (319133) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+ 10.424s D6: I (29201) LAYER_8_UART: MESH_STACK complete_ok=7 failed=0 peer_ACK=none
+ 11.329s STM32: USB_TRACE hex=13
+ 11.332s D6: I (30111) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 11.332s D6: I (30111) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 11.345s D6: W (30121) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 12.325s STM32: USB_TRACE hex=13
+ 12.326s D6: I (31101) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 12.326s D6: I (31101) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 12.335s D6: W (31111) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 13.320s STM32: USB_TRACE hex=13
+ 13.323s D6: I (32101) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 13.323s D6: I (32101) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 13.334s D6: W (32111) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 14.316s STM32: USB_TRACE hex=13
+ 14.317s D6: I (33091) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 14.317s D6: I (33091) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 14.334s D6: W (33111) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 15.312s STM32: USB_TRACE hex=13
+ 15.314s D6: I (34091) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 15.315s D6: I (34091) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 15.326s D6: W (34101) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 15.480s D6: I (34261) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 15.481s 76: I (324193) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 15.481s 76: I (324193) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 15.482s D6: I (34261) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 15.482s 76: I (324193) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+ 15.482s D6: I (34261) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+ 15.482s 76: I (324193) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 15.483s D6: I (34261) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 15.483s 76: I (324193) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 15.483s D6: I (34261) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 15.483s 76: I (324193) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+ 15.483s 76: I (324193) LAYER_8_UART: MESH_RX valid=828 invalid=0 self=0 not_ready=0
+ 15.483s D6: I (34261) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=12 noop=103 invalid=27 hw_errors=0
+ 15.484s D6: I (34261) LAYER_8_UART: MESH_RX valid=92 invalid=0 self=12 not_ready=0
+ 15.484s 76: I (324193) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+ 15.484s D6: I (34261) LAYER_8_UART: MESH_TX accepted=12 failed=0 full=0 expired=0
+ 15.485s D6: I (34261) LAYER_8_UART: UART_TX accepted=80 failed=0 full=0 expired=0
+ 15.485s D6: I (34261) LAYER_8_UART: MESH_STACK complete_ok=12 failed=0 peer_ACK=none
+ 15.485s 76: I (324193) LAYER_8_UART: UART_TX accepted=828 failed=0 full=0 expired=0
+ 15.485s 76: I (324193) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+ 16.308s STM32: USB_TRACE hex=13
+ 16.311s D6: I (35091) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 16.311s D6: I (35091) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 16.324s D6: W (35101) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 17.304s STM32: USB_TRACE hex=13
+ 17.305s D6: I (36081) LAYER_8_UART: MESH_TX id=0x13 source=0x0005 api=accepted age_ms=0
+ 17.306s D6: I (36081) LAYER_8_UART: UART_RX id=0x13 result=queued
+ 17.320s D6: W (36101) BLE_MESH: No outbound bearer found, inbound bearer 1
+ 20.520s D6: I (39301) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 20.521s D6: I (39301) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 20.521s D6: I (39301) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+ 20.522s D6: I (39301) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 20.522s D6: I (39301) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 20.523s D6: I (39301) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=14 noop=103 invalid=27 hw_errors=0
+ 20.523s D6: I (39301) LAYER_8_UART: MESH_RX valid=103 invalid=0 self=14 not_ready=0
+ 20.524s D6: I (39301) LAYER_8_UART: MESH_TX accepted=14 failed=0 full=0 expired=0
+ 20.524s D6: I (39301) LAYER_8_UART: UART_TX accepted=89 failed=0 full=0 expired=0
+ 20.524s D6: I (39301) LAYER_8_UART: MESH_STACK complete_ok=14 failed=0 peer_ACK=none
+ 20.531s 76: I (329243) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 20.532s 76: I (329243) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 20.532s 76: I (329243) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+ 20.532s 76: I (329243) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 20.533s 76: I (329243) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 20.533s 76: I (329243) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+ 20.533s 76: I (329243) LAYER_8_UART: MESH_RX valid=836 invalid=0 self=0 not_ready=0
+ 20.534s 76: I (329243) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+ 20.534s 76: I (329243) LAYER_8_UART: UART_TX accepted=836 failed=0 full=0 expired=0
+ 20.534s 76: I (329243) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+ 22.571s 76: I (331283) LAYER_8_MESH: STATUS name=ESP32-L8-EC76 primary=0x0003 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 22.571s 76: I (331283) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 22.572s 76: I (331283) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=0
+ 22.572s 76: I (331283) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 22.572s 76: I (331283) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=0 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 22.573s 76: I (331283) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=0 noop=0 invalid=0 hw_errors=0
+ 22.573s 76: I (331283) LAYER_8_UART: MESH_RX valid=842 invalid=0 self=0 not_ready=0
+ 22.573s 76: I (331283) LAYER_8_UART: MESH_TX accepted=0 failed=0 full=0 expired=0
+ 22.573s 76: I (331283) LAYER_8_UART: UART_TX accepted=842 failed=0 full=0 expired=0
+ 22.574s 76: I (331283) LAYER_8_UART: MESH_STACK complete_ok=0 failed=0 peer_ACK=none
+ 22.580s D6: I (41361) LAYER_8_MESH: STATUS name=ESP32-L8-F0D6 primary=0x0005 event_ready=1 net=0x0000 app=0x0001 pub=0xc001 sub_C001=1 ttl=7 period=0 retransmit=0 relay=0 onoff_ready=0 state=0
+ 22.581s D6: I (41361) LAYER_8_UART: UART_DIAG version=1 port=1 baud=115201 data=8 parity=none stop=1 flow=0 buffered=0
+ 22.581s D6: I (41361) LAYER_8_UART: UART_DIAG_RX route=iomux matrix_gpio=-1 mapped_gpio=18 path_enabled=1 level=1
+ 22.581s D6: I (41361) LAYER_8_UART: UART_DIAG_TX gpio=17 route=iomux iomux=2 output=0 signal=256
+ 22.582s D6: I (41361) LAYER_8_UART: UART_DIAG_PIN gpio=18 level=1 input=1 output=0 pullup=0 pulldown=0 iomux=2
+ 22.582s D6: I (41361) LAYER_8_UART: QUEUE pending=0 capacity=32; uart_rx valid=14 noop=103 invalid=27 hw_errors=0
+ 22.582s D6: I (41361) LAYER_8_UART: MESH_RX valid=109 invalid=0 self=14 not_ready=0
+ 22.583s D6: I (41361) LAYER_8_UART: MESH_TX accepted=14 failed=0 full=0 expired=0
+ 22.583s D6: I (41361) LAYER_8_UART: UART_TX accepted=95 failed=0 full=0 expired=0
+ 22.583s D6: I (41361) LAYER_8_UART: MESH_STACK complete_ok=14 failed=0 peer_ACK=none
+ 23.598s HOST: COUNTS={"76.background_mesh_rx": 58, "76.mesh_to_uart_tx": 58, "D6.background_mesh_rx": 47, "D6.mesh_to_uart_tx": 47, "D6.uart_rx_0x13": 10, "D6.uart_rx_events": 14, "STM32.0x13": 10}
+ 23.598s HOST: STM32_0x13_TIMES=[8.341, 9.337, 10.333, 11.329, 12.325, 13.32, 14.316, 15.312, 16.308, 17.304]
+ 23.598s HOST: PORTS_CLOSING; STM32 firmware auto-stops after ten attempts
