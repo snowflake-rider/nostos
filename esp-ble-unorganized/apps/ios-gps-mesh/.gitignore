@@ -1,7 +1,0 @@
-.build/
-build/
-DerivedData/
-xcuserdata/
-*.xcuserstate
-# Never add real Mesh exports / keys to the project.
-private-network/

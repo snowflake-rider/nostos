@@ -1,5 +1,0 @@
-build/
-build-host/
-sdkconfig
-sdkconfig.old
-managed_components/

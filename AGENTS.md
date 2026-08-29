@@ -86,3 +86,48 @@ linear issue query --team KAF --project 136f4156-f63e-4013-b82b-98413c3ce340 --a
 - 이미 열려 있는 작업에는 이 파일을 다시 읽도록 요청한다. 자동 재로딩을 가정하지 않는다.
 - 다른 clone, worktree, 다른 컴퓨터에는 이 파일을 전달해야 한다. 자동 커밋·push는 하지 않는다.
 - 점검용 요청: `AGENTS.md를 읽고 Linear NOSTOS 이슈만 조회해줘. 파일이나 이슈는 수정하지 마.`
+
+## 스킬 선택과 검증
+
+### 기준 문서와 로딩
+
+- 이 파일은 **어떤 작업에 어떤 스킬을 사용할지**의 기준이다. 스킬 절차의 원본은 설치된
+  각 `SKILL.md`이며, 본문을 이 저장소에 복사하거나 개인의 절대 설치 경로를 고정하지 않는다.
+- 코드 구현·리뷰·디버깅 시 아래에서 해당 작업에 필요한 스킬만 선택하고, 현재 세션의
+  스킬 목록에서 실제 `SKILL.md`를 찾아 읽는다. 단순 문서 수정에 모든 스킬을 로드하지 않는다.
+- 스킬이 목록에 없거나 읽을 수 없으면 이름과 제약을 알린다. 사용했다고 주장하거나
+  임의로 설치·활성화하지 않는다. 필수 스킬을 사용할 수 없으면 사용자에게 진행 방식을 확인한다.
+- 프로젝트 구조·빌드·배선은 [README](README.md), [팀원 시작 안내](docs/getting-started/README.md),
+  대상 구성 요소의 문서와 실제 설정을 기준으로 확인한다. 스킬의 일반 예제로 SDK 버전,
+  핀, 메시지 ID, 센서 기본값을 바꾸지 않는다. ESP32 기능 확장은 `firmware/esp32/`를 기준으로 한다.
+
+### 영역별 선택
+
+| 작업 영역·조건 | 사용할 스킬 | 적용 범위 |
+| --- | --- | --- |
+| `firmware/stm32/` 펌웨어 | `embedded-systems` | HAL·주변장치·ISR·메모리·타이밍 |
+| `firmware/esp32/` 펌웨어 | `esp32-firmware-engineer` | ESP-IDF·FreeRTOS·UART·Bluetooth Mesh·런타임 진단 |
+| `libs/protocol/` 공통 C 코드 | `embedded-systems` | 메시지 계약·코덱·큐·경계 조건과 양쪽 펌웨어 영향 |
+| `apps/mesh-console/` React UI | `build-web-apps:react-best-practices`; 렌더링·상호작용 검증 시 `build-web-apps:frontend-testing-debugging` | React/Vite에 해당하는 규칙만 적용하며 Next.js 전용 규칙은 제외 |
+| `apps/ios-gps-mesh/` SwiftUI·비동기 코드 | UI는 `build-ios-apps:swiftui-ui-patterns`; 동시성은 `swift-concurrency-pro` | 화면·상태 소유권, Task·actor·취소·격리 |
+
+### 변경에 맞는 검증
+
+- 공통 프로토콜 또는 펌웨어 로직 변경은 루트의 `bash tools/test-host.sh`로 보드 없는 회귀
+  검사를 수행하고, 영향받는 STM32/ESP32 타깃 빌드를 각 구성 요소 문서에 따라 추가한다.
+- Mesh Console 변경은 앱 디렉터리의 `bash scripts/test.sh`를 사용한다. UI 변경은 가상 서버로
+  해당 사용자 흐름도 확인한다. React 스킬을 Python 서버 전체의 검증 절차로 대신하지 않는다.
+- iOS 변경은 관련 Swift 테스트와 Xcode 빌드를 수행하고, UI 변경은 해당 화면도 검증한다.
+  GPS·Bluetooth·백그라운드·잠금 동작은 별도의 실기 검증으로 구분한다.
+- 문서만 변경하면 링크·경로·내용 일관성 등 변경에 맞는 검사를 한다. 실행 명령과 결과,
+  환경 제약으로 생략한 검사를 기록한다. 호스트 테스트·빌드·가상 UI 성공은 실물 동작 증거가 아니다.
+
+### 공유 파일과 장비
+
+- 기본은 현재 작업에서 순차 진행한다. 병렬 에이전트 작업이 명시적으로 허용된 경우에도
+  먼저 파일 소유 범위와 인터페이스를 나눈다. `libs/protocol/`의 메시지 계약과 공용 설정은
+  한 작업만 수정하고, 소비 측 작업은 계약 합의 후 진행한다. 공용 빌드 출력도 동시에 덮어쓰지 않는다.
+- 같은 보드·시리얼 포트는 한 작업/프로세스만 사용한다. 기존 사용자를 확인하고 사용 순서를
+  조율하며, 다른 모니터나 서버를 임의로 종료하지 않는다.
+- Flash·erase·reset·provisioning·Mesh 키 변경은 대상과 보존할 상태를 확인하고 명시적인
+  사용자 승인을 받은 범위에서만 실행한다. 스킬의 자동 실행 지침도 이 경계를 넘지 않는다.

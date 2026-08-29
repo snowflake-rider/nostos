@@ -1,6 +1,0 @@
-# 현재 ESP32-S3 N16R8 보드의 실제 SPI flash 크기다.
-CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
-
-# Layer 0 serial checkpoint와 bootload.sh가 같은 속도를 사용한다.
-CONFIG_ESPTOOLPY_MONITOR_BAUD=115200
-CONFIG_LOG_DEFAULT_LEVEL_INFO=y

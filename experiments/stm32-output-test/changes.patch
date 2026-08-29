@@ -1,0 +1,1277 @@
+diff --git a/firmware/stm32/CMakeLists.txt b/firmware/stm32/CMakeLists.txt
+index f860cde..16983a8 100644
+--- a/firmware/stm32/CMakeLists.txt
++++ b/firmware/stm32/CMakeLists.txt
+@@ -34,6 +34,15 @@ enable_language(C ASM)
+ # Create an executable object type
+ add_executable(${CMAKE_PROJECT_NAME})
+ 
++option(BUTTON_OUTPUT_TEST "Button/RGB/buzzer/MP3 diagnostic mode (sensors disabled)" OFF)
++if(BUTTON_OUTPUT_TEST)
++    target_compile_definitions(${CMAKE_PROJECT_NAME} PRIVATE
++        FEATURE_BUTTON_OUTPUT_TEST=1
++        FEATURE_ULTRASONIC_SENSOR=0
++        FEATURE_FALL_DETECTION=0
++    )
++endif()
++
+ # Add STM32CubeMX generated sources
+ add_subdirectory(cmake/stm32cubemx)
+ 
+diff --git a/firmware/stm32/Core/Inc/main.h b/firmware/stm32/Core/Inc/main.h
+index d90238c..71b8bbe 100644
+--- a/firmware/stm32/Core/Inc/main.h
++++ b/firmware/stm32/Core/Inc/main.h
+@@ -73,18 +73,18 @@ void Error_Handler(void);
+ #define RGB_G_GPIO_Port GPIOB
+ #define VS_RST_Pin GPIO_PIN_1
+ #define VS_RST_GPIO_Port GPIOB
+-#define BTN2_Pin GPIO_PIN_10
+-#define BTN2_GPIO_Port GPIOB
++#define BTN2_SPEED_DOWN_Pin GPIO_PIN_10
++#define BTN2_SPEED_DOWN_GPIO_Port GPIOB
+ #define VS_XCS_Pin GPIO_PIN_12
+ #define VS_XCS_GPIO_Port GPIOB
+-#define BTN4_Pin GPIO_PIN_7
+-#define BTN4_GPIO_Port GPIOC
+-#define BTN3_Pin GPIO_PIN_8
+-#define BTN3_GPIO_Port GPIOA
++#define BTN4_STOP_Pin GPIO_PIN_7
++#define BTN4_STOP_GPIO_Port GPIOC
++#define BTN3_SAFETY_Pin GPIO_PIN_8
++#define BTN3_SAFETY_GPIO_Port GPIOA
+ #define BUZZER_Pin GPIO_PIN_4
+ #define BUZZER_GPIO_Port GPIOB
+-#define BTN1_Pin GPIO_PIN_5
+-#define BTN1_GPIO_Port GPIOB
++#define BTN1_SPEED_UP_Pin GPIO_PIN_5
++#define BTN1_SPEED_UP_GPIO_Port GPIOB
+ #define TEST_BUTTON_Pin GPIO_PIN_6
+ #define TEST_BUTTON_GPIO_Port GPIOB
+ 
+diff --git a/firmware/stm32/Core/Src/main.c b/firmware/stm32/Core/Src/main.c
+index cc006b8..53769f7 100644
+--- a/firmware/stm32/Core/Src/main.c
++++ b/firmware/stm32/Core/Src/main.c
+@@ -22,7 +22,11 @@
+ /* Private includes ----------------------------------------------------------*/
+ /* USER CODE BEGIN Includes */
+ #include "app.h"
++#include "app_config.h"
+ #include "uart_service.h"
++#if FEATURE_BUTTON_OUTPUT_TEST
++#include "output_test.h"
++#endif
+ /* USER CODE END Includes */
+ 
+ /* Private typedef -----------------------------------------------------------*/
+@@ -103,8 +107,13 @@ int main(void)
+   MX_I2C1_Init();
+   /* USER CODE BEGIN 2 */
+   app_init(&hspi2, &huart1, &hi2c1);
++#if FEATURE_BUTTON_OUTPUT_TEST
++  /* USART1의 1바이트 통신은 유지하고 USB에는 시험용 텍스트만 출력합니다. */
++  output_test_init(&huart2, &hspi2);
++#else
+   /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 진단 복사본. */
+   uart_service_set_tx_trace(&huart2);
++#endif
+   /* USER CODE END 2 */
+ 
+   /* Infinite loop */
+@@ -114,7 +123,11 @@ int main(void)
+     /* USER CODE END WHILE */
+ 
+     /* USER CODE BEGIN 3 */
++#if FEATURE_BUTTON_OUTPUT_TEST
++    output_test_process();
++#else
+     app_process();
++#endif
+   }
+   /* USER CODE END 3 */
+ }
+@@ -359,23 +372,23 @@ static void MX_GPIO_Init(void)
+   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+ 
+-  /*Configure GPIO pins : BTN2_Pin BTN1_Pin */
+-  GPIO_InitStruct.Pin = BTN2_Pin|BTN1_Pin;
++  /*Configure GPIO pins : BTN2_SPEED_DOWN_Pin BTN1_SPEED_UP_Pin */
++  GPIO_InitStruct.Pin = BTN2_SPEED_DOWN_Pin|BTN1_SPEED_UP_Pin;
+   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+   GPIO_InitStruct.Pull = GPIO_PULLUP;
+   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+ 
+-  /*Configure GPIO pin : BTN4_Pin */
+-  GPIO_InitStruct.Pin = BTN4_Pin;
++  /*Configure GPIO pin : BTN4_STOP_Pin */
++  GPIO_InitStruct.Pin = BTN4_STOP_Pin;
+   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+   GPIO_InitStruct.Pull = GPIO_PULLUP;
+-  HAL_GPIO_Init(BTN4_GPIO_Port, &GPIO_InitStruct);
++  HAL_GPIO_Init(BTN4_STOP_GPIO_Port, &GPIO_InitStruct);
+ 
+-  /*Configure GPIO pin : BTN3_Pin */
+-  GPIO_InitStruct.Pin = BTN3_Pin;
++  /*Configure GPIO pin : BTN3_SAFETY_Pin */
++  GPIO_InitStruct.Pin = BTN3_SAFETY_Pin;
+   GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+   GPIO_InitStruct.Pull = GPIO_PULLUP;
+-  HAL_GPIO_Init(BTN3_GPIO_Port, &GPIO_InitStruct);
++  HAL_GPIO_Init(BTN3_SAFETY_GPIO_Port, &GPIO_InitStruct);
+ 
+   /*Configure GPIO pin : TEST_BUTTON_Pin (D10/PB6, button to GND) */
+   GPIO_InitStruct.Pin = TEST_BUTTON_Pin;
+diff --git a/firmware/stm32/MyApp/ap/output_test.c b/firmware/stm32/MyApp/ap/output_test.c
+new file mode 100644
+index 0000000..693aaf8
+--- /dev/null
++++ b/firmware/stm32/MyApp/ap/output_test.c
+@@ -0,0 +1,327 @@
++#include "app_config.h"
++
++#if FEATURE_BUTTON_OUTPUT_TEST
++#include "output_test.h"
++
++#include "audio_service.h"
++#include "button.h"
++#include "buzzer.h"
++#include "message_router.h"
++#include "message_service.h"
++#include "rgb_led.h"
++#include "uart_service.h"
++
++#include <stdarg.h>
++#include <stdio.h>
++
++static UART_HandleTypeDef *log_uart;
++static SPI_HandleTypeDef *test_spi;
++static uint32_t led_started;
++static bool led_active;
++static uint32_t status_at;
++static bool was_playing;
++static uint32_t previous_position;
++static uint32_t progress_at;
++static bool stalled_reported;
++static message_type_t playing_message;
++static bool sine_active;
++static uint32_t sine_at;
++static uint32_t next_probe_position;
++static bool message_test_armed;
++static uint32_t message_test_armed_at;
++static uint32_t message_test_seq;
++
++static const char *audio_status_name(vs1003b_status_t status)
++{
++    switch (status)
++    {
++        case VS1003B_STATUS_OK: return "OK";
++        case VS1003B_STATUS_INVALID_ARGUMENT: return "INVALID_ARGUMENT";
++        case VS1003B_STATUS_DREQ_TIMEOUT: return "DREQ_TIMEOUT";
++        case VS1003B_STATUS_SPI_ERROR: return "SPI_ERROR";
++        case VS1003B_STATUS_MODE_MISMATCH: return "MODE_MISMATCH";
++        case VS1003B_STATUS_REGISTER_MISMATCH: return "REGISTER_MISMATCH";
++        case VS1003B_STATUS_BUSY: return "BUSY";
++        default: return "UNKNOWN";
++    }
++}
++
++/* 진단 실패는 실제 UART 메시지의 재전송이나 상태 변경으로 이어지지 않습니다. */
++static void report(const char *format, ...)
++{
++    if (log_uart == NULL) return;
++    char line[192];
++    va_list args;
++    va_start(args, format);
++    int length = vsnprintf(line, sizeof(line), format, args);
++    va_end(args);
++    if (length <= 0) return;
++    if ((size_t)length >= sizeof(line)) length = (int)sizeof(line) - 1;
++    (void)HAL_UART_Transmit(log_uart, (uint8_t *)line, (uint16_t)length, 50U);
++}
++
++static void report_status(void)
++{
++    const message_service_status_t *s = message_service_get_status();
++    report("STATUS audio=%s playing=%u pos=%lu dreq=%u led=%u buzzer=%u\r\n",
++           audio_status_name(s->audio_status), (unsigned)audio_service_is_playing(),
++           (unsigned long)audio_service_position(), (unsigned)vs1003b_is_ready(),
++           (unsigned)led_active, (unsigned)buzzer_is_active());
++}
++
++/* DREQ LOW 상태에서는 SCI도 보내지 않습니다. 실패한 값은 정상 측정값으로 출력하지 않습니다. */
++static void report_codec(const char *phase)
++{
++    static const uint8_t addresses[] = {0x00U, 0x01U, 0x03U, 0x0BU, 0x05U, 0x08U, 0x09U, 0x04U};
++    uint16_t values[8] = {0U};
++    for (unsigned i = 0U; i < 8U; ++i)
++    {
++        if (!vs1003b_is_ready())
++        {
++            report("CODEC phase=%s unavailable=DREQ_LOW\r\n", phase);
++            return;
++        }
++        vs1003b_status_t status = vs1003b_read_register(addresses[i], &values[i]);
++        if (status != VS1003B_STATUS_OK)
++        {
++            report("CODEC phase=%s reg=0x%02X error=%s\r\n", phase,
++                   (unsigned)addresses[i], audio_status_name(status));
++            return;
++        }
++    }
++    report("CODEC phase=%s mode=%04X status=%04X clock=%04X vol=%04X audata=%04X hdat0=%04X hdat1=%04X seconds=%u\r\n",
++           phase, (unsigned)values[0], (unsigned)values[1], (unsigned)values[2],
++           (unsigned)values[3], (unsigned)values[4], (unsigned)values[5],
++           (unsigned)values[6], (unsigned)values[7]);
++}
++
++static vs1003b_status_t reset_codec(void)
++{
++    uint16_t mode = 0U, value = 0U;
++    vs1003b_status_t status = vs1003b_init(test_spi, &mode);
++    /* app_init과 같은 클럭/볼륨. 진단 중 자동 볼륨 증가는 하지 않습니다. */
++    const uint8_t addresses[] = {0x03U, 0x0BU};
++    const uint16_t values[] = {0x9800U, 0x5050U};
++    for (unsigned i = 0U; i < 2U && status == VS1003B_STATUS_OK; ++i)
++    {
++        status = vs1003b_write_register(addresses[i], values[i]);
++        if (status == VS1003B_STATUS_OK)
++            status = vs1003b_read_register(addresses[i], &value);
++        if (status == VS1003B_STATUS_OK && value != values[i])
++            status = VS1003B_STATUS_REGISTER_MISMATCH;
++    }
++    message_service_init(status);
++    rgb_led_off();
++    buzzer_stop();
++    sine_active = led_active = was_playing = stalled_reported = false;
++    previous_position = 0U;
++    progress_at = HAL_GetTick();
++    playing_message = MSG_NONE;
++    next_probe_position = 512U;
++    report("CODEC_INIT status=%s mode=%04X\r\n", audio_status_name(status), (unsigned)mode);
++    if (status == VS1003B_STATUS_OK) report_codec("reset");
++    return status;
++}
++
++static void report_message_test(void)
++{
++    report("MESSAGE_TEST_READY protocol=1 ids=10,11,12,13,20,21,30,31 uart=USART1 seq=%lu build="
++           __DATE__ "_" __TIME__ "\r\n", (unsigned long)message_test_seq);
++}
++
++static bool message_test_id_valid(uint8_t id)
++{
++    switch (id)
++    {
++        case MSG_SPEED_DOWN_REQUEST: case MSG_SPEED_UP_REQUEST:
++        case MSG_SAFETY_REMINDER: case MSG_STOP_REQUEST:
++        case MSG_REAR_SAFE: case MSG_REAR_WARNING:
++        case MSG_FALL_DETECTED: case MSG_SOS: return true;
++        default: return false;
++    }
++}
++
++/* USART2 시험 입력. m 확인 응답 후 1초 안의 ID 한 바이트만 USART1로 보냅니다. */
++static void process_command(void)
++{
++    if (message_test_armed && (uint32_t)(HAL_GetTick() - message_test_armed_at) >= 1000U)
++    {
++        message_test_armed = false;
++        report("MESSAGE_TEST_REJECT reason=TIMEOUT\r\n");
++    }
++    uint8_t command;
++    if (log_uart == NULL || HAL_UART_Receive(log_uart, &command, 1U, 0U) != HAL_OK) return;
++    if (message_test_armed)
++    {
++        message_test_armed = false;
++        if (!message_test_id_valid(command))
++        {
++            report("MESSAGE_TEST_REJECT reason=INVALID_ID\r\n");
++            return;
++        }
++        /* 센서/오디오/LED를 실행하지 않고 실제 기존 UART 전송 경로만 검사합니다. */
++        HAL_StatusTypeDef tx = uart_service_send_message((message_type_t)command);
++        ++message_test_seq;
++        report("MESSAGE_TEST_TX id=0x%02X uart=%s seq=%lu\r\n", (unsigned)command,
++               tx == HAL_OK ? "OK" : "ERROR", (unsigned long)message_test_seq);
++        return;
++    }
++    if (command == '?') report_message_test();
++    else if (command == 'm')
++    {
++        message_test_armed = true;
++        message_test_armed_at = HAL_GetTick();
++        report("MESSAGE_TEST_ARMED timeout_ms=1000\r\n");
++    }
++    else if (command == 'd') report_codec("manual");
++    else if (command == 'r') (void)reset_codec();
++    else if (command == 't')
++    {
++        uint16_t echo = 0U;
++        vs1003b_status_t status = reset_codec();
++        if (status == VS1003B_STATUS_OK) status = vs1003b_sdi_test(&echo);
++        report("SDI_TEST status=%s expected=0820 echo=%04X\r\n", audio_status_name(status), (unsigned)echo);
++        (void)reset_codec();
++    }
++    else if (command == 's')
++    {
++        vs1003b_status_t status = reset_codec();
++        if (status == VS1003B_STATUS_OK) status = vs1003b_sine_test_start();
++        report("SINE_START status=%s duration_ms=1000 vol=5050\r\n", audio_status_name(status));
++        if (status == VS1003B_STATUS_OK)
++        {
++            sine_active = true;
++            sine_at = HAL_GetTick();
++        }
++        else (void)reset_codec(); /* 명령이 일부만 전송되어도 시험 모드를 해제합니다. */
++    }
++}
++
++void output_test_init(UART_HandleTypeDef *debug_uart, SPI_HandleTypeDef *codec_spi)
++{
++    log_uart = debug_uart;
++    test_spi = codec_spi;
++    rgb_led_off();
++    buzzer_stop();
++    led_active = false;
++    led_started = status_at = progress_at = HAL_GetTick();
++    was_playing = false;
++    previous_position = 0U;
++    stalled_reported = false;
++    playing_message = MSG_NONE;
++    sine_active = false;
++    next_probe_position = 512U;
++    message_test_armed = false;
++    message_test_seq = 0U;
++    report("OUTPUT_TEST_READY sensors=OFF remote_output=IGNORED uart1=EVENT_BYTES\r\n");
++    report_message_test();
++    report("MAP 1=RED/UP 2=GREEN/DOWN 3=BLUE/SAFETY 4=WHITE/STOP led_ms=2000 buzzer=2x100ms\r\n");
++    report_status();
++    report("CODEC_COMMANDS d=registers r=reset t=SDI_test s=sine_1s\r\n");
++    report_codec("boot");
++}
++
++static void process_button(message_type_t message)
++{
++    unsigned number;
++    bool red = false, green = false, blue = false;
++    switch (message)
++    {
++        case MSG_SPEED_UP_REQUEST: number = 1U; red = true; break;
++        case MSG_SPEED_DOWN_REQUEST: number = 2U; green = true; break;
++        case MSG_SAFETY_REMINDER: number = 3U; blue = true; break;
++        case MSG_STOP_REQUEST: number = 4U; red = green = blue = true; break;
++        default: return;
++    }
++
++    bool busy = audio_service_is_playing();
++    HAL_StatusTypeDef tx = message_router_publish_local(message);
++    rgb_led_set(red, green, blue);
++    buzzer_play_pattern(BUZZER_PATTERN_REAR_WARNING);
++    led_active = true;
++    led_started = HAL_GetTick();
++    vs1003b_status_t audio = message_service_get_status()->audio_status;
++    const char *request = "BLOCKED";
++    if (audio == VS1003B_STATUS_OK)
++    {
++        request = busy ? "BUSY_SKIPPED" : "STARTED";
++        if (!busy)
++        {
++            playing_message = message;
++            was_playing = audio_service_is_playing();
++            previous_position = audio_service_position();
++            progress_at = HAL_GetTick();
++            stalled_reported = false;
++            next_probe_position = 512U;
++        }
++    }
++    report("BUTTON n=%u id=0x%02X rgb=%u%u%u uart=%s audio=%s status=%s\r\n",
++           number, (unsigned)message, (unsigned)red, (unsigned)green, (unsigned)blue,
++           tx == HAL_OK ? "OK" : "ERROR", request, audio_status_name(audio));
++}
++
++void output_test_process(void)
++{
++    process_command();
++    message_type_t message = button_get_message();
++    if (message != MSG_NONE)
++    {
++        if (!sine_active) process_button(message);
++        else report("BUTTON_IGNORED reason=SINE_TEST\r\n");
++    }
++
++    /* 원격/센서 이벤트가 로컬 출력 시험에 섞이지 않도록 이번 모드에서만 제외합니다. */
++    if (uart_service_get_message(&message))
++        report("REMOTE_IGNORED id=0x%02X\r\n", (unsigned)message);
++
++    message_service_process();
++    uint32_t now = HAL_GetTick();
++    if (sine_active && (uint32_t)(now - sine_at) >= 1000U)
++    {
++        vs1003b_status_t status = vs1003b_sine_test_stop();
++        report("SINE_STOP status=%s\r\n", audio_status_name(status));
++        (void)reset_codec(); /* stop 전송 실패여도 XRST로 시험음을 끝냅니다. */
++    }
++    if (led_active && (uint32_t)(now - led_started) >= 2000U)
++    {
++        rgb_led_off();
++        led_active = false;
++        report("RGB_OFF\r\n");
++    }
++
++    bool playing = audio_service_is_playing();
++    uint32_t position = audio_service_position();
++    if (playing && position >= next_probe_position)
++    {
++        report_codec("stream");
++        next_probe_position += 2048U;
++    }
++    if (position != previous_position)
++    {
++        previous_position = position;
++        progress_at = now;
++        stalled_reported = false;
++    }
++    if (was_playing && !playing)
++    {
++        vs1003b_status_t status = message_service_get_status()->audio_status;
++        /* DATA_DONE은 SPI 데이터 공급 완료이며 실제 음성 청취 성공은 별도입니다. */
++        report("AUDIO_%s id=0x%02X bytes=%lu status=%s\r\n",
++               status == VS1003B_STATUS_OK ? "DATA_DONE" : "ERROR",
++               (unsigned)playing_message, (unsigned long)position, audio_status_name(status));
++        report_codec("end");
++    }
++    if (playing && !stalled_reported && (uint32_t)(now - progress_at) >= 2000U)
++    {
++        report("AUDIO_STALLED id=0x%02X pos=%lu dreq=%u\r\n",
++               (unsigned)playing_message, (unsigned long)position, (unsigned)vs1003b_is_ready());
++        stalled_reported = true;
++    }
++    was_playing = playing;
++    if ((uint32_t)(now - status_at) >= 2000U)
++    {
++        status_at = now;
++        report_status();
++    }
++}
++#endif
+diff --git a/firmware/stm32/MyApp/ap/output_test.h b/firmware/stm32/MyApp/ap/output_test.h
+new file mode 100644
+index 0000000..653b603
+--- /dev/null
++++ b/firmware/stm32/MyApp/ap/output_test.h
+@@ -0,0 +1,10 @@
++#ifndef OUTPUT_TEST_H
++#define OUTPUT_TEST_H
++
++#include "stm32f4xx_hal.h"
++
++/* BUTTON_OUTPUT_TEST 빌드에서만 사용합니다. 제품 동작 규칙이 아닙니다. */
++void output_test_init(UART_HandleTypeDef *debug_uart, SPI_HandleTypeDef *codec_spi);
++void output_test_process(void);
++
++#endif
+diff --git a/firmware/stm32/MyApp/common/app_config.h b/firmware/stm32/MyApp/common/app_config.h
+index 01db0b5..981097a 100644
+--- a/firmware/stm32/MyApp/common/app_config.h
++++ b/firmware/stm32/MyApp/common/app_config.h
+@@ -1,6 +1,11 @@
+ #ifndef APP_CONFIG_H
+ #define APP_CONFIG_H
+ 
++/* 별도 시험 빌드에서만 버튼별 RGB/부저/MP3와 USB 진단 로그를 사용합니다. */
++#ifndef FEATURE_BUTTON_OUTPUT_TEST
++#define FEATURE_BUTTON_OUTPUT_TEST 0
++#endif
++
+ /* 1: HC-SR04 후방 감지 사용, 0: 관련 센서 접근과 메시지 생성 중지 */
+ #ifndef FEATURE_ULTRASONIC_SENSOR
+ #define FEATURE_ULTRASONIC_SENSOR 1
+diff --git a/firmware/stm32/MyApp/hw/button.c b/firmware/stm32/MyApp/hw/button.c
+index a63d433..acdd18f 100644
+--- a/firmware/stm32/MyApp/hw/button.c
++++ b/firmware/stm32/MyApp/hw/button.c
+@@ -19,10 +19,11 @@ typedef struct
+ } button_state_t;
+ 
+ static button_state_t buttons[] = {
+-    {BTN1_GPIO_Port, BTN1_Pin, MSG_SPEED_DOWN_REQUEST, false, false, 0U},
+-    {BTN2_GPIO_Port, BTN2_Pin, MSG_SPEED_UP_REQUEST, false, false, 0U},
+-    {BTN3_GPIO_Port, BTN3_Pin, MSG_SAFETY_REMINDER, false, false, 0U},
+-    {BTN4_GPIO_Port, BTN4_Pin, MSG_STOP_REQUEST, false, false, 0U},
++    /* 보드 D4/D6/D7/D9 순서: 가속, 감속, 안전 알림, 정지 요청. */
++    {BTN1_SPEED_UP_GPIO_Port, BTN1_SPEED_UP_Pin, MSG_SPEED_UP_REQUEST, false, false, 0U},
++    {BTN2_SPEED_DOWN_GPIO_Port, BTN2_SPEED_DOWN_Pin, MSG_SPEED_DOWN_REQUEST, false, false, 0U},
++    {BTN3_SAFETY_GPIO_Port, BTN3_SAFETY_Pin, MSG_SAFETY_REMINDER, false, false, 0U},
++    {BTN4_STOP_GPIO_Port, BTN4_STOP_Pin, MSG_STOP_REQUEST, false, false, 0U},
+     /* D10/PB6 테스트 버튼도 기존 정지 요청 1바이트를 사용합니다. */
+     {TEST_BUTTON_GPIO_Port, TEST_BUTTON_Pin, MSG_STOP_REQUEST, false, false, 0U},
+ };
+diff --git a/firmware/stm32/MyApp/hw/vs1003b.c b/firmware/stm32/MyApp/hw/vs1003b.c
+index 34ce395..1471b16 100644
+--- a/firmware/stm32/MyApp/hw/vs1003b.c
++++ b/firmware/stm32/MyApp/hw/vs1003b.c
+@@ -13,6 +13,7 @@
+ 
+ #define VS1003B_RESET_LOW_MS 2U
+ #define VS1003B_DREQ_TIMEOUT_MS 100U
++#define VS1003B_PLAY_STALL_TIMEOUT_MS 2000U
+ #define VS1003B_SPI_TIMEOUT_MS 10U
+ #define VS1003B_SDI_CHUNK_SIZE 32U
+ #define VS1003B_END_FILL_SIZE 32U
+@@ -22,6 +23,7 @@ static SPI_HandleTypeDef *vs1003b_spi = NULL;
+ static const uint8_t *play_data = NULL;
+ static uint32_t play_size = 0U;
+ static uint32_t play_position = 0U;
++static uint32_t play_progress_at = 0U;
+ static bool play_finishing = false;
+ static bool play_active = false;
+ 
+@@ -205,6 +207,7 @@ vs1003b_status_t vs1003b_play_start(const uint8_t *data, uint32_t size)
+     play_data = data;
+     play_size = size;
+     play_position = 0U;
++    play_progress_at = HAL_GetTick();
+     play_finishing = false;
+     play_active = true;
+ 
+@@ -215,19 +218,28 @@ vs1003b_status_t vs1003b_play_process(void)
+ {
+     static const uint8_t end_fill[VS1003B_END_FILL_SIZE] = {0U};
+ 
+-    if (!play_active || !vs1003b_is_ready())
++    if (!play_active)
+     {
+         return VS1003B_STATUS_OK;
+     }
+ 
+-    if (play_finishing)
++    /* DREQ LOW는 보통 흐름 제어지만, 계속 LOW면 무한 BUSY로 남기지 않습니다. */
++    if (!vs1003b_is_ready())
+     {
+-        vs1003b_status_t status = vs1003b_send_sdi(end_fill, sizeof(end_fill));
+-        if (status == VS1003B_STATUS_OK)
++        if ((uint32_t)(HAL_GetTick() - play_progress_at) >= VS1003B_PLAY_STALL_TIMEOUT_MS)
+         {
+             play_active = false;
+             play_finishing = false;
++            return VS1003B_STATUS_DREQ_TIMEOUT;
+         }
++        return VS1003B_STATUS_OK;
++    }
++
++    if (play_finishing)
++    {
++        vs1003b_status_t status = vs1003b_send_sdi(end_fill, sizeof(end_fill));
++        play_active = false;
++        play_finishing = false;
+         return status;
+     }
+ 
+@@ -248,6 +260,7 @@ vs1003b_status_t vs1003b_play_process(void)
+     }
+ 
+     play_position += chunk_size;
++    play_progress_at = HAL_GetTick();
+     if (play_position >= play_size)
+     {
+         play_finishing = true;
+@@ -303,6 +316,26 @@ vs1003b_status_t vs1003b_sine_test_stop(void)
+     );
+ }
+ 
++vs1003b_status_t vs1003b_sdi_test(uint16_t *echo)
++{
++    /* VS1003 datasheet 9.8.4: SDI로 받은 명령이 SCI_MODE를 HDAT0에 복사합니다. */
++    static const uint8_t command[8] = {0x53U, 0x70U, 0xEEU, 0U, 0U, 0U, 0U, 0U};
++    if (echo == NULL) return VS1003B_STATUS_INVALID_ARGUMENT;
++    if (play_active) return VS1003B_STATUS_BUSY;
++    uint16_t mode = 0U;
++    vs1003b_status_t status = vs1003b_read_register(VS1003B_SCI_MODE_ADDRESS, &mode);
++    if (status != VS1003B_STATUS_OK) return status;
++    mode |= VS1003B_SM_TESTS;
++    status = vs1003b_write_register(VS1003B_SCI_MODE_ADDRESS, mode);
++    if (status != VS1003B_STATUS_OK) return status;
++    status = vs1003b_send_sdi(command, sizeof(command));
++    if (status != VS1003B_STATUS_OK) return status;
++    HAL_Delay(1U);
++    status = vs1003b_read_register(0x08U, echo);
++    if (status != VS1003B_STATUS_OK) return status;
++    return (*echo == mode) ? VS1003B_STATUS_OK : VS1003B_STATUS_REGISTER_MISMATCH;
++}
++
+ vs1003b_status_t vs1003b_init(SPI_HandleTypeDef *hspi, uint16_t *mode_value)
+ {
+     vs1003b_status_t status;
+@@ -313,6 +346,12 @@ vs1003b_status_t vs1003b_init(SPI_HandleTypeDef *hspi, uint16_t *mode_value)
+     }
+ 
+     vs1003b_spi = hspi;
++    /* 하드웨어 리셋은 이전 스트림을 취소합니다. 재초기화 실패 시에도 같습니다. */
++    play_active = false;
++    play_finishing = false;
++    play_data = NULL;
++    play_size = play_position = 0U;
++    play_progress_at = HAL_GetTick();
+     vs1003b_hardware_reset();
+ 
+     if (!vs1003b_wait_ready(VS1003B_DREQ_TIMEOUT_MS))
+diff --git a/firmware/stm32/MyApp/hw/vs1003b.h b/firmware/stm32/MyApp/hw/vs1003b.h
+index c50a8a7..638d24a 100644
+--- a/firmware/stm32/MyApp/hw/vs1003b.h
++++ b/firmware/stm32/MyApp/hw/vs1003b.h
+@@ -36,7 +36,13 @@ vs1003b_status_t vs1003b_write_register(uint8_t address, uint16_t value);
+ vs1003b_status_t vs1003b_sine_test_start(void);
+ vs1003b_status_t vs1003b_sine_test_stop(void);
+ 
+-/* Flash에 있는 오디오 데이터를 DREQ에 맞춰 비차단 방식으로 재생합니다. */
++/* 진단용: 새 초기화 후 SDI 명령으로 MODE를 HDAT0에 복사/검증. 끝난 뒤 재초기화. */
++vs1003b_status_t vs1003b_sdi_test(uint16_t *echo);
++
++/*
++ * Flash 음원을 비차단 전송합니다. DREQ LOW로 2초간 진행하지 못하면
++ * DREQ_TIMEOUT으로 중단합니다. 다시 재생하기 전 칩/서비스를 재초기화해야 합니다.
++ */
+ vs1003b_status_t vs1003b_play_start(const uint8_t *data, uint32_t size);
+ vs1003b_status_t vs1003b_play_process(void);
+ bool vs1003b_is_playing(void);
+diff --git a/firmware/stm32/host-tests/CMakeLists.txt b/firmware/stm32/host-tests/CMakeLists.txt
+index bd1c984..da14eda 100644
+--- a/firmware/stm32/host-tests/CMakeLists.txt
++++ b/firmware/stm32/host-tests/CMakeLists.txt
+@@ -35,3 +35,26 @@ if(ENABLE_SANITIZERS)
+     target_link_options(test_button_uart PRIVATE -fsanitize=address,undefined)
+ endif()
+ add_test(NAME button_uart COMMAND test_button_uart)
++
++add_executable(test_output_test test_output_test.c
++    ../MyApp/ap/output_test.c ../MyApp/hw/button.c
++    ../MyApp/hw/rgb_led.c ../MyApp/hw/buzzer.c)
++target_include_directories(test_output_test PRIVATE fakes ../Core/Inc
++    ../MyApp/ap ../MyApp/common ../MyApp/hw ../MyApp/service ../../../libs/protocol)
++target_compile_definitions(test_output_test PRIVATE FEATURE_BUTTON_OUTPUT_TEST=1)
++target_compile_options(test_output_test PRIVATE -Wall -Wextra -Wpedantic -Werror)
++if(ENABLE_SANITIZERS)
++    target_compile_options(test_output_test PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
++    target_link_options(test_output_test PRIVATE -fsanitize=address,undefined)
++endif()
++add_test(NAME output_test COMMAND test_output_test)
++
++# Real codec driver with simulated DREQ/SPI, including the observed stuck-low path.
++add_executable(test_vs1003b test_vs1003b.c ../MyApp/hw/vs1003b.c)
++target_include_directories(test_vs1003b PRIVATE fakes ../Core/Inc ../MyApp/hw)
++target_compile_options(test_vs1003b PRIVATE -Wall -Wextra -Wpedantic -Werror)
++if(ENABLE_SANITIZERS)
++    target_compile_options(test_vs1003b PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
++    target_link_options(test_vs1003b PRIVATE -fsanitize=address,undefined)
++endif()
++add_test(NAME vs1003b COMMAND test_vs1003b)
+diff --git a/firmware/stm32/host-tests/fakes/stm32f4xx_hal.h b/firmware/stm32/host-tests/fakes/stm32f4xx_hal.h
+index 91ba932..0eeec79 100644
+--- a/firmware/stm32/host-tests/fakes/stm32f4xx_hal.h
++++ b/firmware/stm32/host-tests/fakes/stm32f4xx_hal.h
+@@ -3,25 +3,38 @@
+ #include <stddef.h>
+ #include <stdint.h>
+ 
+-typedef struct { uint16_t input; } GPIO_TypeDef;
++typedef struct { uint16_t input; uint16_t output; } GPIO_TypeDef;
+ extern GPIO_TypeDef host_gpio_a, host_gpio_b, host_gpio_c;
+ #define GPIOA (&host_gpio_a)
+ #define GPIOB (&host_gpio_b)
+ #define GPIOC (&host_gpio_c)
++#define GPIO_PIN_0  ((uint16_t)0x0001)
++#define GPIO_PIN_1  ((uint16_t)0x0002)
++#define GPIO_PIN_4  ((uint16_t)0x0010)
+ #define GPIO_PIN_5  ((uint16_t)0x0020)
+ #define GPIO_PIN_6  ((uint16_t)0x0040)
+ #define GPIO_PIN_7  ((uint16_t)0x0080)
+ #define GPIO_PIN_8  ((uint16_t)0x0100)
+ #define GPIO_PIN_10 ((uint16_t)0x0400)
++#define GPIO_PIN_12 ((uint16_t)0x1000)
+ typedef enum { GPIO_PIN_RESET, GPIO_PIN_SET } GPIO_PinState;
+ typedef enum { HAL_OK, HAL_ERROR, HAL_BUSY, HAL_TIMEOUT } HAL_StatusTypeDef;
+ typedef struct { unsigned instance; } UART_HandleTypeDef;
++typedef struct { unsigned instance; } SPI_HandleTypeDef;
+ 
+ uint32_t HAL_GetTick(void);
++void HAL_Delay(uint32_t delay);
+ GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *port, uint16_t pin);
++void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state);
+ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *uart, uint8_t *data, uint16_t size);
++HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *uart, uint8_t *data,
++                                 uint16_t size, uint32_t timeout);
+ HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *uart, const uint8_t *data,
+                                  uint16_t size, uint32_t timeout);
++HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *spi, uint8_t *data,
++                                 uint16_t size, uint32_t timeout);
++HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *spi, uint8_t *tx,
++                                        uint8_t *rx, uint16_t size, uint32_t timeout);
+ #define __disable_irq() ((void)0)
+ #define __enable_irq() ((void)0)
+ #endif
+diff --git a/firmware/stm32/host-tests/test_button_uart.c b/firmware/stm32/host-tests/test_button_uart.c
+index abf4f1b..d2d6202 100644
+--- a/firmware/stm32/host-tests/test_button_uart.c
++++ b/firmware/stm32/host-tests/test_button_uart.c
+@@ -116,19 +116,28 @@ static void wraparound_and_transport_failure(void)
+     CHECK(uart_service_get_status() == HAL_TIMEOUT);
+     CHECK(poll_after(1000U) == MSG_NONE && sent == 1U);
+ }
+-static void original_buttons_still_work(void)
++static void four_button_mapping_and_single_press(void)
+ {
+     GPIO_TypeDef *ports[] = {GPIOB, GPIOB, GPIOA, GPIOC};
+     const uint16_t pins[] = {GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8, GPIO_PIN_7};
+-    const message_type_t events[] = {MSG_SPEED_DOWN_REQUEST, MSG_SPEED_UP_REQUEST,
++    const message_type_t events[] = {MSG_SPEED_UP_REQUEST, MSG_SPEED_DOWN_REQUEST,
+                                     MSG_SAFETY_REMINDER, MSG_STOP_REQUEST};
+-    const uint8_t bytes[] = {0x10U, 0x11U, 0x12U, 0x13U};
++    const uint8_t bytes[] = {0x11U, 0x10U, 0x12U, 0x13U};
+     for (size_t i = 0; i < 4U; ++i) {
+         reset_at(100U);
+         ports[i]->input &= (uint16_t)~pins[i];
+         CHECK(poll_after(0U) == MSG_NONE);
+-        CHECK(poll_after(30U) == events[i]);
++        CHECK(poll_after(29U) == MSG_NONE);
++        CHECK(poll_after(1U) == events[i]);
+         CHECK(sent == 1U && last_byte == bytes[i]);
++        CHECK(poll_after(1000U) == MSG_NONE && sent == 1U);
++        ports[i]->input |= pins[i];
++        CHECK(poll_after(0U) == MSG_NONE);
++        CHECK(poll_after(30U) == MSG_NONE && sent == 1U);
++        ports[i]->input &= (uint16_t)~pins[i];
++        CHECK(poll_after(0U) == MSG_NONE);
++        CHECK(poll_after(30U) == events[i]);
++        CHECK(sent == 2U && last_byte == bytes[i]);
+     }
+ }
+ static void usb_trace_does_not_change_transport_result(void)
+@@ -151,15 +160,28 @@ static void usb_trace_does_not_change_transport_result(void)
+     CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_OK);
+     CHECK(sent == 2U && traced == 0U);
+ }
++static void all_event_ids_use_one_uart_byte(void)
++{
++    const uint8_t ids[] = {0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x30, 0x31};
++    reset_at(0U);
++    for (size_t i = 0; i < sizeof(ids); ++i) {
++        CHECK(uart_service_send_message((message_type_t)ids[i]) == HAL_OK);
++        CHECK(last_byte == ids[i] && sent == i + 1U);
++        CHECK(uart_service_get_tx_count() == i + 1U);
++    }
++    CHECK(traced == 0U);
++}
+ int main(void)
+ {
+     pb6_press_once();
+     bounce_and_boot_held();
+     wraparound_and_transport_failure();
+-    original_buttons_still_work();
++    four_button_mapping_and_single_press();
+     usb_trace_does_not_change_transport_result();
++    all_event_ids_use_one_uart_byte();
+     puts("PASS PB6 active-low: 29/30ms debounce, one 0x13 byte via selected UART, hold/release/repress");
+-    puts("PASS bounce, boot-held suppression, tick wrap, transport failure, original four buttons");
++    puts("PASS bounce, boot-held suppression, tick wrap, transport failure");
++    puts("PASS D4/PB5=0x11, D6/PB10=0x10, D7/PA8=0x12, D9/PC7=0x13: debounce, hold/release/repress");
+     puts("HARDWARE_PIN_ROUTING_AND_MESH=NOT_TESTED");
+     return 0;
+ }
+diff --git a/firmware/stm32/host-tests/test_output_test.c b/firmware/stm32/host-tests/test_output_test.c
+new file mode 100644
+index 0000000..1823f7b
+--- /dev/null
++++ b/firmware/stm32/host-tests/test_output_test.c
+@@ -0,0 +1,275 @@
++#include "output_test.h"
++#include "audio_service.h"
++#include "button.h"
++#include "buzzer.h"
++#include "main.h"
++#include "message_router.h"
++#include "message_service.h"
++#include "uart_service.h"
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define CHECK(x) do { if (!(x)) { \
++    fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #x); \
++    exit(EXIT_FAILURE); } } while (0)
++
++GPIO_TypeDef host_gpio_a, host_gpio_b, host_gpio_c;
++static UART_HandleTypeDef usb = {2U};
++static SPI_HandleTypeDef spi = {2U};
++static uint8_t command;
++static uint16_t registers[16];
++static unsigned codec_resets, sine_starts, sine_stops, sdi_tests;
++static vs1003b_status_t init_result, sine_result, stop_result;
++static uint32_t tick;
++static message_service_status_t service;
++static bool playing;
++static uint32_t position;
++static message_type_t last_sent, remote;
++static unsigned sent, starts;
++static unsigned wire_sent;
++static HAL_StatusTypeDef wire_result;
++static char logs[16384];
++static size_t log_size;
++
++uint32_t HAL_GetTick(void) { return tick; }
++GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *port, uint16_t pin)
++{
++    return (port->input & pin) ? GPIO_PIN_SET : GPIO_PIN_RESET;
++}
++void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state)
++{
++    if (state == GPIO_PIN_SET) port->output |= pin;
++    else port->output &= (uint16_t)~pin;
++}
++HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *uart, const uint8_t *data,
++                                  uint16_t size, uint32_t timeout)
++{
++    CHECK(uart == &usb && timeout == 50U && data != NULL);
++    CHECK(log_size + size < sizeof(logs));
++    memcpy(logs + log_size, data, size);
++    log_size += size;
++    logs[log_size] = '\0';
++    return HAL_OK;
++}
++bool audio_service_is_playing(void) { return playing; }
++uint32_t audio_service_position(void) { return position; }
++bool vs1003b_is_ready(void) { return true; }
++HAL_StatusTypeDef HAL_UART_Receive(UART_HandleTypeDef *uart, uint8_t *data,
++                                  uint16_t size, uint32_t timeout)
++{
++    CHECK(uart == &usb && size == 1U && timeout == 0U);
++    if (!command) return HAL_TIMEOUT;
++    *data = command;
++    command = 0U;
++    return HAL_OK;
++}
++vs1003b_status_t vs1003b_init(SPI_HandleTypeDef *handle, uint16_t *mode)
++{
++    CHECK(handle == &spi);
++    ++codec_resets;
++    playing = false;
++    position = 0U;
++    *mode = 0x0800U;
++    return init_result;
++}
++vs1003b_status_t vs1003b_read_register(uint8_t address, uint16_t *value)
++{
++    CHECK(address < 16U);
++    *value = registers[address];
++    return VS1003B_STATUS_OK;
++}
++vs1003b_status_t vs1003b_write_register(uint8_t address, uint16_t value)
++{
++    CHECK(address < 16U);
++    registers[address] = value;
++    return VS1003B_STATUS_OK;
++}
++vs1003b_status_t vs1003b_sine_test_start(void) { ++sine_starts; return sine_result; }
++vs1003b_status_t vs1003b_sine_test_stop(void) { ++sine_stops; return stop_result; }
++vs1003b_status_t vs1003b_sdi_test(uint16_t *echo)
++{
++    ++sdi_tests;
++    *echo = 0x0820U;
++    return VS1003B_STATUS_OK;
++}
++void message_service_init(vs1003b_status_t status) { service.audio_status = status; }
++const message_service_status_t *message_service_get_status(void) { return &service; }
++void message_service_process(void) { buzzer_process(); }
++HAL_StatusTypeDef message_router_publish_local(message_type_t message)
++{
++    ++sent;
++    last_sent = message;
++    if (!playing && service.audio_status == VS1003B_STATUS_OK)
++    {
++        playing = true;
++        position = 0U;
++        ++starts;
++    }
++    return HAL_OK;
++}
++bool uart_service_get_message(message_type_t *message)
++{
++    if (remote == MSG_NONE) return false;
++    *message = remote;
++    remote = MSG_NONE;
++    return true;
++}
++HAL_StatusTypeDef uart_service_send_message(message_type_t message)
++{
++    ++wire_sent;
++    last_sent = message;
++    return wire_result;
++}
++
++static void step(uint32_t ms) { tick += ms; output_test_process(); }
++static void reset_at(uint32_t now, vs1003b_status_t status)
++{
++    host_gpio_a = host_gpio_b = host_gpio_c = (GPIO_TypeDef){UINT16_MAX, 0U};
++    tick = now;
++    service = (message_service_status_t){.audio_status = status};
++    playing = false;
++    position = 0U;
++    sent = starts = 0U;
++    wire_sent = 0U;
++    wire_result = HAL_OK;
++    last_sent = remote = MSG_NONE;
++    log_size = 0U;
++    logs[0] = '\0';
++    command = 0U;
++    codec_resets = sine_starts = sine_stops = sdi_tests = 0U;
++    init_result = sine_result = stop_result = VS1003B_STATUS_OK;
++    memset(registers, 0, sizeof(registers));
++    registers[0] = 0x0800U;
++    button_init();
++    output_test_init(&usb, &spi);
++}
++static void press(GPIO_TypeDef *port, uint16_t pin)
++{
++    port->input &= (uint16_t)~pin;
++    step(0U);
++    step(30U);
++}
++static void four_buttons_and_output_timing(void)
++{
++    GPIO_TypeDef *ports[] = {GPIOB, GPIOB, GPIOA, GPIOC};
++    const uint16_t pins[] = {GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8, GPIO_PIN_7};
++    const message_type_t ids[] = {MSG_SPEED_UP_REQUEST, MSG_SPEED_DOWN_REQUEST,
++                                 MSG_SAFETY_REMINDER, MSG_STOP_REQUEST};
++    for (size_t i = 0U; i < 4U; ++i)
++    {
++        reset_at(UINT32_MAX - 200U, VS1003B_STATUS_OK);
++        press(ports[i], pins[i]);
++        CHECK(sent == 1U && last_sent == ids[i] && starts == 1U);
++        CHECK(((GPIOA->output & GPIO_PIN_4) != 0U) == (i == 0U || i == 3U));
++        CHECK(((GPIOB->output & GPIO_PIN_0) != 0U) == (i == 1U || i == 3U));
++        CHECK(((GPIOC->output & GPIO_PIN_1) != 0U) == (i == 2U || i == 3U));
++        CHECK((GPIOB->output & GPIO_PIN_4) != 0U);
++        step(99U); CHECK(buzzer_is_active());
++        step(1U); CHECK(!buzzer_is_active());
++        step(100U); CHECK(buzzer_is_active());
++        step(100U); CHECK(!buzzer_is_active());
++        CHECK((GPIOB->output & GPIO_PIN_4) == 0U);
++        step(1699U); CHECK(strstr(logs, "RGB_OFF") == NULL);
++        playing = false;
++        position = 19917U;
++        step(1U);
++        CHECK((GPIOA->output | GPIOB->output | GPIOC->output) == 0U);
++        CHECK(sent == 1U); /* Holding a button must not repeat the request. */
++        CHECK(strstr(logs, "RGB_OFF") != NULL);
++        CHECK(strstr(logs, "AUDIO_DATA_DONE") != NULL);
++    }
++}
++static void audio_error_and_busy_are_visible(void)
++{
++    reset_at(0U, VS1003B_STATUS_MODE_MISMATCH);
++    press(GPIOB, GPIO_PIN_5);
++    CHECK(sent == 1U && starts == 0U);
++    CHECK(GPIOA->output & GPIO_PIN_4);
++    CHECK(buzzer_is_active());
++    CHECK(strstr(logs, "audio=BLOCKED status=MODE_MISMATCH") != NULL);
++
++    reset_at(0U, VS1003B_STATUS_OK);
++    press(GPIOB, GPIO_PIN_5);
++    press(GPIOB, GPIO_PIN_10);
++    CHECK(sent == 2U && starts == 1U);
++    CHECK(strstr(logs, "audio=BUSY_SKIPPED") != NULL);
++    step(2000U);
++    CHECK(strstr(logs, "AUDIO_STALLED id=0x11") != NULL);
++    remote = MSG_SOS;
++    step(0U);
++    CHECK(strstr(logs, "REMOTE_IGNORED id=0x31") != NULL);
++    CHECK(sent == 2U && starts == 1U);
++}
++static void diagnostics_are_bounded_and_do_not_publish(void)
++{
++    reset_at(UINT32_MAX - 500U, VS1003B_STATUS_OK);
++    command = 's'; step(0U);
++    CHECK(sine_starts == 1U && codec_resets == 1U);
++    press(GPIOB, GPIO_PIN_5);
++    CHECK(sent == 0U && starts == 0U);
++    step(969U); CHECK(sine_stops == 0U);
++    stop_result = VS1003B_STATUS_DREQ_TIMEOUT;
++    step(1U); CHECK(sine_stops == 1U && codec_resets == 2U);
++    CHECK(strstr(logs, "SINE_STOP status=DREQ_TIMEOUT") != NULL);
++    command = 't'; step(0U);
++    CHECK(sdi_tests == 1U && codec_resets == 4U && sent == 0U);
++    CHECK(strstr(logs, "SDI_TEST status=OK expected=0820 echo=0820") != NULL);
++
++    init_result = VS1003B_STATUS_MODE_MISMATCH;
++    command = 's'; step(0U);
++    CHECK(sine_starts == 1U); /* No test sound after failed initialization. */
++    CHECK(service.audio_status == VS1003B_STATUS_MODE_MISMATCH);
++    init_result = VS1003B_STATUS_OK;
++    command = 'r'; step(0U);
++    CHECK(service.audio_status == VS1003B_STATUS_OK && !playing);
++    CHECK(registers[0x03] == 0x9800U && registers[0x0B] == 0x5050U);
++    press(GPIOB, GPIO_PIN_10);
++    CHECK(sent == 1U && starts == 1U && last_sent == MSG_SPEED_DOWN_REQUEST);
++}
++static void message_test_uses_uart_without_local_outputs(void)
++{
++    const uint8_t ids[] = {0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x30, 0x31};
++    reset_at(UINT32_MAX - 500U, VS1003B_STATUS_OK);
++    command = '?'; step(0U);
++    CHECK(strstr(logs, "MESSAGE_TEST_READY protocol=1") != NULL);
++    command = 0x13; step(0U);
++    CHECK(wire_sent == 0U); /* Unarmed input cannot transmit. */
++    for (size_t i = 0; i < sizeof(ids); ++i)
++    {
++        command = 'm'; step(0U);
++        CHECK(strstr(logs, "MESSAGE_TEST_ARMED") != NULL);
++        command = ids[i]; step(0U);
++        CHECK(wire_sent == i + 1U && last_sent == ids[i]);
++        step(1U);
++        CHECK(wire_sent == i + 1U); /* No periodic send or retry. */
++    }
++    CHECK(sent == 0U && starts == 0U && !playing && !buzzer_is_active());
++    CHECK((GPIOA->output | GPIOB->output | GPIOC->output) == 0U);
++    CHECK(strstr(logs, "MESSAGE_TEST_TX id=0x31 uart=OK seq=8") != NULL);
++    command = 'm'; step(0U);
++    command = 's'; step(0U); /* Malformed ID must not become a codec command. */
++    CHECK(wire_sent == 8U && sine_starts == 0U && codec_resets == 0U);
++    command = 'm'; step(0U);
++    step(1000U); /* Includes uint32 tick wrap. */
++    command = 0x13; step(0U);
++    CHECK(wire_sent == 8U);
++    wire_result = HAL_ERROR;
++    command = 'm'; step(0U);
++    command = 0x13; step(0U);
++    CHECK(strstr(logs, "MESSAGE_TEST_TX id=0x13 uart=ERROR seq=9") != NULL);
++    step(1000U);
++    CHECK(wire_sent == 9U);
++}
++int main(void)
++{
++    four_buttons_and_output_timing();
++    audio_error_and_busy_are_visible();
++    diagnostics_are_bounded_and_do_not_publish();
++    message_test_uses_uart_without_local_outputs();
++    puts("PASS real button/RGB/buzzer drivers: mappings, debounce, finite outputs, tick wrap");
++    puts("PASS audio failure/busy/stall reporting, remote output isolation (audio/router mocked)");
++    puts("PHYSICAL_LIGHT_SOUND_AND_VS1003B=NOT_TESTED");
++    return 0;
++}
+diff --git a/firmware/stm32/host-tests/test_vs1003b.c b/firmware/stm32/host-tests/test_vs1003b.c
+new file mode 100644
+index 0000000..7fca9ef
+--- /dev/null
++++ b/firmware/stm32/host-tests/test_vs1003b.c
+@@ -0,0 +1,169 @@
++#include "vs1003b.h"
++#include "main.h"
++
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++
++#define CHECK(x) do { if (!(x)) { \
++    fprintf(stderr, "%s:%d: %s\n", __FILE__, __LINE__, #x); \
++    exit(EXIT_FAILURE); } } while (0)
++
++GPIO_TypeDef host_gpio_a, host_gpio_b, host_gpio_c;
++static SPI_HandleTypeDef spi = {2U};
++static uint32_t tick, tick_step;
++static HAL_StatusTypeDef spi_result;
++static unsigned sdi_bytes, sdi_calls;
++static uint16_t registers[16];
++static bool drop_sdi_commands;
++static uint8_t asset[2600];
++
++uint32_t HAL_GetTick(void) { uint32_t now = tick; tick += tick_step; return now; }
++void HAL_Delay(uint32_t delay) { tick += delay; }
++GPIO_PinState HAL_GPIO_ReadPin(GPIO_TypeDef *port, uint16_t pin)
++{
++    return (port->input & pin) ? GPIO_PIN_SET : GPIO_PIN_RESET;
++}
++void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState value)
++{
++    if (value == GPIO_PIN_SET) port->output |= pin;
++    else port->output &= (uint16_t)~pin;
++}
++HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *handle, uint8_t *tx,
++                                        uint8_t *rx, uint16_t size, uint32_t timeout)
++{
++    CHECK(handle == &spi && timeout == 10U && tx != NULL && rx != NULL);
++    memset(rx, 0, size);
++    if ((GPIOB->output & VS_XCS_Pin) == 0U)
++    {
++        CHECK(GPIOC->output & VS_XDCS_Pin);
++        CHECK(size == 4U && tx[0] == 0x03U && tx[1] < 16U);
++        rx[2] = (uint8_t)(registers[tx[1]] >> 8U);
++        rx[3] = (uint8_t)registers[tx[1]];
++    }
++    else
++    {
++        CHECK((GPIOC->output & VS_XDCS_Pin) == 0U);
++        CHECK(size > 0U && size <= 32U);
++        ++sdi_calls;
++        if (spi_result == HAL_OK) sdi_bytes += size;
++        if (!drop_sdi_commands && spi_result == HAL_OK && size == 8U &&
++            tx[0] == 0x53U && tx[1] == 0x70U && tx[2] == 0xEEU && tx[3] == 0U)
++            registers[8] = registers[0];
++    }
++    return spi_result;
++}
++HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *handle, uint8_t *data,
++                                 uint16_t size, uint32_t timeout)
++{
++    CHECK(handle == &spi && size == 4U && timeout == 10U);
++    CHECK(data[0] == 0x02U && data[1] < 16U);
++    CHECK((GPIOB->output & VS_XCS_Pin) == 0U && (GPIOC->output & VS_XDCS_Pin));
++    if (spi_result == HAL_OK)
++        registers[data[1]] = (uint16_t)((uint16_t)data[2] << 8U) | data[3];
++    return spi_result;
++}
++
++static void init_at(uint32_t now)
++{
++    host_gpio_a = host_gpio_b = host_gpio_c = (GPIO_TypeDef){0};
++    GPIOC->input = VS_DREQ_Pin;
++    tick = now;
++    tick_step = 0U;
++    spi_result = HAL_OK;
++    sdi_bytes = sdi_calls = 0U;
++    memset(registers, 0, sizeof(registers));
++    registers[0] = 0x0800U;
++    drop_sdi_commands = false;
++    uint16_t mode = 0U;
++    CHECK(vs1003b_init(&spi, &mode) == VS1003B_STATUS_OK);
++    CHECK(mode == 0x0800U);
++}
++static void stalled_dreq_reports_error(void)
++{
++    init_at(UINT32_MAX - 1000U); /* Also exercise HAL tick wrap. */
++    CHECK(vs1003b_play_start(asset, sizeof(asset)) == VS1003B_STATUS_OK);
++    for (unsigned i = 0; i < 79U; ++i)
++        CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(vs1003b_play_position() == 2528U); /* Captured hardware failure. */
++    GPIOC->input = 0U;
++    unsigned calls = sdi_calls;
++    tick += 1999U;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(vs1003b_is_playing() && sdi_calls == calls);
++    ++tick;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_DREQ_TIMEOUT);
++    CHECK(!vs1003b_is_playing() && sdi_calls == calls);
++    CHECK(vs1003b_play_position() == 2528U);
++}
++static void temporary_backpressure_and_completion(void)
++{
++    init_at(0U);
++    CHECK(vs1003b_play_start(asset, 33U) == VS1003B_STATUS_OK);
++    CHECK(vs1003b_play_start(asset, 33U) == VS1003B_STATUS_BUSY);
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(vs1003b_play_position() == 32U);
++    GPIOC->input = 0U;
++    tick += 1900U;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(sdi_bytes == 32U);
++    GPIOC->input = VS_DREQ_Pin;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(vs1003b_play_position() == 33U);
++    GPIOC->input = 0U;
++    tick += 1900U;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(vs1003b_is_playing()); /* Deadline refreshes on progress. */
++    GPIOC->input = VS_DREQ_Pin;
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    CHECK(!vs1003b_is_playing() && sdi_bytes == 65U);
++}
++static void reset_cancels_old_stream(void)
++{
++    init_at(0U);
++    CHECK(vs1003b_play_start(asset, sizeof(asset)) == VS1003B_STATUS_OK);
++    CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++    init_at(0U);
++    CHECK(!vs1003b_is_playing() && vs1003b_play_position() == 0U);
++    CHECK(vs1003b_play_start(asset, 1U) == VS1003B_STATUS_OK);
++    GPIOC->input = 0U;
++    tick_step = 1U; /* Let the bounded hardware-reset wait expire. */
++    uint16_t mode;
++    CHECK(vs1003b_init(&spi, &mode) == VS1003B_STATUS_DREQ_TIMEOUT);
++    CHECK(!vs1003b_is_playing());
++}
++static void transfer_errors_release_both_selects(void)
++{
++    for (unsigned finishing = 0U; finishing < 2U; ++finishing)
++    {
++        init_at(0U);
++        CHECK(vs1003b_play_start(asset, 1U) == VS1003B_STATUS_OK);
++        if (finishing) CHECK(vs1003b_play_process() == VS1003B_STATUS_OK);
++        spi_result = HAL_ERROR;
++        CHECK(vs1003b_play_process() == VS1003B_STATUS_SPI_ERROR);
++        CHECK(!vs1003b_is_playing());
++        CHECK((GPIOB->output & VS_XCS_Pin) && (GPIOC->output & VS_XDCS_Pin));
++    }
++}
++static void sdi_test_requires_echo_not_just_spi_success(void)
++{
++    uint16_t echo = 0U;
++    init_at(0U);
++    CHECK(vs1003b_sdi_test(&echo) == VS1003B_STATUS_OK);
++    CHECK(echo == 0x0820U && sdi_bytes == 8U);
++    init_at(0U);
++    drop_sdi_commands = true;
++    CHECK(vs1003b_sdi_test(&echo) == VS1003B_STATUS_REGISTER_MISMATCH);
++    CHECK(echo == 0U && sdi_bytes == 8U);
++}
++int main(void)
++{
++    stalled_dreq_reports_error();
++    temporary_backpressure_and_completion();
++    reset_cancels_old_stream();
++    transfer_errors_release_both_selects();
++    sdi_test_requires_echo_not_just_spi_success();
++    puts("PASS real VS1003B driver: 2528-byte stall, timeout/wrap, backpressure, reset, SPI errors");
++    puts("PHYSICAL_AUDIO=NOT_TESTED");
++    return 0;
++}
+diff --git a/firmware/stm32/nostos_stm32.ioc b/firmware/stm32/nostos_stm32.ioc
+index 21e9ea4..5709ea0 100644
+--- a/firmware/stm32/nostos_stm32.ioc
++++ b/firmware/stm32/nostos_stm32.ioc
+@@ -79,7 +79,7 @@ PA4.GPIO_Label=RGB_R
+ PA4.Locked=true
+ PA4.Signal=GPIO_Output
+ PA8.GPIOParameters=GPIO_PuPd,GPIO_Label
+-PA8.GPIO_Label=BTN3
++PA8.GPIO_Label=BTN3_SAFETY
+ PA8.GPIO_PuPd=GPIO_PULLUP
+ PA8.Locked=true
+ PA8.Signal=GPIO_Input
+@@ -93,7 +93,7 @@ PB1.Locked=true
+ PB1.PinState=GPIO_PIN_SET
+ PB1.Signal=GPIO_Output
+ PB10.GPIOParameters=GPIO_PuPd,GPIO_Label
+-PB10.GPIO_Label=BTN2
++PB10.GPIO_Label=BTN2_SPEED_DOWN
+ PB10.GPIO_PuPd=GPIO_PULLUP
+ PB10.Locked=true
+ PB10.Signal=GPIO_Input
+@@ -115,7 +115,7 @@ PB4.GPIO_Label=BUZZER
+ PB4.Locked=true
+ PB4.Signal=GPIO_Output
+ PB5.GPIOParameters=GPIO_PuPd,GPIO_Label
+-PB5.GPIO_Label=BTN1
++PB5.GPIO_Label=BTN1_SPEED_UP
+ PB5.GPIO_PuPd=GPIO_PULLUP
+ PB5.Locked=true
+ PB5.Signal=GPIO_Input
+@@ -153,7 +153,7 @@ PC5.Locked=true
+ PC5.PinState=GPIO_PIN_SET
+ PC5.Signal=GPIO_Output
+ PC7.GPIOParameters=GPIO_PuPd,GPIO_Label
+-PC7.GPIO_Label=BTN4
++PC7.GPIO_Label=BTN4_STOP
+ PC7.GPIO_PuPd=GPIO_PULLUP
+ PC7.Locked=true
+ PC7.Signal=GPIO_Input

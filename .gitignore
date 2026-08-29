@@ -40,6 +40,9 @@ sdkconfig.old
 
 # Local ESP-IDF example_init dependency locks embed installation paths.
 dependencies.lock
+**/.pytest_cache/
+**/dist/
+*.tsbuildinfo
 
 # C3 reference example selects its target when configuring; this snapshot is generated.
-/code/examples/esp32c3/generic-onoff-node/sdkconfig
+/experiments/examples/esp32c3/generic-onoff-node/sdkconfig

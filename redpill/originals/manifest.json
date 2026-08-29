@@ -1,0 +1,223 @@
+[
+  {
+    "day": 4,
+    "status": "host_module",
+    "url": "https://app.notion.com/d7c2ae7008718339a31f015459b4d577",
+    "author": "김현수",
+    "bytes": 1660,
+    "sha256": "f12ae0e1271878f416cb25f311d7bd7f39254b91671d7f939e253bf6f07f311d",
+    "module": "bits"
+  },
+  {
+    "day": 5,
+    "status": "host_module",
+    "url": "https://app.notion.com/b1c2ae70087183f4b0a881685df5fd5f",
+    "author": "김현수",
+    "bytes": 5280,
+    "sha256": "5da69a5a6efecea915375736087bcd2a7866a00de67fb1465f08e15d25dc615f",
+    "module": "popcount"
+  },
+  {
+    "day": 6,
+    "status": "host_module",
+    "url": "https://app.notion.com/b5c2ae70087182288a31017269b58985",
+    "author": "김현수",
+    "bytes": 2867,
+    "sha256": "fb188e86ddfdabbef17ef1818701c5d119af27ba5b7877f54c50e19f3e449b56",
+    "module": "rotate"
+  },
+  {
+    "day": 7,
+    "status": "host_module",
+    "url": "https://app.notion.com/5ab2ae7008718288a53481c3ae3f7137",
+    "author": "김현수",
+    "bytes": 3781,
+    "sha256": "e642afcff6fb73a13881eb86d9481ba981952afc9a246c184f45cc257aa3bdb1",
+    "module": "checksum"
+  },
+  {
+    "day": 8,
+    "status": "host_module",
+    "url": "https://app.notion.com/fef2ae7008718339a88a819672ddc5ae",
+    "author": "김현수",
+    "bytes": 2953,
+    "sha256": "dc7b955dd7b1a7febf64bcd721e857eea92462080d76291dd455b8d9e8a682ff",
+    "module": "memmove"
+  },
+  {
+    "day": 9,
+    "status": "host_module",
+    "url": "https://app.notion.com/6fa2ae70087183c0a547010b3926cb5c",
+    "author": "김현수",
+    "bytes": 4278,
+    "sha256": "100ba2e5f56de570348833b868f83bc457d27994f08ddc2725643a1ee688053d",
+    "module": "swap"
+  },
+  {
+    "day": 10,
+    "status": "host_module",
+    "url": "https://app.notion.com/e282ae70087182aeaed401784e3363db",
+    "author": "김현수",
+    "bytes": 4439,
+    "sha256": "7a8d9e4731bf4720da6374729809cec7abfe7e3c7337a6b15285afdbe3368f33",
+    "module": "matrix"
+  },
+  {
+    "day": 11,
+    "status": "host_module",
+    "url": "https://app.notion.com/4872ae70087182668ee881d69ba26ad7",
+    "author": "김현수",
+    "bytes": 2258,
+    "sha256": "39a0e97f16a9f53d3d6a11c128cdccc44adbe9211469ccdaefd3d0e968cdf2e1",
+    "module": "calculator"
+  },
+  {
+    "day": 12,
+    "status": "host_module",
+    "url": "https://app.notion.com/8f12ae70087183d0b8f6014c6f79c766",
+    "author": "김현수",
+    "bytes": 2791,
+    "sha256": "3a46dff4f75553c10901926e7a5a603ec7e0ab5e485633eac918760339823119",
+    "module": "offset"
+  },
+  {
+    "day": 13,
+    "status": "host_module",
+    "url": "https://app.notion.com/c422ae700871822185840128977c534d",
+    "author": "김현수",
+    "bytes": 3076,
+    "sha256": "326e62022ac1e98eda2e781164e670f8b76907ae70cfe1310aa6f07e88a20bca",
+    "module": "pool"
+  },
+  {
+    "day": 14,
+    "status": "host_module",
+    "url": "https://app.notion.com/6532ae70087182e0908b81508fcea35c",
+    "author": "김현수",
+    "bytes": 2134,
+    "sha256": "2f18c3035ffe145142b00730bfd3f32b5f827dcafeabf1133a850b19c0296fb1",
+    "module": "hexdump"
+  },
+  {
+    "day": 15,
+    "status": "host_module",
+    "url": "https://app.notion.com/af32ae70087183048dbf8176f2d3b1dd",
+    "author": "김현수",
+    "bytes": 2333,
+    "sha256": "1be6812aa808f651be180f060cf6b7986db2eca6a260291beb18da1c2abb37fe",
+    "module": "ring_buffer"
+  },
+  {
+    "day": 16,
+    "status": "host_module",
+    "url": "https://app.notion.com/41a2ae70087182e89be2816d55b6c0de",
+    "author": "김현수",
+    "bytes": 3930,
+    "sha256": "29cd5d925c859cb4af318a9f3786dff7f1e20246ff55bc29245189e927d65e1f",
+    "module": "linked_list"
+  },
+  {
+    "day": 17,
+    "status": "host_module",
+    "url": "https://app.notion.com/2e02ae700871820a836d818cd6917154",
+    "author": "김현수",
+    "bytes": 5338,
+    "sha256": "7634d76ebd8b3d738c2bae21f7fdacce102b66ce1eb085e148f9e72d94122fdf",
+    "module": "bitmap"
+  },
+  {
+    "day": 18,
+    "status": "host_module",
+    "url": "https://app.notion.com/91d2ae700871837bbcff01a95657c426",
+    "author": "김현수",
+    "bytes": 5842,
+    "sha256": "2471a89ca4e82f350feeb279e79d26c27ec09ec001430226808bd473d5153ee8",
+    "module": "min_heap"
+  },
+  {
+    "day": 19,
+    "status": "no_submission",
+    "database": "https://app.notion.com/p/0a32ae700871825d9332819327de8a28"
+  },
+  {
+    "day": 20,
+    "status": "no_submission",
+    "database": "https://app.notion.com/p/5172ae700871834cbc8d0157dfa6dec0"
+  },
+  {
+    "day": 22,
+    "status": "host_module",
+    "url": "https://app.notion.com/8aa2ae7008718335bc5f8192412db5f7",
+    "author": "김현수",
+    "bytes": 6069,
+    "sha256": "355ec566d3396e42d79aa8f18ab5b074688b2fca461f12b11da1289557ef9d02",
+    "module": "timer"
+  },
+  {
+    "day": 23,
+    "status": "host_module",
+    "url": "https://app.notion.com/e202ae70087183069efb01f1c925b65d",
+    "author": "김현수",
+    "bytes": 4064,
+    "sha256": "f938646639c568b49710ffb49483f8cfe7eb476c0b78945202ee41a3734cc84f",
+    "module": "tokenizer"
+  },
+  {
+    "day": 24,
+    "status": "host_module",
+    "url": "https://app.notion.com/3612ae7008718299a7f1015021070ab7",
+    "author": "김현수",
+    "bytes": 2818,
+    "sha256": "42c644c43b8dd408639e7819314d365b6d742f7c18c9a86c02db2c99db069420",
+    "module": "debounce"
+  },
+  {
+    "day": 25,
+    "status": "host_module",
+    "url": "https://app.notion.com/63e2ae70087183cb8cea0159e390ff03",
+    "author": "김현수",
+    "bytes": 2974,
+    "sha256": "331d1e4aa41606c2c16baa36295682c7463ae9fbf2c4cfe598022dcd94f8b16d",
+    "module": "moving_average"
+  },
+  {
+    "day": 26,
+    "status": "host_module",
+    "url": "https://app.notion.com/79a2ae7008718351bacc012f2dfbe17e",
+    "author": "김현수",
+    "bytes": 3023,
+    "sha256": "ae9fb4c3581db5c4ce2e0ea330e86b05ea41920e04fa83d1790660a2c361d5fd",
+    "module": "producer_consumer"
+  },
+  {
+    "day": 27,
+    "status": "no_submission",
+    "database": "https://app.notion.com/p/6602ae700871832d99fa01aa87c1c217"
+  },
+  {
+    "day": 28,
+    "status": "no_submission",
+    "database": "https://app.notion.com/p/5c92ae700871829db37d013a71061f50"
+  },
+  {
+    "day": 33,
+    "status": "hardware_reference",
+    "url": "https://app.notion.com/3952ae7008718257bffd818ba48c8329",
+    "author": "김현수",
+    "sections": [
+      "김현수",
+      "김현수 2"
+    ],
+    "sha256": {
+      "v1": "d11f77cd383d8e880a3f86f035e654bb742bbb80f531ee6e1e05d0c88fa3182b",
+      "v2": "b8041ec011c2c4f0ec9e06d1abfee0ac2081758dfb2cf554cfc076b9cf95359f"
+    },
+    "module": "uart_chat"
+  },
+  {
+    "day": 34,
+    "status": "notes_only",
+    "url": "https://app.notion.com/10d2ae7008718375969f013a27e6c904",
+    "author": "홍성록 / 김현수"
+  }
+]
