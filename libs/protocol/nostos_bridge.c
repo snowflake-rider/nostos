@@ -1,5 +1,10 @@
 #include "nostos_bridge.h"
 #include <string.h>
+static bool urgent_type(uint8_t type)
+{
+    return type==NOSTOS_FALL || type==NOSTOS_SOS ||
+        type==NOSTOS_FALL_CLEAR || type==NOSTOS_SOS_CLEAR;
+}
 nostos_result_t nostos_bridge_init(nostos_bridge_t *b, uint8_t local, const nostos_peer_t peers[NOSTOS_NODE_COUNT])
 {
     if (!b || !peers || local<1 || local>NOSTOS_NODE_COUNT) return NOSTOS_BAD_ARGUMENT;
@@ -14,7 +19,11 @@ nostos_result_t nostos_bridge_init(nostos_bridge_t *b, uint8_t local, const nost
         for (size_t j=0; j<i; ++j)
             if (peers[i].mesh_address==peers[j].mesh_address || peers[i].role==peers[j].role) return NOSTOS_BAD_VALUE;
     }
-    *b=(nostos_bridge_t){.local_source=local}; memcpy(b->peers,peers,sizeof(b->peers)); return NOSTOS_OK;
+    *b=(nostos_bridge_t){.local_source=local,.free_count=NOSTOS_BRIDGE_CAPACITY};
+    memcpy(b->peers,peers,sizeof(b->peers));
+    for (size_t i=0; i<NOSTOS_BRIDGE_CAPACITY; ++i)
+        b->free_slots[i]=(uint8_t)(NOSTOS_BRIDGE_CAPACITY-1U-i);
+    return NOSTOS_OK;
 }
 nostos_result_t nostos_bridge_accept(nostos_bridge_t *b, nostos_direction_t d,
     const uint8_t *w, size_t n, uint16_t source, uint32_t now, bool ready)
@@ -35,16 +44,44 @@ nostos_result_t nostos_bridge_accept(nostos_bridge_t *b, nostos_direction_t d,
             if (b->peers[i].source_id==claimed && b->peers[i].mesh_address==source) match=true;
         if (!match) return NOSTOS_UNAUTHORIZED;
     }
-    if (b->count==NOSTOS_BRIDGE_CAPACITY) return NOSTOS_FULL;
-    nostos_job_t *job=&b->jobs[(b->head+b->count)%NOSTOS_BRIDGE_CAPACITY];
-    memcpy(job->wire,w,n); job->length=n; job->received_ms=now; job->direction=d; ++b->count;
+    bool urgent=r==NOSTOS_OK && urgent_type(m.type);
+    if (b->count==NOSTOS_BRIDGE_CAPACITY ||
+        (!urgent && b->normal_count==NOSTOS_BRIDGE_NORMAL_CAPACITY)) return NOSTOS_FULL;
+    uint8_t slot=b->free_slots[--b->free_count];
+    nostos_job_t *job=&b->jobs[slot];
+    memcpy(job->wire,w,n); job->length=n; job->received_ms=now; job->direction=d;
+    if (urgent) {
+        size_t tail=(b->urgent_head+b->urgent_count)%NOSTOS_BRIDGE_CAPACITY;
+        b->urgent_order[tail]=slot; ++b->urgent_count;
+    } else {
+        size_t tail=(b->normal_head+b->normal_count)%NOSTOS_BRIDGE_NORMAL_CAPACITY;
+        b->normal_order[tail]=slot; ++b->normal_count;
+    }
+    ++b->count;
     return NOSTOS_OK;
 }
 nostos_result_t nostos_bridge_next(nostos_bridge_t *b, uint32_t now, bool ready, nostos_job_t *out)
 {
     if (!b || !out) return NOSTOS_BAD_ARGUMENT;
     if (!b->count) return NOSTOS_EMPTY;
-    *out=b->jobs[b->head]; b->head=(b->head+1)%NOSTOS_BRIDGE_CAPACITY; --b->count;
+    uint8_t slot;
+    bool take_urgent=b->urgent_count &&
+        (!b->normal_count || b->urgent_streak<NOSTOS_BRIDGE_URGENT_BURST);
+    if (take_urgent) {
+        slot=b->urgent_order[b->urgent_head];
+        b->urgent_head=(b->urgent_head+1U)%NOSTOS_BRIDGE_CAPACITY;
+        --b->urgent_count;
+        ++b->urgent_streak;
+    } else {
+        slot=b->normal_order[b->normal_head];
+        b->normal_head=(b->normal_head+1U)%NOSTOS_BRIDGE_NORMAL_CAPACITY;
+        --b->normal_count;
+        b->urgent_streak=0;
+    }
+    *out=b->jobs[slot];
+    b->free_slots[b->free_count++]=slot;
+    --b->count;
+    if (!b->count) b->urgent_streak=0;
     if ((uint32_t)(now-out->received_ms)>NOSTOS_BRIDGE_MAX_AGE_MS) return NOSTOS_EXPIRED;
     if (out->direction==NOSTOS_TO_MESH && !ready) return NOSTOS_NOT_READY;
     return NOSTOS_OK;

@@ -205,11 +205,43 @@ static void bridge(void)
     nostos_bridge_t b; CHECK(nostos_bridge_init(&b,2,peers)==NOSTOS_OK);
     nostos_message_t m=message(NOSTOS_STOP,0); uint8_t w[64]; size_t n=encode(m,w);
     CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,false)==NOSTOS_NOT_READY);
-    for(size_t i=0;i<NOSTOS_BRIDGE_CAPACITY;++i) CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
+    for(size_t i=0;i<NOSTOS_BRIDGE_NORMAL_CAPACITY;++i) CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
     CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_FULL);
-    w[1]=0x10; nostos_job_t job;
-    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_STOP); /* Owned copy. */
-    CHECK(nostos_bridge_next(&b,2001,true,&job)==NOSTOS_EXPIRED);
+    m=message(NOSTOS_FALL,1); n=encode(m,w);
+    for(size_t i=0;i<NOSTOS_BRIDGE_URGENT_RESERVE;++i) CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
+    CHECK(b.count==NOSTOS_BRIDGE_CAPACITY && b.normal_count==NOSTOS_BRIDGE_NORMAL_CAPACITY &&
+        b.urgent_count==NOSTOS_BRIDGE_URGENT_RESERVE);
+    CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_FULL);
+    memset(w,0,sizeof(w)); nostos_job_t job;
+    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_FALL); /* Urgent first, owned copy. */
+    for(size_t i=1;i<NOSTOS_BRIDGE_URGENT_RESERVE;++i)
+        CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_FALL);
+    CHECK(nostos_bridge_next(&b,2001,true,&job)==NOSTOS_EXPIRED && job.wire[1]==NOSTOS_STOP);
+    while(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK) CHECK(job.wire[1]==NOSTOS_STOP);
+    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_EMPTY);
+
+    CHECK(nostos_bridge_init(&b,2,peers)==NOSTOS_OK);
+    m=message(NOSTOS_FALL,2); n=encode(m,w);
+    for(size_t i=0;i<NOSTOS_BRIDGE_CAPACITY;++i)
+        CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
+    CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_FULL);
+    for(size_t i=0;i<NOSTOS_BRIDGE_CAPACITY;++i)
+        CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_FALL);
+    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_EMPTY);
+
+    CHECK(nostos_bridge_init(&b,2,peers)==NOSTOS_OK);
+    m=message(NOSTOS_ENVIRONMENT,10);
+    m.payload.environment=(nostos_environment_t){350,500,NOSTOS_VALID,NOSTOS_VALID}; n=encode(m,w);
+    CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
+    const uint8_t urgent_types[5]={NOSTOS_FALL,NOSTOS_SOS,NOSTOS_FALL_CLEAR,NOSTOS_SOS_CLEAR,NOSTOS_FALL};
+    for(size_t i=0;i<COUNT(urgent_types);++i) {
+        m=message(urgent_types[i],(uint16_t)(11U+i)); n=encode(m,w);
+        CHECK(nostos_bridge_accept(&b,NOSTOS_TO_MESH,w,n,0,0,true)==NOSTOS_OK);
+    }
+    for(size_t i=0;i<NOSTOS_BRIDGE_URGENT_BURST;++i)
+        CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==urgent_types[i] && job.wire[7]==11U+i);
+    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_ENVIRONMENT && job.wire[7]==10);
+    CHECK(nostos_bridge_next(&b,0,true,&job)==NOSTOS_OK && job.wire[1]==NOSTOS_FALL && job.wire[7]==15);
     CHECK(nostos_bridge_init(&b,3,peers)==NOSTOS_OK);
     CHECK(nostos_bridge_accept(&b,NOSTOS_TO_UART,w,n,0x101,0,true)==NOSTOS_UNAUTHORIZED);
     CHECK(nostos_bridge_accept(&b,NOSTOS_TO_UART,w,n,0x202,0,true)==NOSTOS_OK);
@@ -221,7 +253,7 @@ static void bridge(void)
     nostos_receiver_t r=receiver();
     CHECK(nostos_receiver_wire(&r,job.wire,job.length,1)==NOSTOS_UNSUPPORTED_TYPE && !r.request_count);
     w[0]=1; CHECK(nostos_bridge_accept(&b,NOSTOS_TO_UART,w,11,0x202,0,true)==NOSTOS_UNSUPPORTED_VERSION);
-    puts("Address/source binding, no self echo, owned bytes, expiry, full queue, opaque v2 extension PASS");
+    puts("Source binding, owned bytes, urgent reserve/FIFO/fairness, expiry, opaque v2 extension PASS");
 }
 typedef struct {
     uint8_t frame[NOSTOS_UART_FRAME_MAX];
