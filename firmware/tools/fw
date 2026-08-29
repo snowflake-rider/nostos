@@ -1,0 +1,430 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+TOOLS_DIR="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)"
+FIRMWARE_DIR="$(cd -- "$TOOLS_DIR/.." && pwd -P)"
+REPO_DIR="$(cd -- "$FIRMWARE_DIR/.." && pwd -P)"
+RELEASE_TOOL="$TOOLS_DIR/release.py"
+PROFILE="$FIRMWARE_DIR/profiles/release.json"
+INVENTORY="$FIRMWARE_DIR/inventory/boards.local.json"
+
+usage() {
+    cat <<'EOF'
+usage: firmware/tools/fw <command> [options]
+
+commands:
+  doctor
+  test [all|stm32|esp32|protocol]
+  build [all|stm32|esp32]
+  package --version X.Y.Z
+  verify --release PATH_OR_ID
+  flash --release PATH_OR_ID --target stm32|esp32 --node NAME --dry-run
+
+The flash command is intentionally plan-only. It never builds or writes hardware.
+EOF
+}
+
+die_usage() {
+    printf 'error: %s\n\n' "$1" >&2
+    usage >&2
+    exit 2
+}
+
+require_no_args() {
+    if [[ "$#" -ne 0 ]]; then
+        die_usage "unexpected arguments: $*"
+    fi
+}
+
+check_root_layout() {
+    local layout_failures=0
+    local required_file
+    local required_dir
+    local forbidden_name
+    local root_entry
+    local root_name
+    local exception_dir
+    local exception_entry
+    local relative_entry
+    local ignore_source
+    local ignore_line
+    local ignore_pattern
+    local ignored_entry
+    local git_root
+    local git_root_physical
+
+    for required_file in \
+        '.gitignore' \
+        'AGENTS.md' \
+        'README.md' \
+        'STRUCTURE.md' \
+        'firmware/VERSION' \
+        'firmware/README.md' \
+        'firmware/build.sh' \
+        'firmware/test-host.sh' \
+        'firmware/flash-stm32-all.sh' \
+        'firmware/profiles/release.json' \
+        'firmware/inventory/boards.example.json' \
+        'firmware/tools/fw' \
+        'firmware/tools/release.py' \
+        'releases/README.md' \
+        'releases/index.json'; do
+        if [[ ! -f "$REPO_DIR/$required_file" || -L "$REPO_DIR/$required_file" ]]; then
+            printf 'FAIL %-22s required regular file missing: %s\n' \
+                'canonical layout' "$required_file" >&2
+            layout_failures=$((layout_failures + 1))
+        fi
+    done
+
+    for required_dir in \
+        'firmware' \
+        'firmware/stm32' \
+        'firmware/esp32' \
+        'firmware/protocol' \
+        'firmware/profiles' \
+        'firmware/inventory' \
+        'firmware/tools' \
+        'releases' \
+        'releases/baselines'; do
+        if [[ ! -d "$REPO_DIR/$required_dir" || -L "$REPO_DIR/$required_dir" ]]; then
+            printf 'FAIL %-22s required directory missing: %s\n' \
+                'canonical layout' "$required_dir" >&2
+            layout_failures=$((layout_failures + 1))
+        fi
+    done
+
+    for forbidden_name in \
+        stm32 esp32 protocol VERSION build.sh test-host.sh flash-stm32-all.sh manifest.json; do
+        if [[ -e "$REPO_DIR/$forbidden_name" || -L "$REPO_DIR/$forbidden_name" ]]; then
+            printf 'FAIL %-22s legacy root path present: %s\n' 'canonical layout' "$forbidden_name" >&2
+            layout_failures=$((layout_failures + 1))
+        fi
+    done
+
+    while IFS= read -r -d '' root_entry; do
+        root_name="${root_entry##*/}"
+        case "$root_name" in
+            .git|.gitignore|.worktrees|AGENTS.md|README.md|STRUCTURE.md|firmware|releases|apps|docs)
+                ;;
+            stm32|esp32|protocol|VERSION|build.sh|test-host.sh|flash-stm32-all.sh|manifest.json)
+                # Reported above with the more specific legacy-path diagnostic.
+                ;;
+            *)
+                printf 'FAIL %-22s unexpected root entry: %s\n' 'canonical layout' "$root_name" >&2
+                layout_failures=$((layout_failures + 1))
+                ;;
+        esac
+    done < <(find "$REPO_DIR" -mindepth 1 -maxdepth 1 -print0)
+
+    if command -v git >/dev/null 2>&1; then
+        git_root="$(git -C "$REPO_DIR" rev-parse --show-toplevel 2>/dev/null || true)"
+        if [[ -n "$git_root" ]]; then
+            git_root_physical="$(cd -- "$git_root" && pwd -P)"
+        else
+            git_root_physical=''
+        fi
+        if [[ "$git_root_physical" != "$REPO_DIR" ]]; then
+            printf 'FAIL %-22s expected Git root: %s\n' 'canonical layout' "$REPO_DIR" >&2
+            layout_failures=$((layout_failures + 1))
+        fi
+
+        for exception_dir in apps docs; do
+            [[ -e "$REPO_DIR/$exception_dir" || -L "$REPO_DIR/$exception_dir" ]] || continue
+            if [[ ! -d "$REPO_DIR/$exception_dir" || -L "$REPO_DIR/$exception_dir" ]]; then
+                printf 'FAIL %-22s checkout-local root must be a directory: %s\n' \
+                    'canonical layout' "$exception_dir" >&2
+                layout_failures=$((layout_failures + 1))
+                continue
+            fi
+            while IFS= read -r -d '' ignore_source && \
+                IFS= read -r -d '' ignore_line && \
+                IFS= read -r -d '' ignore_pattern && \
+                IFS= read -r -d '' ignored_entry; do
+                case "$ignored_entry" in
+                    apps/mesh-console/logs/*|docs/bluetooth-setting/private-network/Nostos.json|docs/media/nostos-ride-signals/*)
+                        if [[ -z "$ignore_pattern" ]]; then
+                            printf 'FAIL %-22s checkout-local file is not ignored: %s\n' \
+                                'canonical layout' "$ignored_entry" >&2
+                            layout_failures=$((layout_failures + 1))
+                        fi
+                        ;;
+                    *)
+                        printf 'FAIL %-22s checkout-local file is outside allowed paths: %s\n' \
+                            'canonical layout' "$ignored_entry" >&2
+                        layout_failures=$((layout_failures + 1))
+                        ;;
+                esac
+            done < <(
+                while IFS= read -r -d '' exception_entry; do
+                    relative_entry="${exception_entry#"$REPO_DIR"/}"
+                    printf '%s\0' "$relative_entry"
+                done < <(find "$REPO_DIR/$exception_dir" \( -type f -o -type l \) -print0) |
+                    git -C "$REPO_DIR" check-ignore -z -v -n --stdin
+            )
+        done
+    else
+        printf 'FAIL %-22s Git unavailable; cannot verify checkout-local exceptions\n' \
+            'canonical layout' >&2
+        layout_failures=$((layout_failures + 1))
+    fi
+
+    if [[ "$layout_failures" -ne 0 ]]; then
+        return 1
+    fi
+    printf 'OK   %-22s required tree present; root entries and local exceptions verified\n' \
+        'canonical layout'
+}
+
+doctor() {
+    local failures=0
+    local command_name
+
+    printf 'NOSTOS firmware root: %s\n' "$FIRMWARE_DIR"
+    for command_name in bash git python3 cmake ctest; do
+        if command -v "$command_name" >/dev/null 2>&1; then
+            printf 'OK   %-22s %s\n' "$command_name" "$(command -v "$command_name")"
+        else
+            printf 'FAIL %-22s not found\n' "$command_name" >&2
+            failures=$((failures + 1))
+        fi
+    done
+
+    for command_name in arm-none-eabi-gcc arm-none-eabi-objcopy ninja idf.py; do
+        if command -v "$command_name" >/dev/null 2>&1; then
+            printf 'OK   %-22s %s\n' "$command_name" "$(command -v "$command_name")"
+        else
+            printf 'WARN %-22s not found (required only for its target build)\n' "$command_name" >&2
+        fi
+    done
+
+    if check_root_layout; then
+        :
+    else
+        failures=$((failures + 1))
+    fi
+
+    if [[ -f "$FIRMWARE_DIR/build.sh" && -f "$FIRMWARE_DIR/test-host.sh" && -f "$FIRMWARE_DIR/VERSION" ]]; then
+        printf 'OK   %-22s present\n' 'firmware entrypoints'
+    else
+        printf 'FAIL %-22s build.sh, test-host.sh, or VERSION missing\n' 'firmware entrypoints' >&2
+        failures=$((failures + 1))
+    fi
+
+    if command -v python3 >/dev/null 2>&1 && [[ -f "$RELEASE_TOOL" ]]; then
+        if python3 "$RELEASE_TOOL" validate-profile --firmware-root "$FIRMWARE_DIR" --profile "$PROFILE"; then
+            :
+        else
+            failures=$((failures + 1))
+        fi
+    else
+        printf 'FAIL %-22s release helper missing or Python unavailable\n' 'release tooling' >&2
+        failures=$((failures + 1))
+    fi
+
+    if [[ "$failures" -ne 0 ]]; then
+        printf 'doctor: FAIL (%d required check(s) failed)\n' "$failures" >&2
+        return 1
+    fi
+    printf '%s\n' 'doctor: PASS (target-specific WARN items may still block a target build)'
+}
+
+run_test() {
+    local target="${1:-all}"
+    if [[ "$#" -gt 1 ]]; then
+        die_usage 'test accepts at most one target'
+    fi
+
+    case "$target" in
+        all)
+            bash "$FIRMWARE_DIR/test-host.sh"
+            ;;
+        stm32)
+            bash "$FIRMWARE_DIR/stm32/tools/test-host.sh"
+            ;;
+        esp32)
+            bash "$FIRMWARE_DIR/esp32/test-host.sh"
+            ;;
+        protocol)
+            (
+                local protocol_build
+                protocol_build="$(mktemp -d "${TMPDIR:-/tmp}/nostos-protocol.XXXXXX")"
+                trap 'rm -rf -- "$protocol_build"' EXIT
+                cmake -S "$FIRMWARE_DIR/protocol" -B "$protocol_build" -DENABLE_SANITIZERS=ON
+                cmake --build "$protocol_build" --parallel
+                ctest --test-dir "$protocol_build" --output-on-failure
+            )
+            ;;
+        *)
+            die_usage "unknown test target: $target"
+            ;;
+    esac
+}
+
+run_build() {
+    local target="${1:-all}"
+    if [[ "$#" -gt 1 ]]; then
+        die_usage 'build accepts at most one target'
+    fi
+    case "$target" in
+        all)
+            bash "$FIRMWARE_DIR/build.sh" all
+            python3 "$RELEASE_TOOL" record-build \
+                --firmware-root "$FIRMWARE_DIR" \
+                --repo-root "$REPO_DIR" \
+                --profile "$PROFILE" \
+                --target stm32
+            python3 "$RELEASE_TOOL" record-build \
+                --firmware-root "$FIRMWARE_DIR" \
+                --repo-root "$REPO_DIR" \
+                --profile "$PROFILE" \
+                --target esp32
+            ;;
+        stm32|esp32)
+            bash "$FIRMWARE_DIR/build.sh" "$target"
+            python3 "$RELEASE_TOOL" record-build \
+                --firmware-root "$FIRMWARE_DIR" \
+                --repo-root "$REPO_DIR" \
+                --profile "$PROFILE" \
+                --target "$target"
+            ;;
+        *)
+            die_usage "unknown build target: $target"
+            ;;
+    esac
+}
+
+run_package() {
+    local version=''
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            --version)
+                [[ "$#" -ge 2 ]] || die_usage '--version requires X.Y.Z'
+                version="$2"
+                shift 2
+                ;;
+            *)
+                die_usage "unknown package option: $1"
+                ;;
+        esac
+    done
+    [[ -n "$version" ]] || die_usage 'package requires --version X.Y.Z'
+    python3 "$RELEASE_TOOL" package \
+        --firmware-root "$FIRMWARE_DIR" \
+        --repo-root "$REPO_DIR" \
+        --profile "$PROFILE" \
+        --version "$version"
+}
+
+run_verify() {
+    local release=''
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            --release)
+                [[ "$#" -ge 2 ]] || die_usage '--release requires a path or release ID'
+                release="$2"
+                shift 2
+                ;;
+            *)
+                die_usage "unknown verify option: $1"
+                ;;
+        esac
+    done
+    [[ -n "$release" ]] || die_usage 'verify requires --release PATH_OR_ID'
+    python3 "$RELEASE_TOOL" verify \
+        --firmware-root "$FIRMWARE_DIR" \
+        --profile "$PROFILE" \
+        --release "$release"
+}
+
+run_flash() {
+    local release=''
+    local target=''
+    local node=''
+    local dry_run=0
+
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            --release)
+                [[ "$#" -ge 2 ]] || die_usage '--release requires a path or release ID'
+                release="$2"
+                shift 2
+                ;;
+            --target)
+                [[ "$#" -ge 2 ]] || die_usage '--target requires stm32 or esp32'
+                target="$2"
+                shift 2
+                ;;
+            --node)
+                [[ "$#" -ge 2 ]] || die_usage '--node requires a name'
+                node="$2"
+                shift 2
+                ;;
+            --dry-run)
+                dry_run=1
+                shift
+                ;;
+            *)
+                die_usage "unknown flash option: $1"
+                ;;
+        esac
+    done
+
+    [[ -n "$release" ]] || die_usage 'flash requires --release PATH_OR_ID'
+    [[ -n "$node" ]] || die_usage 'flash requires --node NAME from boards.local.json'
+    case "$target" in
+        stm32|esp32) ;;
+        '') die_usage 'flash requires --target stm32|esp32' ;;
+        *) die_usage "unknown flash target: $target" ;;
+    esac
+    if [[ "$dry_run" -ne 1 ]]; then
+        printf '%s\n' 'error: hardware execution is intentionally unavailable; pass --dry-run to print a verified plan' >&2
+        exit 3
+    fi
+
+    local plan_args=(
+        "$RELEASE_TOOL" plan-flash
+        --firmware-root "$FIRMWARE_DIR"
+        --profile "$PROFILE"
+        --inventory "$INVENTORY"
+        --release "$release"
+        --target "$target"
+    )
+    if [[ -n "$node" ]]; then
+        plan_args+=(--node "$node")
+    fi
+    python3 "${plan_args[@]}"
+}
+
+command_name="${1:-help}"
+if [[ "$#" -gt 0 ]]; then
+    shift
+fi
+
+case "$command_name" in
+    help|-h|--help)
+        require_no_args "$@"
+        usage
+        ;;
+    doctor)
+        require_no_args "$@"
+        doctor
+        ;;
+    test)
+        run_test "$@"
+        ;;
+    build)
+        run_build "$@"
+        ;;
+    package)
+        run_package "$@"
+        ;;
+    verify)
+        run_verify "$@"
+        ;;
+    flash)
+        run_flash "$@"
+        ;;
+    *)
+        die_usage "unknown command: $command_name"
+        ;;
+esac

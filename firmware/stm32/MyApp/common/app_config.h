@@ -16,4 +16,26 @@
 #define FEATURE_BUTTON_OUTPUT_TEST 0
 #endif
 
+/* SSD1306 128x64 OLED를 I2C1(PB8/PB9)에서 갱신합니다. */
+#ifndef FEATURE_SSD1306_DISPLAY
+#define FEATURE_SSD1306_DISPLAY 1
+#endif
+
+/* DHT11을 PA1에서 읽어 로컬 OLED에 온도/습도를 표시합니다. */
+#ifndef FEATURE_DHT11_SENSOR
+#define FEATURE_DHT11_SENSOR 1
+#endif
+
+#ifndef SSD1306_I2C_ADDRESS
+#define SSD1306_I2C_ADDRESS 0x3CU
+#endif
+
+#ifndef DHT11_DATA_PORT
+#define DHT11_DATA_PORT GPIOA
+#endif
+
+#ifndef DHT11_DATA_PIN
+#define DHT11_DATA_PIN GPIO_PIN_1
+#endif
+
 #endif /* APP_CONFIG_H */

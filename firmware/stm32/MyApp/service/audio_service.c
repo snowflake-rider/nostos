@@ -1,5 +1,6 @@
 #include "audio_service.h"
 
+#include "calibration_completed_audio.h"
 #include "cheer_up_audio.h"
 #include "rear_warning_audio.h"
 #include "speed_down_request_audio.h"
@@ -55,10 +56,8 @@ static audio_asset_t audio_service_find_asset(message_type_t message)
     return asset;
 }
 
-vs1003b_status_t audio_service_play(message_type_t message)
+static vs1003b_status_t audio_service_play_asset(audio_asset_t asset)
 {
-    audio_asset_t asset = audio_service_find_asset(message);
-
     /* 음원이 없는 메시지는 정상적으로 무음 처리합니다. */
     if ((asset.data == NULL) || (asset.size == 0U))
     {
@@ -72,6 +71,20 @@ vs1003b_status_t audio_service_play(message_type_t message)
     }
 
     return vs1003b_play_start(asset.data, asset.size);
+}
+
+vs1003b_status_t audio_service_play(message_type_t message)
+{
+    return audio_service_play_asset(audio_service_find_asset(message));
+}
+
+vs1003b_status_t audio_service_play_calibration_completed(void)
+{
+    const audio_asset_t asset = {
+        .data = calibration_completed_audio_data,
+        .size = calibration_completed_audio_size,
+    };
+    return audio_service_play_asset(asset);
 }
 
 vs1003b_status_t audio_service_process(void)

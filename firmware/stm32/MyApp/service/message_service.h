@@ -26,6 +26,9 @@ void message_service_init(vs1003b_status_t initial_audio_status);
 /* 메시지 의미에 맞게 LED, 음성, 부저 출력을 요청합니다. */
 void message_service_handle(message_type_t message);
 
+/* 로컬 버튼은 오디오와 의미 색상을 함께 출력하고 UART 송신은 router가 담당합니다. */
+void message_service_handle_local(message_type_t message);
+
 /* 비차단 오디오 전송과 부저 종료 처리를 진행합니다. */
 void message_service_process(void);
 

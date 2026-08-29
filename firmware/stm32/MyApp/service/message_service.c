@@ -15,6 +15,7 @@ static message_service_status_t service_status = {
 };
 static message_type_t rear_state = MSG_NONE;
 static bool emergency_latched = false;
+static bool fall_buzzer_latched = false;
 
 static void message_service_play_audio(message_type_t message)
 {
@@ -30,6 +31,7 @@ void message_service_init(vs1003b_status_t initial_audio_status)
     buzzer_init();
     rear_state = MSG_NONE;
     emergency_latched = false;
+    fall_buzzer_latched = false;
 
     service_status.audio_status = initial_audio_status;
     service_status.audio_playing = audio_service_is_playing();
@@ -49,11 +51,16 @@ void message_service_handle(message_type_t message)
 
     if ((message == MSG_FALL_DETECTED) || (message == MSG_SOS))
     {
+        if ((message == MSG_FALL_DETECTED) && !fall_buzzer_latched)
+        {
+            fall_buzzer_latched = true;
+            buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
+        }
+
         if (!emergency_latched)
         {
             emergency_latched = true;
             alert_show(message);
-            buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
             message_service_play_audio(message);
         }
 
@@ -72,25 +79,33 @@ void message_service_handle(message_type_t message)
         {
             rear_state = MSG_REAR_SAFE;
             alert_show(message);
-
-            if (buzzer_get_pattern() == BUZZER_PATTERN_REAR_WARNING)
-            {
-                buzzer_stop();
-            }
         }
         else if (rear_state != MSG_REAR_WARNING)
         {
             rear_state = MSG_REAR_WARNING;
             alert_show(message);
-            buzzer_play_pattern(BUZZER_PATTERN_REAR_WARNING);
             message_service_play_audio(message);
         }
 
         return;
     }
 
-    /* 버튼 요청은 LED와 부저를 변경하지 않고 음성만 재생합니다. */
+    /* 원격 버튼 요청은 LED와 부저를 변경하지 않고 음성만 재생합니다. */
     message_service_play_audio(message);
+}
+
+void message_service_handle_local(message_type_t message)
+{
+    if ((message == MSG_SPEED_UP_REQUEST) ||
+        (message == MSG_SPEED_DOWN_REQUEST) ||
+        (message == MSG_STOP_REQUEST))
+    {
+        alert_show_local_button(message);
+        message_service_play_audio(message);
+        return;
+    }
+
+    message_service_handle(message);
 }
 
 void message_service_process(void)

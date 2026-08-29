@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "app.h"
 #include "app_config.h"
+#include "safety_service.h"
 #if FEATURE_BUTTON_OUTPUT_TEST
 #include "button_output_test.h"
 #endif
@@ -110,8 +111,8 @@ int main(void)
 #if FEATURE_BUTTON_OUTPUT_TEST
   button_output_test_init();
 #else
-  /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 진단 복사본. */
-  uart_service_set_tx_trace(&huart2);
+  /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 캘리브레이션 텍스트 로그. */
+  safety_service_set_log_uart(&huart2);
 #endif
   /* USER CODE END 2 */
 

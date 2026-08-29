@@ -28,6 +28,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 project(${CMAKE_PROJECT_NAME})
 option(NOSTOS_PROTOCOL_V2 "Use v2 endpoint; requires trusted boot/session provider" OFF)
 option(BUTTON_OUTPUT_TEST "Diagnostic button -> RGB -> VS1003B output mode" OFF)
+option(SSD1306_DISPLAY "Enable SSD1306 display on I2C1 PB8/PB9" ON)
+option(DHT11_SENSOR "Enable local DHT11 sampling on PA1" ON)
 if(BUTTON_OUTPUT_TEST AND NOSTOS_PROTOCOL_V2)
     message(FATAL_ERROR "BUTTON_OUTPUT_TEST currently exercises the legacy button message path; disable NOSTOS_PROTOCOL_V2")
 endif()
@@ -35,11 +37,23 @@ if(NOSTOS_PROTOCOL_V2)
     add_compile_definitions(NOSTOS_PROTOCOL_V2=1)
 endif()
 if(BUTTON_OUTPUT_TEST)
+    set(SSD1306_DISPLAY OFF)
+    set(DHT11_SENSOR OFF)
     add_compile_definitions(
         FEATURE_BUTTON_OUTPUT_TEST=1
         FEATURE_ULTRASONIC_SENSOR=0
         FEATURE_FALL_DETECTION=0
     )
+endif()
+if(SSD1306_DISPLAY)
+    add_compile_definitions(FEATURE_SSD1306_DISPLAY=1)
+else()
+    add_compile_definitions(FEATURE_SSD1306_DISPLAY=0)
+endif()
+if(DHT11_SENSOR)
+    add_compile_definitions(FEATURE_DHT11_SENSOR=1)
+else()
+    add_compile_definitions(FEATURE_DHT11_SENSOR=0)
 endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
@@ -69,11 +83,11 @@ file(GLOB_RECURSE MYAPP_SOURCES CONFIGURE_DEPENDS
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${MYAPP_SOURCES}
-    ../../libs/protocol/nostos_protocol.c
-    ../../libs/protocol/nostos_uart.c
-    ../../libs/protocol/nostos_state.c
-    ../../libs/protocol/nostos_endpoint.c
-    ../../libs/protocol/nostos_debug.c
+    ../protocol/nostos_protocol.c
+    ../protocol/nostos_uart.c
+    ../protocol/nostos_state.c
+    ../protocol/nostos_endpoint.c
+    ../protocol/nostos_debug.c
 )
 
 # Add include paths
@@ -84,7 +98,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     MyApp/common
     MyApp/hw
     MyApp/service
-    ../../libs/protocol
+    ../protocol
 )
 
 # Add project symbols (macros)

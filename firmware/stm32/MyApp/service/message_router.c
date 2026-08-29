@@ -21,7 +21,7 @@ HAL_StatusTypeDef message_router_publish_local(message_type_t message)
 
     ++local_message_count;
 #if !NOSTOS_PROTOCOL_V2
-    message_service_handle(message);
+    message_service_handle_local(message);
 #endif
     return uart_service_send_message(message);
 }

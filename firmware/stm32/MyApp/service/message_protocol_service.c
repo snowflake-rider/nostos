@@ -15,6 +15,21 @@ static volatile bool rx_overflow;
 static uint32_t next_incident=1;
 static message_protocol_stats_t stats;
 
+static bool unmuted_fall_is_active(void)
+{
+    for (size_t index = 0U; index < NOSTOS_INCIDENT_CAPACITY; ++index)
+    {
+        const nostos_incident_record_t *incident =
+            &endpoint.receiver.incidents[index];
+        if (incident->used && !incident->closed && !incident->muted &&
+            (incident->kind == NOSTOS_FALL))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 __attribute__((weak)) nostos_result_t message_protocol_service_boot(UART_HandleTypeDef *uart, vs1003b_status_t status)
 { (void)uart; (void)status; return NOSTOS_NOT_READY; }
 
@@ -41,9 +56,9 @@ static void apply_outputs(void *context, nostos_outputs_t outputs)
     else if (outputs.led==NOSTOS_LED_GREEN) alert_show(MSG_REAR_SAFE);
     else if (outputs.led==NOSTOS_LED_YELLOW_BLINK) alert_show(MSG_REAR_WARNING);
     else alert_show(MSG_FALL_DETECTED);
-    if (outputs.buzzer==NOSTOS_BUZZER_OFF) buzzer_stop();
-    else buzzer_play_pattern(outputs.buzzer==NOSTOS_BUZZER_EMERGENCY?
-        BUZZER_PATTERN_EMERGENCY:BUZZER_PATTERN_REAR_WARNING);
+    /* Prototype 정책: v2에서도 unmuted FALL만 부저를 허용합니다. */
+    if (unmuted_fall_is_active()) buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
+    else buzzer_stop();
 }
 static bool audio_ready(void *context)
 { (void)context; return audio_status==VS1003B_STATUS_OK && !audio_service_is_playing(); }

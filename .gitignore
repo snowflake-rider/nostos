@@ -44,5 +44,10 @@ dependencies.lock
 **/dist/
 *.tsbuildinfo
 
-# C3 reference example selects its target when configuring; this snapshot is generated.
-/experiments/examples/esp32c3/generic-onoff-node/sdkconfig
+# Local firmware packages and board inventory
+/firmware/out/
+/firmware/inventory/boards.local.json
+
+# Preserved local evidence and media from the pre-slim checkout
+/apps/mesh-console/logs/
+/docs/media/nostos-ride-signals/

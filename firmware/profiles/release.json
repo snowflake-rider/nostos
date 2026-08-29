@@ -1,0 +1,56 @@
+{
+  "schemaVersion": 1,
+  "profile": "release",
+  "status": "draft",
+  "versionFile": "VERSION",
+  "targets": {
+    "stm32": {
+      "chip": "STM32F411xC_xE",
+      "flashAddress": "0x08000000",
+      "buildPolicy": {
+        "generator": "Ninja",
+        "protocolV2": false,
+        "buttonOutputTest": false,
+        "ssd1306Display": true,
+        "dht11Sensor": true
+      },
+      "artifact": "stm32/build/Release/nostos_stm32.bin"
+    },
+    "esp32": {
+      "chip": "esp32s3",
+      "espIdf": "v5.5.5",
+      "defaultFlashMode": "application-only",
+      "partitionLayout": "single-factory-v1",
+      "flashOffsets": {
+        "bootloader": "0x0",
+        "partitionTable": "0x8000",
+        "application": "0x10000"
+      },
+      "buildPolicy": {
+        "protocolV2": false,
+        "flashMode": "dio",
+        "flashSize": "16MB",
+        "flashFrequency": "80m"
+      },
+      "artifacts": {
+        "bootloader": "esp32/build/bootloader/bootloader.bin",
+        "partitionTable": "esp32/build/partition_table/partition-table.bin",
+        "application": "esp32/build/nostos_esp32.bin",
+        "flasherArgs": "esp32/build/flasher_args.json"
+      }
+    }
+  },
+  "protocols": {
+    "uart": {
+      "version": 1,
+      "wireFormat": "single-byte-message-id"
+    },
+    "mesh": {
+      "version": 1,
+      "wireFormat": "version-byte-plus-message-id"
+    }
+  },
+  "package": {
+    "outputDirectory": "out/releases"
+  }
+}

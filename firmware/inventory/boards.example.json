@@ -1,0 +1,21 @@
+{
+  "schemaVersion": 1,
+  "devices": [
+    {
+      "id": "replace-with-local-name",
+      "target": "stm32",
+      "transport": "stlink",
+      "serial": "REPLACE_WITH_LOCAL_STLINK_SERIAL",
+      "enabled": false
+    },
+    {
+      "id": "replace-with-local-name",
+      "target": "esp32",
+      "transport": "serial",
+      "port": "REPLACE_WITH_LOCAL_SERIAL_PORT",
+      "partitionLayout": "single-factory-v1",
+      "partitionTableSha256": "REPLACE_WITH_VERIFIED_PARTITION_TABLE_SHA256",
+      "enabled": false
+    }
+  ]
+}

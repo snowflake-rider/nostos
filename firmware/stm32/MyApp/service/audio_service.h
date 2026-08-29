@@ -10,6 +10,9 @@
 /* 메시지에 대응하는 음원을 선택해 비차단 재생을 시작합니다. */
 vs1003b_status_t audio_service_play(message_type_t message);
 
+/* MPU6050 장착 자세 캘리브레이션 성공 안내 음원을 재생합니다. */
+vs1003b_status_t audio_service_play_calibration_completed(void);
+
 /* app_process()에서 반복 호출하여 오디오 데이터를 조금씩 전송합니다. */
 vs1003b_status_t audio_service_process(void);
 

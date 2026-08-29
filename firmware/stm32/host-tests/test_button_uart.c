@@ -116,20 +116,112 @@ static void wraparound_and_transport_failure(void)
     CHECK(uart_service_get_status() == HAL_TIMEOUT);
     CHECK(poll_after(1000U) == MSG_NONE && sent == 1U);
 }
-static void original_buttons_still_work(void)
+static message_type_t press_and_release(GPIO_TypeDef *port, uint16_t pin)
+{
+    port->input &= (uint16_t)~pin;
+    CHECK(poll_after(0U) == MSG_NONE);
+    message_type_t event = poll_after(30U);
+    port->input |= pin;
+    CHECK(poll_after(0U) == MSG_NONE);
+    CHECK(poll_after(30U) == MSG_NONE);
+    return event;
+}
+
+static void prototype_buttons_use_new_mapping(void)
+{
+    GPIO_TypeDef *ports[] = {GPIOB, GPIOB, GPIOA};
+    const uint16_t pins[] = {GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8};
+    const message_type_t events[] = {MSG_SPEED_UP_REQUEST,
+                                    MSG_SPEED_DOWN_REQUEST,
+                                    MSG_STOP_REQUEST};
+    const uint8_t bytes[] = {0x11U, 0x10U, 0x13U};
+    for (size_t i = 0U; i < 3U; ++i) {
+        reset_at(100U);
+        CHECK(press_and_release(ports[i], pins[i]) == events[i]);
+        CHECK(sent == 1U && last_byte == bytes[i]);
+        CHECK(!button_take_calibration_request());
+    }
+}
+
+static void btn4_alone_has_no_output(void)
+{
+    reset_at(100U);
+    CHECK(press_and_release(GPIOC, GPIO_PIN_7) == MSG_NONE);
+    CHECK(sent == 0U);
+    CHECK(!button_take_calibration_request());
+}
+
+static void calibration_sequence_is_local_and_one_shot(void)
 {
     GPIO_TypeDef *ports[] = {GPIOB, GPIOB, GPIOA, GPIOC};
-    const uint16_t pins[] = {GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8, GPIO_PIN_7};
-    const message_type_t events[] = {MSG_SPEED_DOWN_REQUEST, MSG_SPEED_UP_REQUEST,
-                                    MSG_SAFETY_REMINDER, MSG_STOP_REQUEST};
-    const uint8_t bytes[] = {0x10U, 0x11U, 0x12U, 0x13U};
-    for (size_t i = 0; i < 4U; ++i) {
-        reset_at(100U);
-        ports[i]->input &= (uint16_t)~pins[i];
-        CHECK(poll_after(0U) == MSG_NONE);
-        CHECK(poll_after(30U) == events[i]);
-        CHECK(sent == 1U && last_byte == bytes[i]);
+    const uint16_t pins[] = {
+        GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8, GPIO_PIN_7
+    };
+    const message_type_t events[] = {
+        MSG_SPEED_UP_REQUEST, MSG_SPEED_DOWN_REQUEST, MSG_STOP_REQUEST, MSG_NONE
+    };
+
+    reset_at(100U);
+    for (size_t i = 0U; i < 4U; ++i) {
+        CHECK(press_and_release(ports[i], pins[i]) == events[i]);
+        CHECK(button_take_calibration_request() == (i == 3U));
     }
+    CHECK(!button_take_calibration_request());
+    CHECK(sent == 3U && last_byte == 0x13U);
+
+    /* 디바운싱 시간 계산은 HAL tick wraparound에서도 유지됩니다. */
+    reset_at(UINT32_MAX - 100U);
+    for (size_t i = 0U; i < 4U; ++i) {
+        CHECK(press_and_release(ports[i], pins[i]) == events[i]);
+    }
+    CHECK(button_take_calibration_request());
+    CHECK(!button_take_calibration_request() && sent == 3U);
+}
+
+static void wrong_or_slow_sequence_is_rejected(void)
+{
+    reset_at(100U);
+    CHECK(press_and_release(GPIOB, GPIO_PIN_5) == MSG_SPEED_UP_REQUEST);
+    CHECK(press_and_release(GPIOA, GPIO_PIN_8) == MSG_STOP_REQUEST);
+    CHECK(press_and_release(GPIOB, GPIO_PIN_10) == MSG_SPEED_DOWN_REQUEST);
+    CHECK(press_and_release(GPIOC, GPIO_PIN_7) == MSG_NONE);
+    CHECK(!button_take_calibration_request());
+
+    reset_at(100U);
+    CHECK(press_and_release(GPIOB, GPIO_PIN_5) == MSG_SPEED_UP_REQUEST);
+    CHECK(poll_after(5000U) == MSG_NONE);
+    CHECK(press_and_release(GPIOB, GPIO_PIN_10) == MSG_SPEED_DOWN_REQUEST);
+    CHECK(press_and_release(GPIOA, GPIO_PIN_8) == MSG_STOP_REQUEST);
+    CHECK(press_and_release(GPIOC, GPIO_PIN_7) == MSG_NONE);
+    CHECK(!button_take_calibration_request());
+}
+
+static void simultaneous_buttons_are_not_a_sequence(void)
+{
+    GPIO_TypeDef *ports[] = {GPIOB, GPIOB, GPIOA, GPIOC};
+    const uint16_t pins[] = {
+        GPIO_PIN_5, GPIO_PIN_10, GPIO_PIN_8, GPIO_PIN_7
+    };
+
+    reset_at(100U);
+    for (size_t index = 0U; index < 4U; ++index) {
+        ports[index]->input &= (uint16_t)~pins[index];
+    }
+    CHECK(poll_after(0U) == MSG_NONE);
+    CHECK(poll_after(30U) == MSG_SPEED_UP_REQUEST);
+    CHECK(!button_take_calibration_request());
+
+    for (size_t index = 0U; index < 4U; ++index) {
+        ports[index]->input |= pins[index];
+    }
+    CHECK(poll_after(0U) == MSG_NONE);
+    CHECK(poll_after(30U) == MSG_NONE);
+
+    CHECK(press_and_release(GPIOB, GPIO_PIN_5) == MSG_SPEED_UP_REQUEST);
+    CHECK(press_and_release(GPIOB, GPIO_PIN_10) == MSG_SPEED_DOWN_REQUEST);
+    CHECK(press_and_release(GPIOA, GPIO_PIN_8) == MSG_STOP_REQUEST);
+    CHECK(press_and_release(GPIOC, GPIO_PIN_7) == MSG_NONE);
+    CHECK(button_take_calibration_request());
 }
 static void usb_trace_does_not_change_transport_result(void)
 {
@@ -156,10 +248,16 @@ int main(void)
     pb6_press_once();
     bounce_and_boot_held();
     wraparound_and_transport_failure();
-    original_buttons_still_work();
+    prototype_buttons_use_new_mapping();
+    btn4_alone_has_no_output();
+    calibration_sequence_is_local_and_one_shot();
+    wrong_or_slow_sequence_is_rejected();
+    simultaneous_buttons_are_not_a_sequence();
     usb_trace_does_not_change_transport_result();
     puts("PASS PB6 active-low: 29/30ms debounce, one 0x13 byte via selected UART, hold/release/repress");
-    puts("PASS bounce, boot-held suppression, tick wrap, transport failure, original four buttons");
+    puts("PASS BTN1=UP/0x11, BTN2=DOWN/0x10, BTN3=STOP/0x13, BTN4=no message");
+    puts("PASS BTN1->BTN2->BTN3->BTN4=one local calibration request within 5 seconds");
+    puts("PASS wrong/slow/simultaneous sequence rejection, bounce, boot-held, tick wrap, transport failure");
     puts("HARDWARE_PIN_ROUTING_AND_MESH=NOT_TESTED");
     return 0;
 }

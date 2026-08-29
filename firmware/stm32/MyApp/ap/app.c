@@ -1,6 +1,10 @@
 #include "app.h"
 
+#include "audio_service.h"
+#include "alert.h"
 #include "button.h"
+#include "display_service.h"
+#include "environment_service.h"
 #include "message_router.h"
 #include "message_service.h"
 #include "safety_service.h"
@@ -8,7 +12,6 @@
 #include "vs1003b.h"
 #if NOSTOS_PROTOCOL_V2
 #include "message_protocol_service.h"
-#include "audio_service.h"
 volatile nostos_result_t protocol_debug_boot_status=NOSTOS_NOT_READY;
 #endif
 
@@ -49,6 +52,14 @@ volatile float safety_debug_distance_cm = 0.0f;
 volatile safety_event_t safety_debug_event = SAFETY_EVENT_NONE;
 volatile fall_state_t safety_debug_fall_state = FALL_STATE_IDLE;
 volatile uint32_t safety_debug_countdown_seconds = 0U;
+volatile safety_calibration_state_t safety_debug_calibration_state =
+    SAFETY_CALIBRATION_UNCALIBRATED;
+volatile bool safety_debug_calibration_valid = false;
+volatile uint32_t safety_debug_calibration_samples = 0U;
+volatile bool safety_debug_calibration_request_accepted = false;
+volatile bool display_debug_ready = false;
+volatile bool environment_debug_valid = false;
+volatile uint32_t environment_debug_failure_count = 0U;
 
 void app_init(
     SPI_HandleTypeDef *vs1003b_spi,
@@ -119,11 +130,19 @@ void app_init(
 #endif
     message_router_init();
     safety_service_init(sensor_i2c);
+    environment_service_init();
+    display_service_init(sensor_i2c);
 }
 
 void app_process(void)
 {
     message_type_t message = button_get_message();
+
+    if (button_take_calibration_request())
+    {
+        safety_debug_calibration_request_accepted =
+            safety_service_start_calibration();
+    }
 
     if (message != MSG_NONE)
     {
@@ -150,6 +169,16 @@ void app_process(void)
     }
 
     safety_service_process();
+    environment_service_process();
+    display_service_process();
+    const safety_service_status_t *safety_status = safety_service_get_status();
+    alert_set_rear_safe_enabled(safety_status->calibration_valid);
+
+    if (!audio_service_is_playing() &&
+        safety_service_take_calibration_completed())
+    {
+        vs1003b_debug_status = audio_service_play_calibration_completed();
+    }
 #if NOSTOS_PROTOCOL_V2
     message_protocol_service_process();
     vs1003b_debug_audio_playing=audio_service_is_playing();
@@ -179,7 +208,6 @@ void app_process(void)
     message_router_debug_local_count = message_router_get_local_count();
     message_router_debug_remote_count = message_router_get_remote_count();
 
-    const safety_service_status_t *safety_status = safety_service_get_status();
     safety_debug_mpu_ready = safety_status->mpu_ready;
     safety_debug_mpu_data_valid = safety_status->mpu_data_valid;
     safety_debug_mpu_address = safety_status->mpu_address;
@@ -189,6 +217,12 @@ void app_process(void)
     safety_debug_event = safety_status->event;
     safety_debug_fall_state = safety_status->fall_state;
     safety_debug_countdown_seconds = safety_status->countdown_remaining_seconds;
+    safety_debug_calibration_state = safety_status->calibration_state;
+    safety_debug_calibration_valid = safety_status->calibration_valid;
+    safety_debug_calibration_samples = safety_status->calibration_sample_count;
+    display_debug_ready = display_service_is_ready();
+    environment_debug_valid = environment_service_data_valid();
+    environment_debug_failure_count = environment_service_failure_count();
 }
 
 message_type_t app_get_last_message(void)

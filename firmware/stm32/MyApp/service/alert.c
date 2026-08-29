@@ -5,13 +5,33 @@
 
 #define REAR_WARNING_BLINK_MS 500U
 #define EMERGENCY_BLINK_MS 200U
+#define LOCAL_BUTTON_COLOR_MS 2000U
 
 static alert_state_t alert_state = ALERT_STATE_OFF;
 static bool led_on = false;
 static uint32_t next_toggle_ms = 0U;
+static message_type_t local_button_color = MSG_NONE;
+static uint32_t local_button_color_until_ms = 0U;
+static bool rear_safe_enabled = false;
 
 static void alert_apply_output(void)
 {
+    if (local_button_color == MSG_SPEED_UP_REQUEST)
+    {
+        rgb_led_set(false, true, false);
+        return;
+    }
+    if (local_button_color == MSG_SPEED_DOWN_REQUEST)
+    {
+        rgb_led_set(true, true, false);
+        return;
+    }
+    if (local_button_color == MSG_STOP_REQUEST)
+    {
+        rgb_led_set(true, false, false);
+        return;
+    }
+
     if (!led_on)
     {
         rgb_led_off();
@@ -47,7 +67,14 @@ static void alert_select_state(alert_state_t state)
     }
 
     alert_state = state;
-    led_on = (state != ALERT_STATE_OFF);
+    led_on = ((state == ALERT_STATE_REAR_SAFE) && rear_safe_enabled) ||
+        (state == ALERT_STATE_REAR_WARNING) ||
+        (state == ALERT_STATE_EMERGENCY);
+
+    if (state == ALERT_STATE_EMERGENCY)
+    {
+        local_button_color = MSG_NONE;
+    }
 
     if (state == ALERT_STATE_REAR_WARNING)
     {
@@ -71,6 +98,24 @@ void alert_init(void)
     alert_state = ALERT_STATE_OFF;
     led_on = false;
     next_toggle_ms = 0U;
+    local_button_color = MSG_NONE;
+    local_button_color_until_ms = 0U;
+    rear_safe_enabled = false;
+}
+
+void alert_set_rear_safe_enabled(bool enabled)
+{
+    if (rear_safe_enabled == enabled)
+    {
+        return;
+    }
+
+    rear_safe_enabled = enabled;
+    if (alert_state == ALERT_STATE_REAR_SAFE)
+    {
+        led_on = enabled;
+        alert_apply_output();
+    }
 }
 
 void alert_show(message_type_t message)
@@ -101,8 +146,42 @@ void alert_show(message_type_t message)
     }
 }
 
+void alert_show_local_button(message_type_t message)
+{
+    if (alert_state == ALERT_STATE_EMERGENCY)
+    {
+        return;
+    }
+
+    if ((message != MSG_SPEED_UP_REQUEST) &&
+        (message != MSG_SPEED_DOWN_REQUEST) &&
+        (message != MSG_STOP_REQUEST))
+    {
+        return;
+    }
+
+    local_button_color = message;
+    local_button_color_until_ms = HAL_GetTick() + LOCAL_BUTTON_COLOR_MS;
+    alert_apply_output();
+}
+
 void alert_process(void)
 {
+    if (local_button_color != MSG_NONE)
+    {
+        if ((int32_t)(HAL_GetTick() - local_button_color_until_ms) < 0)
+        {
+            return;
+        }
+
+        local_button_color = MSG_NONE;
+        if (alert_state == ALERT_STATE_REAR_WARNING)
+        {
+            next_toggle_ms = HAL_GetTick() + REAR_WARNING_BLINK_MS;
+        }
+        alert_apply_output();
+    }
+
     uint32_t blink_period_ms = 0U;
 
     if (alert_state == ALERT_STATE_REAR_WARNING)

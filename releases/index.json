@@ -1,0 +1,12 @@
+{
+  "schemaVersion": 1,
+  "officialReleases": [],
+  "baselines": [
+    {
+      "id": "2026-08-29-v1",
+      "record": "baselines/2026-08-29-v1.json",
+      "official": false,
+      "status": "historical-validation-record"
+    }
+  ]
+}

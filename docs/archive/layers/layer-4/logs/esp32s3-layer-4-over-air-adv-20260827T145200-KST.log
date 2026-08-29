@@ -1,8 +1,0 @@
-STAGE=macos_corebluetooth_scan
-CORE_BLUETOOTH_SCAN=STARTED
-LAYER4_OVER_AIR name=ESP32-L4-B6 rssi=-38 service_match=false
-LAYER4_OVER_AIR name=ESP32-L4-B6 rssi=-38 service_match=true
-LAYER4_OVER_AIR_ADV=PASS
-ONE_BOARD_OVER_AIR_ADV=PASS
-PAIR_PEER_RX=NOT_VERIFIED
-LOG_FILE=/Users/kafka/Documents/Notion/esp-ble/layers/layer-4/logs/esp32s3-layer-4-over-air-adv-20260827T145200-KST.log

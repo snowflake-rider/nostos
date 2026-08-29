@@ -1,3 +1,0 @@
-received_at,raw_hex,flags,cumulative_wheel_revolutions,last_wheel_event_time,delta_revolutions,delta_ticks,wheel_circumference_mm,speed_kmh,kmh_x10,note
-2026-08-29T12:00:00.000+09:00,01100000000004,1,16,1024,,,2105,,,baseline
-2026-08-29T12:00:01.000+09:00,01110000000008,1,17,2048,1,1024,2105,7.578,76,example only

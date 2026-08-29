@@ -97,9 +97,11 @@ linear issue query --team KAF --project 136f4156-f63e-4013-b82b-98413c3ce340 --a
   스킬 목록에서 실제 `SKILL.md`를 찾아 읽는다. 단순 문서 수정에 모든 스킬을 로드하지 않는다.
 - 스킬이 목록에 없거나 읽을 수 없으면 이름과 제약을 알린다. 사용했다고 주장하거나
   임의로 설치·활성화하지 않는다. 필수 스킬을 사용할 수 없으면 사용자에게 진행 방식을 확인한다.
-- 프로젝트 구조·빌드·배선은 [README](README.md), [팀원 시작 안내](docs/getting-started/README.md),
-  대상 구성 요소의 문서와 실제 설정을 기준으로 확인한다. 스킬의 일반 예제로 SDK 버전,
-  핀, 메시지 ID, 센서 기본값을 바꾸지 않는다. ESP32 기능 확장은 `firmware/esp32/`를 기준으로 한다.
+- 프로젝트 구조·의존 방향·버전·릴리스 정책의 단일 기준은 [STRUCTURE.md](STRUCTURE.md)다.
+  사용법과 배선은 [README](README.md), `firmware/README.md`, 각 대상 README와 실제 설정을
+  기준으로 확인한다. 활성 소스는 `firmware/` 한 벌만 유지하고 과거 버전은 tag와 release
+  metadata로 보존한다. 구조 규칙을 이 문서에 중복 작성하지 않는다.
+  스킬의 일반 예제로 SDK 버전, 핀, 메시지 ID, 센서 기본값을 바꾸지 않는다.
 
 ### 영역별 선택
 
@@ -107,26 +109,46 @@ linear issue query --team KAF --project 136f4156-f63e-4013-b82b-98413c3ce340 --a
 | --- | --- | --- |
 | `firmware/stm32/` 펌웨어 | `embedded-systems` | HAL·주변장치·ISR·메모리·타이밍 |
 | `firmware/esp32/` 펌웨어 | `esp32-firmware-engineer` | ESP-IDF·FreeRTOS·UART·Bluetooth Mesh·런타임 진단 |
-| `libs/protocol/` 공통 C 코드 | `embedded-systems` | 메시지 계약·코덱·큐·경계 조건과 양쪽 펌웨어 영향 |
-| `apps/mesh-console/` React UI | `build-web-apps:react-best-practices`; 렌더링·상호작용 검증 시 `build-web-apps:frontend-testing-debugging` | React/Vite에 해당하는 규칙만 적용하며 Next.js 전용 규칙은 제외 |
-| `apps/ios-gps-mesh/` SwiftUI·비동기 코드 | UI는 `build-ios-apps:swiftui-ui-patterns`; 동시성은 `swift-concurrency-pro` | 화면·상태 소유권, Task·actor·취소·격리 |
+| `firmware/protocol/` 공통 C 코드 | `embedded-systems` | 메시지 계약·코덱·큐·경계 조건과 양쪽 펌웨어 영향 |
 
 ### 변경에 맞는 검증
 
-- 공통 프로토콜 또는 펌웨어 로직 변경은 루트의 `bash tools/test-host.sh`로 보드 없는 회귀
-  검사를 수행하고, 영향받는 STM32/ESP32 타깃 빌드를 각 구성 요소 문서에 따라 추가한다.
-- Mesh Console 변경은 앱 디렉터리의 `bash scripts/test.sh`를 사용한다. UI 변경은 가상 서버로
-  해당 사용자 흐름도 확인한다. React 스킬을 Python 서버 전체의 검증 절차로 대신하지 않는다.
-- iOS 변경은 관련 Swift 테스트와 Xcode 빌드를 수행하고, UI 변경은 해당 화면도 검증한다.
-  GPS·Bluetooth·백그라운드·잠금 동작은 별도의 실기 검증으로 구분한다.
+- 공통 프로토콜 또는 펌웨어 로직 변경은 루트에서 `bash firmware/tools/fw test`로 보드 없는 전체 회귀
+  검사를 수행한다.
+- STM32 영향이 있으면 `bash firmware/tools/fw build stm32`, ESP32 영향이 있으면 ESP-IDF v5.5.5
+  환경에서 `bash firmware/tools/fw build esp32`를 추가로 실행한다. 두 타깃 모두 영향받으면 각각 빌드한다.
+- `fw build`와 `fw test`는 Flash하지 않는다. Flash는 검증된 release package와 local inventory를
+  입력으로 사용하며 대상과 별도 승인을 확인한 뒤 `bash firmware/tools/fw flash ... --dry-run`부터 수행한다.
 - 문서만 변경하면 링크·경로·내용 일관성 등 변경에 맞는 검사를 한다. 실행 명령과 결과,
-  환경 제약으로 생략한 검사를 기록한다. 호스트 테스트·빌드·가상 UI 성공은 실물 동작 증거가 아니다.
+  환경 제약으로 생략한 검사를 기록한다. 호스트 테스트·빌드·read-back 성공은 센서·오디오·무선
+  다중 홉의 실물 동작 증거가 아니다.
+
+### 병렬 subagent 운영
+
+- 서로 의존하지 않는 두 개 이상의 구체적 작업으로 나눌 수 있으면 루트 에이전트는 Codex의
+  subagent/병렬 도구를 사용해 보통 2~3개 작업을 **동시에** 시작한다. 예: STM32와 ESP32의
+  분리된 조사, 서로 다른 디렉터리의 구현, 독립된 테스트·리뷰. 한 파일의 짧은 수정처럼
+  분할 비용이 더 큰 작업은 루트 에이전트가 직접 처리한다.
+- 시작 전에 각 subagent에 목적, 입력·선행 조건, 읽기/쓰기 허용 경로, 금지 범위,
+  완료 기준과 검증·보고 형식을 명시한다. 의미 있는 역할 이름을 쓰며 같은 조사나 구현을
+  여러 agent에게 중복 배정하지 않는다.
+- 독립 작업은 agent 하나의 완료를 기다린 뒤 다음 agent를 시작하지 않는다. 가능한 agent를
+  먼저 모두 실행하고, 루트 에이전트도 충돌하지 않는 통합 준비·검증을 진행한다. 의존 관계가
+  있는 단계는 선행 결과가 확인된 뒤 실행한다.
+- 한 파일에는 한 명의 writer만 둔다. `firmware/protocol/`의 메시지 계약과 공용 설정도 한 작업만
+  수정하고, 소비 측 작업은 합의된 계약을 입력으로 사용한다. 같은 범위의 읽기 전용 리뷰는
+  병렬로 할 수 있지만 수정은 루트 에이전트가 결과를 통합한 뒤 한 번만 적용한다.
+- 루트 에이전트가 Linear 쓰기와 사용자 진행 보고를 담당한다. 모든 agent 결과와 실제 diff를
+  회수·검토하고 통합 상태에서 필요한 테스트를 직접 확인한다. subagent의 완료 보고만으로
+  전체 작업을 완료 처리하거나 검증 성공을 주장하지 않는다.
+- agent 실패·중단 시 해당 작업을 재시도하거나 다른 agent에 재배정하고 나머지 독립 작업은
+  계속한다. 현재 런타임에서 subagent 기능을 사용할 수 없으면 그 제약을 알리고 순차 진행한다.
+  루트 에이전트가 명시적으로 위임하지 않은 nested subagent 생성은 허용하지 않는다.
 
 ### 공유 파일과 장비
 
-- 기본은 현재 작업에서 순차 진행한다. 병렬 에이전트 작업이 명시적으로 허용된 경우에도
-  먼저 파일 소유 범위와 인터페이스를 나눈다. `libs/protocol/`의 메시지 계약과 공용 설정은
-  한 작업만 수정하고, 소비 측 작업은 계약 합의 후 진행한다. 공용 빌드 출력도 동시에 덮어쓰지 않는다.
+- 공용 빌드 출력은 여러 agent가 동시에 덮어쓰지 않는다. agent별 임시 빌드 디렉터리를
+  사용하거나 통합 검증 단계에서 한 번만 빌드한다.
 - 같은 보드·시리얼 포트는 한 작업/프로세스만 사용한다. 기존 사용자를 확인하고 사용 순서를
   조율하며, 다른 모니터나 서버를 임의로 종료하지 않는다.
 - Flash·erase·reset·provisioning·Mesh 키 변경은 대상과 보존할 상태를 확인하고 명시적인

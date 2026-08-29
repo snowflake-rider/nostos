@@ -1,0 +1,84 @@
+{
+  "recordType": "historical-baseline",
+  "officialRelease": false,
+  "note": "Paths and hashes describe the pre-restructure checkout captured on 2026-08-29; this is not a reproducible release package.",
+  "version": "v1",
+  "layoutRevision": "root-v1-only",
+  "packageRevision": "display-dht11",
+  "packagedAt": "2026-08-29",
+  "baseCommit": "ecc715232ab588715b2ffced43d2df6dc917524d",
+  "sourceSnapshotsAtBaseCommit": {
+    "stm32": "firmware/stm32-layer2",
+    "esp32": "firmware/esp32",
+    "protocol": "libs/protocol"
+  },
+  "pathsAtCapture": {
+    "stm32": "stm32",
+    "esp32": "esp32",
+    "protocol": "protocol"
+  },
+  "defaults": {
+    "protocol": "v1-one-byte",
+    "stm32ProtocolV2": false,
+    "buttonOutputTest": false,
+    "ssd1306Display": true,
+    "dht11Sensor": true,
+    "esp32ProtocolV2": false
+  },
+  "stm32Image": {
+    "kind": "release-build",
+    "buildOutputPath": "stm32/build/Release/nostos_stm32.bin",
+    "artifactRetained": false,
+    "generator": "Unix Makefiles",
+    "flashAddress": "0x08000000",
+    "bytes": 137632,
+    "sha256": "ba6ea4918690b51562f4cfb31b8351d55d36f91597f838cd701f17581ab3e460",
+    "buildVerified": true,
+    "flashVerified": false,
+    "flashStatus": "not-flashed-after-root-relocation",
+    "verifiedStlinkDeviceCount": 0,
+    "deviceIdentifiersRetained": false
+  },
+  "deployedStm32Image": {
+    "kind": "release-build",
+    "bytes": 137632,
+    "sha256": "d76589510f81d40f09ac5a31a373481dca448e919d495a7a267f6620eaaf91b0",
+    "flashVerified": true,
+    "flashStatus": "written-readback-verified",
+    "verifiedStlinkDeviceCount": 3,
+    "deviceIdentifiersRetained": false
+  },
+  "earlierStm32Deployment": {
+    "bytes": 134980,
+    "sha256": "594092890103a958bbe42ceb3afea063a0a8023e5dc80b735f79b30dcbf53fa3",
+    "verifiedStlinkDeviceCount": 3,
+    "deviceIdentifiersRetained": false
+  },
+  "esp32Image": {
+    "kind": "release-build",
+    "buildOutputPath": "esp32/build/nostos_esp32.bin",
+    "artifactRetained": false,
+    "bytes": 915856,
+    "sha256": "f572aa9a4851e1cfb6eb41dd00a33df89e205611a7b66ae56cfd7796c8435a4f",
+    "appPartitionBytes": 1536000,
+    "freeBytes": 620144,
+    "projectVersion": "v1",
+    "reproducibleBuild": false,
+    "compileTimeDateEmbedded": true,
+    "buildVerified": true,
+    "flashVerified": false
+  },
+  "previousEsp32Build": {
+    "bytes": 915856,
+    "sha256": "36b9b2cee94e87db863ae07d636e71b254d8cfb253b7b75b05f1f2ab6cb9eaf8",
+    "reproducibleBuild": false,
+    "buildVerified": true,
+    "flashVerified": false
+  },
+  "targets": {
+    "stm32": "STM32F411xC_xE",
+    "esp32": "esp32s3",
+    "espIdf": "v5.5.5",
+    "uart": "115200-8N1"
+  }
+}

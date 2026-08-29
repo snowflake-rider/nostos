@@ -596,6 +596,12 @@ CONFIG_PARTITION_TABLE_MD5=y
 # end of Partition Table
 
 #
+# NOSTOS message protocol
+#
+# CONFIG_NOSTOS_PROTOCOL_V2 is not set
+# end of NOSTOS message protocol
+
+#
 # Compiler options
 #
 CONFIG_COMPILER_OPTIMIZATION_DEBUG=y
