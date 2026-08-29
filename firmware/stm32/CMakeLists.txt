@@ -62,6 +62,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ../../libs/protocol/nostos_uart.c
     ../../libs/protocol/nostos_state.c
     ../../libs/protocol/nostos_endpoint.c
+    ../../libs/protocol/nostos_debug.c
 )
 
 # Add include paths

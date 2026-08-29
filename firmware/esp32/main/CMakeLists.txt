@@ -7,5 +7,6 @@ idf_component_register(
          "../../../libs/protocol/event_protocol.c" "../../../libs/protocol/event_bridge.c"
          "../../../libs/protocol/nostos_protocol.c" "../../../libs/protocol/nostos_uart.c"
          "../../../libs/protocol/nostos_bridge.c"
+         "../../../libs/protocol/nostos_debug.c"
     INCLUDE_DIRS "." "../../../libs/protocol"
     REQUIRES bt nvs_flash esp_driver_uart esp_driver_gpio esp_timer example_init)

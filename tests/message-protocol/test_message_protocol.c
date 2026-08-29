@@ -1,4 +1,5 @@
 #include "nostos_bridge.h"
+#include "nostos_debug.h"
 #include "nostos_endpoint.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -411,6 +412,40 @@ static void fuzz(void)
     CHECK(feed_frame(&parser,frame,n,100001,out)==fixtures[0].length);
     puts("100000 deterministic malformed inputs and stream recovery PASS");
 }
+typedef struct { char lines[4][NOSTOS_HEXDUMP_LINE_CAPACITY]; size_t count; } debug_capture_t;
+static bool capture_debug_line(void *context, const char *line)
+{
+    debug_capture_t *capture=context;
+    CHECK(capture->count<COUNT(capture->lines));
+    CHECK(strlen(line)<sizeof(capture->lines[0]));
+    strcpy(capture->lines[capture->count++],line);
+    return true;
+}
+static bool reject_debug_line(void *context, const char *line)
+{
+    (void)context; (void)line; return false;
+}
+static void debug(void)
+{
+    nostos_message_t environment=message(NOSTOS_ENVIRONMENT,7);
+    environment.payload.environment=(nostos_environment_t){362,603,NOSTOS_VALID,NOSTOS_VALID};
+    uint8_t wire[NOSTOS_WIRE_MAX]; size_t length=encode(environment,wire);
+    debug_capture_t capture={0};
+    CHECK(capture.count==0); /* Encode has no implicit logging side effect. */
+    CHECK(nostos_debug_hexdump(wire,length,capture_debug_line,&capture)==NOSTOS_OK);
+    CHECK(capture.count==1);
+    CHECK(!strncmp(capture.lines[0],"0000  02 41 02 01 00 00 00 07 00 89 79 ",39));
+    CHECK(strstr(capture.lines[0],".A........y")!=NULL);
+    memset(wire,0x7e,sizeof(wire)); capture=(debug_capture_t){0};
+    CHECK(nostos_debug_hexdump(wire,sizeof(wire),capture_debug_line,&capture)==NOSTOS_OK);
+    CHECK(capture.count==4 && !strncmp(capture.lines[3],"0030  ",6));
+    CHECK(nostos_debug_hexdump(wire,1,reject_debug_line,NULL)==NOSTOS_IO_ERROR);
+    CHECK(nostos_debug_hexdump(NULL,1,capture_debug_line,&capture)==NOSTOS_BAD_ARGUMENT);
+    CHECK(nostos_debug_hexdump(wire,0,capture_debug_line,&capture)==NOSTOS_BAD_LENGTH);
+    CHECK(nostos_debug_hexdump(wire,NOSTOS_WIRE_MAX+1U,capture_debug_line,&capture)==NOSTOS_TOO_LARGE);
+    CHECK(nostos_debug_hexdump(wire,1,NULL,&capture)==NOSTOS_BAD_ARGUMENT);
+    puts("Opt-in bounded hexdump, no implicit logging, callback abort PASS");
+}
 int main(int argc, char **argv)
 {
     if(argc!=2) return 2;
@@ -420,6 +455,7 @@ int main(int argc, char **argv)
     else if(!strcmp(argv[1],"bridge")) bridge();
     else if(!strcmp(argv[1],"relay")) relay();
     else if(!strcmp(argv[1],"fuzz")) fuzz();
+    else if(!strcmp(argv[1],"debug")) debug();
     else return 2;
     return 0;
 }

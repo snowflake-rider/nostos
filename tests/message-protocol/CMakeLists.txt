@@ -8,7 +8,8 @@ find_package(Python3 REQUIRED COMPONENTS Interpreter)
 set(PROTOCOL "${CMAKE_CURRENT_SOURCE_DIR}/../../libs/protocol")
 add_library(nostos_protocol
     ${PROTOCOL}/nostos_protocol.c ${PROTOCOL}/nostos_uart.c
-    ${PROTOCOL}/nostos_bridge.c ${PROTOCOL}/nostos_state.c ${PROTOCOL}/nostos_endpoint.c)
+    ${PROTOCOL}/nostos_bridge.c ${PROTOCOL}/nostos_state.c ${PROTOCOL}/nostos_endpoint.c
+    ${PROTOCOL}/nostos_debug.c)
 target_include_directories(nostos_protocol PUBLIC ${PROTOCOL})
 target_compile_options(nostos_protocol PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 if(ENABLE_SANITIZERS)
@@ -26,7 +27,7 @@ target_include_directories(test_message_protocol PRIVATE "${CMAKE_CURRENT_BINARY
 target_link_libraries(test_message_protocol PRIVATE nostos_protocol)
 target_compile_options(test_message_protocol PRIVATE -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 enable_testing()
-foreach(suite codec uart state bridge relay fuzz)
+foreach(suite codec uart state bridge relay fuzz debug)
     add_test(NAME message_protocol_${suite} COMMAND test_message_protocol ${suite})
 endforeach()
 
