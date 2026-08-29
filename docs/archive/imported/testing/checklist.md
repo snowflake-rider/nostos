@@ -21,7 +21,7 @@
 - [x] 재등록 후 STM32→D6→Mesh→B6 전달 — 버튼 4 `0x13`의 B6 MESH_RX 및 UART_TX 로그 확인. 상대 STM32의 실제 수신/출력 판정은 아님.
 - [x] 사용자 4→3→2→1 조작 후 B6 누적 Mesh 수신 4건, UART 송신 accepted 4건, 관련 failed/invalid=0 확인. 3·2·1의 개별 ID 로그는 관찰기 종료 후라 미기록.
 - [ ] B6 재등록 후 반복 전달 안정성 — 첫 버튼 4는 76만 수신, B6 미수신. 후속 시험에서 B6 수신 회복; 첫 누락 원인 미확정.
-- [x] nRF Mesh Export `Nostos.json` 비공개 로컬 보관 — 원본과 복사본 일치, B6 `0006`/C001 설정 및 키 필드 포함 확인. Import 복원 시험은 별도. 저장 위치는 [설정 가이드](../../../hardware/nrf-mesh-setup.md)에 기록.
+- [x] nRF Mesh Export `Nostos.json` 비공개 로컬 보관 — 원본과 복사본 일치, B6 `0006`/C001 설정 및 키 필드 포함 확인. Import 복원 시험은 별도. 저장 위치는 [설정 가이드](../../../bluetooth-setting/nrf-mesh-setup.md)에 기록.
 
 D6·76·STM32에는 erase/flash/reset을 실행하지 않았다. 초기 설치 후 첫 관찰에서는
 USB 응답이 없었으나, B6에 esptool USB reset 절차를 적용한 뒤 위 부팅/상태를 확인했다.

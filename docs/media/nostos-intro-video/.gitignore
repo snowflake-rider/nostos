@@ -1,0 +1,9 @@
+node_modules
+dist
+.DS_Store
+.env
+
+# Keep only the reviewed deliverables. Ignore ad-hoc preview renders.
+out/*
+!out/nostos-intro.mp4
+!out/nostos-intro-cover.png

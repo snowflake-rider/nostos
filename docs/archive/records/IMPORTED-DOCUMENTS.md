@@ -57,7 +57,7 @@
 | `layers/layer-6/README.md` | [열기](../layers/layer-6/README.md) |
 | `layers/layer-6/logs/README.md` | [열기](../layers/layer-6/logs/README.md) |
 | `layers/layer-7/README.md` | [열기](../layers/layer-7/README.md) |
-| `layers/layer-8/B6_SETUP.md` | [열기](../../../firmware/esp32/docs/B6_SETUP.md) |
+| `layers/layer-8/B6_SETUP.md` | [열기](../../bluetooth-setting/B6_SETUP.md) |
 | `layers/layer-8/FAST_CHECK.md` | [열기](../../../firmware/esp32/docs/FAST_CHECK.md) |
 | `layers/layer-8/README.md` | [열기](../../../firmware/esp32/docs/layer8-background.md) |
 | `layers/layer-8/UART_DIAGNOSTICS.md` | [열기](../../../firmware/esp32/docs/UART_DIAGNOSTICS.md) |
@@ -96,7 +96,7 @@
 | `stm32-project/modules/03-communication/pico2/README.md` | [열기](../legacy-stm32/modules/03-communication/pico2/README.md) |
 | `stm32-project/modules/03-communication/stm32/README.md` | [열기](../legacy-stm32/modules/03-communication/stm32/README.md) |
 | `stm32-project/modules/README.md` | [열기](../legacy-stm32/modules/README.md) |
-| `verified/01-hardware-and-settings.md` | [열기](../../verification/01-hardware-and-settings.md) |
+| `verified/01-hardware-and-settings.md` | [열기](../../bluetooth-setting/01-hardware-and-settings.md) |
 | `verified/02-uart-periodic-test.md` | [열기](../../verification/02-uart-periodic-test.md) |
 | `verified/03-button-to-mesh-test.md` | [열기](../../verification/03-button-to-mesh-test.md) |
 | `verified/04-recovery-and-limits.md` | [열기](../../verification/04-recovery-and-limits.md) |

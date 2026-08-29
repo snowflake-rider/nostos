@@ -29,7 +29,7 @@ STM32 외부 PB6 버튼을 누르면 USART2 송신과 ST-LINK VCP 수신까지�
 근거:
 
 - [Layer 8 두 보드 설치·초기 상태](../../../firmware/esp32/docs/VERIFICATION.md)
-- [B6 AppKey/Publication 진단과 설정 절차](../../../firmware/esp32/docs/B6_SETUP.md)
+- [B6 AppKey/Publication 진단과 설정 절차](../../bluetooth-setting/B6_SETUP.md)
 - [STM32 버튼·USART2 실제 관찰 결과](../../verification/stm32-button-uart.md)
 - [현재 배선용 빠른 버튼 → Mesh 관찰 도구](../../../firmware/esp32/docs/FAST_CHECK.md)
 - [iPhone GPS Mesh 구현 검증 기록](../designs/plans/2026-08-28-iphone-gps-mesh-verification.md)

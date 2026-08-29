@@ -53,6 +53,17 @@ STM32 Release만 빌드합니다.
 bash firmware/v1/build.sh stm32
 ```
 
+연결된 STM32F411 세 대에 검증된 v1 이미지를 병렬 Flash하고 read-back까지 확인합니다.
+일반 macOS 터미널에서 실행하면 관리자 암호를 한 번 요청합니다.
+
+```sh
+bash firmware/v1/flash-stm32-all.sh
+```
+
+실제 write 없이 이미지와 대상만 확인하려면 `--dry-run`을 붙입니다. 이 스크립트는
+전체 chip erase, option byte/OTP, ESP32 NVS·Mesh 설정을 변경하지 않습니다.
+write를 다시 하지 않고 현재 Flash 내용만 read-back 검증·reset하려면 `--verify-only`를 붙입니다.
+
 ESP-IDF v5.5.5 환경을 활성화한 뒤 ESP32-S3를 빌드합니다.
 
 ```sh
@@ -72,6 +83,6 @@ bash firmware/v1/build.sh esp32
 
 2026-08-29 사용자가 두 조합에서 BTN1/2/3의 로컬 오디오와 상대 보드 오디오 재생을 확인했습니다. 이 기록은 버튼 UART/Mesh 전달 경로의 수동 확인이며, 장기 무선 안정성이나 실제 낙상 판정을 증명하지 않습니다.
 
-같은 날 STM32F411 세 대에 화면 이식 전 이미지 134,980바이트를 플래시했고, 세 read-back은 모두 SHA-256 `594092890103a958bbe42ceb3afea063a0a8023e5dc80b735f79b30dcbf53fa3`으로 일치했습니다. 현재 v1의 화면·DHT11 포함 137,632바이트 이미지는 빌드까지 완료했지만 macOS device-access 권한 때문에 write 시작 전에 중단되어 아직 보드에 들어가지 않았습니다. Flash byte 일치는 버튼·센서·오디오의 재부팅 후 실물 동작을 대신하지 않습니다.
+같은 날 STM32F411 세 대에 화면 이식 전 이미지 134,980바이트를 먼저 플래시한 뒤, 화면·DHT11 포함 현재 v1 이미지 137,632바이트를 세 대에 병렬 플래시했습니다. ST-LINK 시리얼 `066DFF485277504867161930`, `066DFF505567494867071811`, `066EFF3134584B3043121635`의 개별 read-back은 모두 SHA-256 `d76589510f81d40f09ac5a31a373481dca448e919d495a7a267f6620eaaf91b0` 및 byte-for-byte 비교가 일치했고 reset까지 성공했습니다. Flash byte 일치는 버튼·센서·오디오의 재부팅 후 실물 동작을 대신하지 않습니다.
 
 ESP32 Mesh 주소·NetKey·AppKey·Publication·Subscription은 각 보드 NVS에 따로 존재합니다. 이 디렉터리에는 Mesh 키, NVS/Flash 백업, 장치별 provisioning export를 포함하지 않습니다. 새 보드는 소스 Flash와 별도로 같은 Mesh 네트워크에 안전하게 provisioning해야 합니다.

@@ -214,7 +214,7 @@ D6의 당시 연결은 UART bridge였고 Layer 8 console은 native USB Serial/JT
 
 현재 NVS 백업 비교에서 EC76과 BAB6는 같은 NetKey를 사용했지만 활성 AppKey 1이 서로 달랐다. EC76은 후속 `status`에서 `event_ready=1`, BAB6는 `event_ready=0`, `pub=0x0000`, `sub_C001=1`이었다. 원인을 숨기기 위해 키나 NVS를 삭제하지 않고 두 노드에 하나의 공용 AppKey와 C001 Publication을 설정하는 절차를 분리해 기록했다.
 
-- [B6 AppKey/Publication 진단](../../firmware/esp32/docs/B6_SETUP.md)
+- [B6 AppKey/Publication 진단](../bluetooth-setting/B6_SETUP.md)
 
 ### STM32 버튼 관찰 — 11:57 KST
 

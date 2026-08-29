@@ -65,6 +65,16 @@ class FastCheckTest(unittest.TestCase):
             "76.MESH_RX": 1, "B6.MESH_RX": 1,
         })
 
+    def test_known_stm32_status_text_does_not_turn_button_path_into_noise(self):
+        rows = snapshot(0)
+        rows += [{"at": .5, "board": "STM32", "stm_text": "STATUS audio=OK playing=0 pos=16749 dreq=1 led=0 buzzer=0\r\n"}]
+        rows += [{"at": 1, "board": "STM32", "hex": "13"}] + path()
+        rows += [{"at": 2, "board": "STM32", "stm_text": "STATUS audio=OK playing=0 pos=16749 dreq=1 led=0 buzzer=0\r\n"}]
+        rows += end_snapshot(4.1) + [{"at": 4.2}]
+        result = [row for row in replay(rows) if row["kind"] == "result"][0]
+        self.assertEqual(result["verdict"], "PASS_OBSERVED")
+        self.assertFalse(any(issue.startswith("STM32_") for issue in result["issues"]))
+
     def test_configuration_change_during_trial_is_not_a_pass(self):
         rows = snapshot(0) + [{"at": 1, "board": "STM32", "hex": "13"}]
         rows += path()

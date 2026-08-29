@@ -33,7 +33,7 @@
 
 | 기록 | 내용 |
 | --- | --- |
-| [Layer 8 B6 진단](../../../firmware/esp32/docs/B6_SETUP.md) | AppKey 불일치와 Publication 상태를 NVS에서 비교하고, 기존 키를 삭제하지 않는 설정 절차 정리 |
+| [Layer 8 B6 진단](../../bluetooth-setting/B6_SETUP.md) | AppKey 불일치와 Publication 상태를 NVS에서 비교하고, 기존 키를 삭제하지 않는 설정 절차 정리 |
 | [Layer 8 빠른 버튼 → Mesh 검증](../../../firmware/esp32/docs/FAST_CHECK.md) | STM32·D6·76·B6 로그를 한 관찰 창에서 비교하는 읽기 전용 도구와 보수적 판정 기준 |
 | [STM32 버튼/UART 시험](../../verification/stm32-button-uart.md) | PB6 → USART2 → ST-LINK VCP까지 확인하고 외부 D1 → ESP32 구간을 미검증으로 분리 |
 | [STM32 Event bridge 검증](../legacy-stm32/integration/esp32-s3/VERIFICATION.md) | 공통 codec/queue, ESP32·STM32 build와 남은 실제 종단 간 시험 |

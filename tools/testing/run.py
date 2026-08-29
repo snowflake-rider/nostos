@@ -20,6 +20,8 @@ STAGES = {
     "protocol": "메시지·출력 회귀 (모의)",
     "stm32-debug": "STM32 Debug 전체 컴파일·링크",
     "stm32-release": "STM32 Release 전체 컴파일·링크",
+    "button-output": "버튼→RGB→MP3→VS1003B 독립 검사",
+    "case-tests": "ESP32 큐 단일·복합 케이스 (모의)",
     "esp32": "ESP32-S3 전체 컴파일·링크",
     "console": "Mesh Console 테스트·웹 빌드",
     "tui": "TUI 테스트·타입 검사",
@@ -140,6 +142,15 @@ def stage(key, out, env, timeout):
         target = "stm32-" + key.split("-")[1].title()
         commands = [["bash", str(ROOT / "tools/testing/build-target.sh"), target,
                      str(ROOT / "firmware/stm32"), str(out / key)]]
+    elif key == "button-output":
+        needed = ["cmake", "cc", "ninja", "arm-none-eabi-gcc",
+                  "arm-none-eabi-size", "arm-none-eabi-nm"]
+        env = dict(env, NOSTOS_BUTTON_OUTPUT_BUILD_DIR=str(out / "button-output-build"))
+        commands = [["bash", str(ROOT / "tests/button-output/run.sh"), "--all"]]
+    elif key == "case-tests":
+        needed = ["cmake", "cc"]
+        env = dict(env, NOSTOS_CASE_TEST_BUILD_DIR=str(out / "case-tests-build"))
+        commands = [["bash", str(ROOT / "tests/case-tests/run.sh"), "--all"]]
     elif key == "esp32":
         needed = ["cmake", "ninja"]
         if not (Path(env.get("ESP_IDF_PATH", "/nonexistent")) / "export.sh").is_file():
@@ -230,7 +241,7 @@ def main(argv=None):
     if args.stage == "list":
         for key, label in STAGES.items():
             print(f"{key:14} {label}")
-        print("code = USB 제외 전체 (protocol은 host에 포함) / logic = 코드 회귀 / stm32 = Debug+Release / apps = Console+TUI")
+        print("code = USB 제외 전체 (버튼 출력·큐 케이스 포함) / logic = 코드 회귀 / stm32 = Debug+Release / apps = Console+TUI")
         print("실물 송신은 별도: tests/mesh/README.md (--send 필수)")
         return 0
     keys = GROUPS.get(args.stage, (args.stage,))

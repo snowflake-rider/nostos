@@ -35,6 +35,7 @@ class Observer:
         self.last_stm = 0.0
         self.idle_reported = False
         self.last_warning = {}
+        self.stm_text = bytearray()
 
     def ready(self, now):
         addresses = []
@@ -65,29 +66,44 @@ class Observer:
 
     def stm(self, data, now):
         for byte in data:
-            self.last_stm, self.idle_reported = now, False
-            if byte != 0x13:
-                self.warning(f"STM32_UNEXPECTED_BYTE_0x{byte:02x}", now)
+            if byte == 0x13:
+                self._stm_event(now)
                 continue
-            if self.trial is None:
-                self.number += 1
-                self.trial = {
-                    "number": self.number, "start": now, "deadline": now + self.window,
-                    "counts": Counter({"STM32": 0, f"{self.source}.UART_RX": 0,
-                                       f"{self.source}.MESH_TX": 0,
-                                       **{f"{p}.MESH_RX": 0 for p in self.peers}}),
-                    "issues": set(), "baseline": {b: dict(s[0]) for b, s in self.stats.items()},
-                    "source_address": self.status.get(self.source, ({}, 0))[0].get("primary"),
-                    "requested": False,
-                }
-                if not self.ready(now):
-                    self.trial["issues"].add("NOT_READY_OR_STALE_BASELINE")
-                self.emit({"kind": "start", "number": self.number, "window": self.window})
-            elif now >= self.trial["deadline"]:
-                self.warning("PRESS_DURING_END_SNAPSHOT_REPEAT_TEST", now)
+            if byte == 0x0D:
                 continue
-            self.trial["counts"]["STM32"] += 1
-            self.emit({"kind": "stage", "stage": "STM32", "count": self.trial["counts"]["STM32"]})
+            if byte == 0x0A:
+                line = self.stm_text.decode("ascii", errors="replace")
+                self.stm_text.clear()
+                if line and not line.startswith(("STAU ", "STATUS audio=")):
+                    self.warning("STM32_UNEXPECTED_TEXT", now)
+                continue
+            if 0x20 <= byte <= 0x7E and len(self.stm_text) < 256:
+                self.stm_text.append(byte)
+                continue
+            self.stm_text.clear()
+            self.warning(f"STM32_UNEXPECTED_BYTE_0x{byte:02x}", now)
+
+    def _stm_event(self, now):
+        self.last_stm, self.idle_reported = now, False
+        if self.trial is None:
+            self.number += 1
+            self.trial = {
+                "number": self.number, "start": now, "deadline": now + self.window,
+                "counts": Counter({"STM32": 0, f"{self.source}.UART_RX": 0,
+                                   f"{self.source}.MESH_TX": 0,
+                                   **{f"{p}.MESH_RX": 0 for p in self.peers}}),
+                "issues": set(), "baseline": {b: dict(s[0]) for b, s in self.stats.items()},
+                "source_address": self.status.get(self.source, ({}, 0))[0].get("primary"),
+                "requested": False,
+            }
+            if not self.ready(now):
+                self.trial["issues"].add("NOT_READY_OR_STALE_BASELINE")
+            self.emit({"kind": "start", "number": self.number, "window": self.window})
+        elif now >= self.trial["deadline"]:
+            self.warning("PRESS_DURING_END_SNAPSHOT_REPEAT_TEST", now)
+            return
+        self.trial["counts"]["STM32"] += 1
+        self.emit({"kind": "stage", "stage": "STM32", "count": self.trial["counts"]["STM32"]})
 
     def line(self, board, raw, now):
         if board not in self.boards:
@@ -247,6 +263,10 @@ def run_replay(observer, filename):
                 if record.get("board") != "STM32":
                     raise ValueError("hex input is reserved for STM32")
                 observer.stm(bytes.fromhex(record["hex"]), now)
+            elif "stm_text" in record:
+                if record.get("board") != "STM32":
+                    raise ValueError("stm_text input is reserved for STM32")
+                observer.stm(record["stm_text"].encode("ascii"), now)
             elif "line" in record:
                 observer.line(record["board"], record["line"], now)
             observer.tick(now)
@@ -284,6 +304,7 @@ def run_live(observer, duration):
         for board in required:
             port = found[IDENTITIES[board]]
             device = stack.enter_context(NoControlSerial(port, 115200, timeout=0, write_timeout=.2, exclusive=True))
+            device.reset_input_buffer()
             devices[device], buffers[device] = board, bytearray()
             observer.emit({"kind": "connected", "board": board, "port": port})
         observer.emit({"kind": "notice", "text": "status 명령만 사용. 리셋/플래시/키 변경 없음. Ctrl-C 종료."})

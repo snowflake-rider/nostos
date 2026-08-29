@@ -22,9 +22,13 @@
     "bytes": 137632,
     "sha256": "d76589510f81d40f09ac5a31a373481dca448e919d495a7a267f6620eaaf91b0",
     "buildVerified": true,
-    "flashVerified": false,
-    "flashStatus": "not-written-macos-device-access",
-    "verifiedStlinkSerials": []
+    "flashVerified": true,
+    "flashStatus": "written-readback-verified",
+    "verifiedStlinkSerials": [
+      "066DFF485277504867161930",
+      "066DFF505567494867071811",
+      "066EFF3134584B3043121635"
+    ]
   },
   "previousStm32Deployment": {
     "bytes": 134980,

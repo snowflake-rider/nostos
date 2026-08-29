@@ -17,11 +17,15 @@ bash tests/run.sh
 | [04 ESP32](system/04-esp32/README.md) | ESP32-S3 전체 컴파일·링크 | `bash tests/run.sh esp32` |
 | [05 앱](system/05-apps/README.md) | Mesh Console/TUI 테스트·빌드 | `bash tests/run.sh apps` |
 | [06 USB](system/06-usb/README.md) | D6·76·B6 상태 조회, 기본 실행에서는 제외 | `bash tests/run.sh usb` |
+| [07 버튼 출력](system/07-button-output/README.md) | 버튼→RGB→MP3→VS1003B 진단 경로 | `bash tests/run.sh button-output` |
+| [08 큐 케이스](system/08-case-tests/README.md) | ESP32 큐 단일·복합 상황 모의 검사 | `bash tests/run.sh case-tests` |
 | [Mesh 01–04](mesh/README.md) | 준비 → 6회 송수신 → 반복 → Relay 비교 | 송신은 `--send` 필수 |
 
 각 단계 폴더의 `run.sh`로도 실행할 수 있습니다. 모든 명령은 저장소 루트 기준입니다.
 `bash tests/run.sh list`는 목록, `--json`은 자동화용 최종 JSON만 출력합니다.
 메시지/출력 검사는 코드 회귀에 이미 포함되어 중복 실행하지 않습니다. 그것만 보려면 `bash tests/run.sh protocol`.
+물리 버튼부터 코덱까지 한 경로로 확인하는 진단 검사는 `bash tests/run.sh button-output`입니다.
+큐의 단일 경계와 FALL 복합 상황은 `bash tests/run.sh case-tests`로 따로 반복할 수 있습니다.
 
 ## 결과 읽는 법
 
@@ -52,6 +56,11 @@ C001 이벤트 전달, 통제된 다중 홉, 장시간 RF 안정성은 자동 PA
 [배선 안내](../docs/hardware/wiring.md)와 [실물 검증 순서](../docs/getting-started/README.md)를 따라 별도 확인합니다.
 
 기존 [개발자 모의 검사](integration/README.md), `tools/test-host.sh`, 고급 Mesh 명령은 그대로 사용할 수 있습니다.
+
+## 큐 단일·복합 케이스
+
+[case-tests](case-tests/README.md): `01-single`과 `02-complex`로 나눠 실제 공통 C 큐 구현을
+Debug, Release, ASan/UBSan에서 검사합니다. 실물 Bluetooth/RF 검사는 포함하지 않습니다.
 
 ## v2 메시지 전체 검사
 

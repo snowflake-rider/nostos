@@ -19,6 +19,7 @@
 
 ## 필요할 때만 보기
 
+- [v1 → v2: ESP32·STM32 변경 요약](v1-to-v2.md)
 - [확인 질문의 답](answers.md)
 - [그림과 실제 코드 연결](code-map.md)
 - [전달·재생 조건과 검증 한계](delivery-and-limits.md)

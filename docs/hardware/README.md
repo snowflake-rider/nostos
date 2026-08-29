@@ -4,7 +4,7 @@
 
 - [팀 기준 배선](wiring.md)
 - [ESP32-S3 N16R8 핀](esp32-s3-pinout.md)
-- [nRF Mesh 설정·복구](nrf-mesh-setup.md)
+- [nRF Mesh 설정·복구](../bluetooth-setting/nrf-mesh-setup.md)
 - [Mesh 구성 설명](how-to-make-mesh-network.md)
 - [UART 읽기 전용 진단](../../firmware/esp32/docs/UART_DIAGNOSTICS.md)
 

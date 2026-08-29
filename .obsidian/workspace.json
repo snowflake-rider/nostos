@@ -1,0 +1,235 @@
+{
+  "main": {
+    "id": "4458c4468495747a",
+    "type": "split",
+    "children": [
+      {
+        "id": "ea3a35c45e7dff69",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "4799f45029c9d16d",
+            "type": "leaf",
+            "state": {
+              "type": "markdown",
+              "state": {
+                "file": "docs/architecture/message-protocol/02-one-message.md",
+                "mode": "source",
+                "source": false
+              },
+              "icon": "lucide-file",
+              "title": "02-one-message"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "vertical"
+  },
+  "left": {
+    "id": "a317dda4d0ddd6be",
+    "type": "split",
+    "children": [
+      {
+        "id": "fa8b8720a613eeb1",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "945168d94ef4aac2",
+            "type": "leaf",
+            "state": {
+              "type": "file-explorer",
+              "state": {
+                "sortOrder": "alphabetical",
+                "autoReveal": false
+              },
+              "icon": "lucide-folder-closed",
+              "title": "Files"
+            }
+          },
+          {
+            "id": "ba23ecceba41345c",
+            "type": "leaf",
+            "state": {
+              "type": "search",
+              "state": {
+                "query": "",
+                "matchingCase": false,
+                "explainSearch": false,
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical"
+              },
+              "icon": "lucide-search",
+              "title": "Search"
+            }
+          },
+          {
+            "id": "d77cb7ec1f69101c",
+            "type": "leaf",
+            "state": {
+              "type": "bookmarks",
+              "state": {},
+              "icon": "lucide-bookmark",
+              "title": "Bookmarks"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300
+  },
+  "right": {
+    "id": "3f3e93c4bd3f4498",
+    "type": "split",
+    "children": [
+      {
+        "id": "adfcdc8b6afef2d8",
+        "type": "tabs",
+        "children": [
+          {
+            "id": "62312961bc5bc1d3",
+            "type": "leaf",
+            "state": {
+              "type": "backlink",
+              "state": {
+                "file": "docs/architecture/message-protocol/02-one-message.md",
+                "collapseAll": false,
+                "extraContext": false,
+                "sortOrder": "alphabetical",
+                "showSearch": false,
+                "searchQuery": "",
+                "backlinkCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-coming-in",
+              "title": "Backlinks for 02-one-message"
+            }
+          },
+          {
+            "id": "9a1d05fc6319507a",
+            "type": "leaf",
+            "state": {
+              "type": "outgoing-link",
+              "state": {
+                "file": "docs/architecture/message-protocol/02-one-message.md",
+                "linksCollapsed": false,
+                "unlinkedCollapsed": true
+              },
+              "icon": "links-going-out",
+              "title": "Outgoing links from 02-one-message"
+            }
+          },
+          {
+            "id": "c229eff001420985",
+            "type": "leaf",
+            "state": {
+              "type": "tag",
+              "state": {
+                "sortOrder": "frequency",
+                "useHierarchy": true,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-tags",
+              "title": "Tags"
+            }
+          },
+          {
+            "id": "960656f77efa1b40",
+            "type": "leaf",
+            "state": {
+              "type": "all-properties",
+              "state": {
+                "sortOrder": "frequency",
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-archive",
+              "title": "All properties"
+            }
+          },
+          {
+            "id": "74d27a08c3f7296f",
+            "type": "leaf",
+            "state": {
+              "type": "outline",
+              "state": {
+                "file": "docs/architecture/message-protocol/02-one-message.md",
+                "followCursor": false,
+                "showSearch": false,
+                "searchQuery": ""
+              },
+              "icon": "lucide-list",
+              "title": "Outline of 02-one-message"
+            }
+          }
+        ]
+      }
+    ],
+    "direction": "horizontal",
+    "width": 300,
+    "collapsed": true
+  },
+  "left-ribbon": {
+    "hiddenItems": {
+      "switcher:Open quick switcher": false,
+      "graph:Open graph view": false,
+      "canvas:Create new canvas": false,
+      "daily-notes:Open today's daily note": false,
+      "templates:Insert template": false,
+      "command-palette:Open command palette": false,
+      "bases:Create new base": false
+    }
+  },
+  "active": "4799f45029c9d16d",
+  "lastOpenFiles": [
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/tasks.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/portable/xtensa/xtensa_overlay_os_hook.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/esp_additions/freertos_compatibility.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/stream_buffer.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/nvs_flash/CMakeFiles/__idf_nvs_flash.dir/src/nvs_partition_manager.cpp.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/nvs_flash/CMakeFiles/__idf_nvs_flash.dir/src/nvs_page.cpp.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/nvs_flash/CMakeFiles/__idf_nvs_flash.dir/src/nvs_types.cpp.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/nvs_flash/CMakeFiles/__idf_nvs_flash.dir/src/nvs_encrypted_partition.cpp.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/portable/xtensa/xtensa_init.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/event_groups.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-build/esp-idf/freertos/CMakeFiles/__idf_freertos.dir/FreeRTOS-Kernel/timers.c.obj",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/layer8-ridar/README.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/docs/layer8-background.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/docs/VERIFICATION.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/docs/UART_DIAGNOSTICS.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/docs/FAST_CHECK.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/libs/protocol/V2.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/libs/protocol/README.md",
+    "build/test-results/20260829-194940-hirrevmr/esp32-source/firmware/esp32/README.md",
+    "build/linear-comments/kaf-396-three-stm32-v1-flash-complete.md",
+    "build/linear-comments/kaf-396-three-stm32-v1-flash-start.md",
+    "build/linear-comments/kaf-396-three-stm32-flash-compare.md",
+    "firmware/v1/README.md",
+    "firmware/v1/protocol/V2.md",
+    "firmware/v1/protocol/README.md",
+    "firmware/v1/esp32/docs/layer8-background.md",
+    "firmware/v1/esp32/docs/VERIFICATION.md",
+    "firmware/v1/esp32/docs/UART_DIAGNOSTICS.md",
+    "firmware/v1/esp32/docs/FAST_CHECK.md",
+    "firmware/v1/esp32/docs/B6_SETUP.md",
+    "firmware/v1/esp32/README.md",
+    "firmware/v1/stm32/README.md",
+    "build/linear-comments/kaf-396-v1-start.md",
+    "tests/remote-audio/README.md",
+    "tmp/linear/nostos-video-final.md",
+    "docs/media/nostos-intro-video/out/nostos-intro-cover.png",
+    "docs/media/nostos-intro-video/out/previews/font-check-system.png",
+    "docs/media/nostos-intro-video/out/previews/font-check.png",
+    "docs/media/nostos-intro-video/node_modules/@remotion/google-fonts/README.md",
+    "docs/media/nostos-intro-video/out/previews/contact-sheet.png",
+    "docs/media/nostos-intro-video/out/previews/frame-450.png",
+    "docs/media/nostos-intro-video/out/previews/frame-240.png",
+    "docs/media/nostos-intro-video/out/previews/frame-650.png",
+    "docs/media/nostos-intro-video/out/previews/frame-830.png",
+    "docs/media/nostos-intro-video/out/previews/frame-990.png",
+    "docs/media/nostos-intro-video/out/previews/frame-75.png"
+  ]
+}

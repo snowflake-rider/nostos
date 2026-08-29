@@ -30,7 +30,7 @@
 
 | 문서 | 내용 |
 | --- | --- |
-| [01. 보드·배선·설정](01-hardware-and-settings.md) | 검증 당시 핀, 버튼, UART, Mesh 주소 |
+| [01. 보드·배선·설정](../bluetooth-setting/01-hardware-and-settings.md) | 검증 당시 핀, 버튼, UART, Mesh 주소 |
 | [02. UART 단독 10/10](02-uart-periodic-test.md) | 버튼을 제외한 전달 시험과 성공 조건 |
 | [03. 버튼 → Mesh 3/3](03-button-to-mesh-test.md) | 실제 누름과 두 ESP32의 로그 대응 |
 | [04. 복구·남은 문제](04-recovery-and-limits.md) | 원래 상태 복구, 재부팅 시 수신 정체, 미검증 항목 |
