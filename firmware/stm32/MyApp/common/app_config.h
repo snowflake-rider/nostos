@@ -11,4 +11,14 @@
 #define FEATURE_FALL_DETECTION 1
 #endif
 
+/* 현재 실물 STM32는 primary 0x0005인 D6/source2의 UART에 연결됩니다. */
+#ifndef NOSTOS_V2_LOCAL_SOURCE
+#define NOSTOS_V2_LOCAL_SOURCE 2U
+#endif
+
+/* 모든 STM32가 함께 변경되는 명시적 배포 epoch입니다. 자동 승인 값이 아닙니다. */
+#ifndef NOSTOS_V2_DEPLOYMENT_SESSION
+#define NOSTOS_V2_DEPLOYMENT_SESSION 1U
+#endif
+
 #endif /* APP_CONFIG_H */

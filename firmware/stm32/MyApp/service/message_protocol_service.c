@@ -2,6 +2,7 @@
 #include "alert.h"
 #include "audio_service.h"
 #include "buzzer.h"
+#include <string.h>
 
 static nostos_endpoint_t endpoint;
 static UART_HandleTypeDef *data_uart;
@@ -17,6 +18,15 @@ static message_protocol_stats_t stats;
 
 __attribute__((weak)) nostos_result_t message_protocol_service_boot(UART_HandleTypeDef *uart, vs1003b_status_t status)
 { (void)uart; (void)status; return NOSTOS_NOT_READY; }
+__attribute__((weak)) nostos_result_t message_protocol_service_checkpoint_commit(
+    const message_protocol_checkpoint_t *checkpoint)
+{
+    /* Host-only service tests may initialize the endpoint directly. Production
+     * v2 builds replace this hook with the flash-backed implementation below;
+     * the weak boot hook still refuses a target boot without that provider. */
+    (void)checkpoint;
+    return NOSTOS_OK;
+}
 
 void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms)
 {
@@ -71,14 +81,73 @@ nostos_result_t message_protocol_service_init(UART_HandleTypeDef *uart,
 }
 nostos_endpoint_t *message_protocol_service_endpoint(void) { return initialized?&endpoint:NULL; }
 const message_protocol_stats_t *message_protocol_service_stats(void) { return &stats; }
+void message_protocol_service_shutdown(void)
+{
+    uint32_t mask=__get_PRIMASK(); __disable_irq();
+    initialized=false; rx_head=0; rx_tail=0; rx_overflow=false;
+    __set_PRIMASK(mask);
+}
+nostos_result_t message_protocol_service_checkpoint(message_protocol_checkpoint_t *checkpoint)
+{
+    if(!initialized || !checkpoint) return NOSTOS_NOT_READY;
+    *checkpoint=(message_protocol_checkpoint_t){
+        .source_id=endpoint.sender.source_id,
+        .session_id=endpoint.sender.session_id,
+        .next_sequence=endpoint.sender.next_sequence,
+        .next_incident=next_incident,
+    };
+    memcpy(checkpoint->windows,endpoint.receiver.windows,sizeof(checkpoint->windows));
+    memcpy(checkpoint->incidents,endpoint.receiver.incidents,sizeof(checkpoint->incidents));
+    return NOSTOS_OK;
+}
+static void reconstruct_incidents(nostos_receiver_t *receiver)
+{
+    for(size_t i=0;i<NOSTOS_INCIDENT_CAPACITY;++i) {
+        const nostos_incident_record_t *record=&receiver->incidents[i];
+        if(!record->used) continue;
+        nostos_incident_state_t *state=record->kind==NOSTOS_FALL?
+            &receiver->shared_data.nodes[record->source_id-1U].fall:
+            &receiver->shared_data.nodes[record->source_id-1U].sos;
+        if(state->phase==NOSTOS_INCIDENT_UNSEEN || record->ref.session_id>state->incident.session_id ||
+            (record->ref.session_id==state->incident.session_id &&
+             record->ref.incident_id>=state->incident.incident_id)) {
+            state->incident=record->ref;
+            state->phase=record->closed?NOSTOS_INCIDENT_CLOSED:NOSTOS_INCIDENT_ACTIVE;
+        }
+    }
+}
+nostos_result_t message_protocol_service_restore(UART_HandleTypeDef *uart,
+    vs1003b_status_t status, const message_protocol_checkpoint_t *checkpoint)
+{
+    if(!message_protocol_checkpoint_valid(checkpoint)) return NOSTOS_BAD_VALUE;
+    nostos_result_t result=message_protocol_service_init(
+        uart,checkpoint->source_id,checkpoint->session_id,status);
+    if(result!=NOSTOS_OK) return result;
+    endpoint.sender.next_sequence=checkpoint->next_sequence;
+    memcpy(endpoint.receiver.windows,checkpoint->windows,sizeof(checkpoint->windows));
+    memcpy(endpoint.receiver.incidents,checkpoint->incidents,sizeof(checkpoint->incidents));
+    next_incident=checkpoint->next_incident;
+    reconstruct_incidents(&endpoint.receiver);
+    return NOSTOS_OK;
+}
+static nostos_result_t persist_current(void)
+{
+    message_protocol_checkpoint_t checkpoint;
+    nostos_result_t result=message_protocol_service_checkpoint(&checkpoint);
+    return result==NOSTOS_OK?message_protocol_service_checkpoint_commit(&checkpoint):result;
+}
 nostos_result_t message_protocol_service_receive(uint8_t byte, uint32_t received_ms)
 {
     nostos_result_t r=initialized?nostos_endpoint_uart_byte(&endpoint,byte,received_ms):NOSTOS_NOT_READY;
     if(r!=NOSTOS_EMPTY) {
+        if(r==NOSTOS_OK) {
+            ++stats.received;
+            nostos_result_t saved=persist_current();
+            if(saved!=NOSTOS_OK) { message_protocol_service_shutdown(); r=NOSTOS_IO_ERROR; }
+        }
         stats.last_result=r;
-        if(r==NOSTOS_OK) ++stats.received;
-        else if(r==NOSTOS_DUPLICATE) ++stats.duplicates;
-        else ++stats.rejected;
+        if(r==NOSTOS_DUPLICATE) ++stats.duplicates;
+        else if(r!=NOSTOS_OK) ++stats.rejected;
     }
     return r;
 }
@@ -99,7 +168,9 @@ void message_protocol_service_process(void)
         rx_tail=(rx_tail+1U)%RX_CAPACITY;
         __set_PRIMASK(mask);
         (void)message_protocol_service_receive(byte,received_ms);
+        if(!initialized) break;
     }
+    if(!initialized) return;
     nostos_endpoint_process(&endpoint,HAL_GetTick());
     if(audio_status==VS1003B_STATUS_OK) audio_status=audio_service_process();
     alert_process(); buzzer_process();
@@ -119,5 +190,17 @@ nostos_result_t message_protocol_service_publish_event(uint8_t type)
         m.payload.incident=incident->incident;
     } else if(!((type>=NOSTOS_SPEED_DOWN && type<=NOSTOS_STOP) ||
         type==NOSTOS_REAR_SAFE || type==NOSTOS_REAR_WARNING || type==NOSTOS_REAR_UNKNOWN)) return NOSTOS_BAD_VALUE;
-    return nostos_endpoint_publish(&endpoint,&m,HAL_GetTick());
+    if(endpoint.sender.next_sequence>UINT16_MAX) return NOSTOS_EXHAUSTED;
+    /* Reserve the sequence durably before any physical UART write. A reset may
+     * skip one sequence, but can never reuse an already transmitted value. */
+    message_protocol_checkpoint_t reserved;
+    nostos_result_t result=message_protocol_service_checkpoint(&reserved);
+    if(result!=NOSTOS_OK) return result;
+    ++reserved.next_sequence;
+    result=message_protocol_service_checkpoint_commit(&reserved);
+    if(result!=NOSTOS_OK) return result;
+    result=nostos_endpoint_publish(&endpoint,&m,HAL_GetTick());
+    nostos_result_t saved=persist_current();
+    if(saved!=NOSTOS_OK) { message_protocol_service_shutdown(); return NOSTOS_IO_ERROR; }
+    return result;
 }

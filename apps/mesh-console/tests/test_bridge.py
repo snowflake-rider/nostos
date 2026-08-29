@@ -45,6 +45,13 @@ def test_decoder_fragmented_utf8_crlf_ansi_and_bound():
     ("I (20) X: MESH_TX id=1 source=2 api=accepted", "MESH TX", "info"),
     ("I (20) X: MESH_RX source=2 id=1 result=queued", "MESH RX", "info"),
     ("I (20) X: UART_TX id=1 source=2 api=accepted", "UART TX", "info"),
+    ("I (20) NOSTOS_V2: UART_RX type=0x13 source=2 len=9 result=OK", "UART RX", "info"),
+    ("I (20) NOSTOS_V2: MESH_TX type=0x13 source=2 len=9 result=OK api=accepted", "MESH TX", "info"),
+    ("I (20) NOSTOS_V2: MESH_RX type=0x13 source=1 address=0x0003 len=9 result=OK", "MESH RX", "info"),
+    ("I (20) NOSTOS_V2: UART_TX type=0x13 source=1 len=9 result=OK api=accepted", "UART TX", "info"),
+    ("I (20) NOSTOS_V2: UART_RX type=0x13 source=2 len=9 result=FULL", "ERROR", "error"),
+    ("I (20) NOSTOS_V2: MESH_RX type=0x13 source=1 address=0x0003 len=9 result=UNAUTHORIZED", "ERROR", "error"),
+    ("I (20) NOSTOS_V2: UART_TX type=0x13 source=1 len=9 result=OK api=failed", "ERROR", "error"),
     ("E (20) X: failure", "ERROR", "error"),
     ("I (20) X: MESH_TX id=1 api=failed", "ERROR", "error"),
     ("W (20) X: warning", "OTHER", "warning"),
@@ -197,9 +204,13 @@ def test_port_configuration_never_calls_modem_control():
 def test_message_interpretation_matches_c_contract_and_preserves_outcome():
     contract = (Path(__file__).resolve().parents[3] / "libs/protocol/message_type.h").read_text()
     ids = {name: int(value, 16) for name, value in re.findall(r"(MSG_\w+)\s*=\s*(0x[\dA-Fa-f]+)", contract)}
-    assert set(EVENT_NAMES) == {value for name, value in ids.items() if name not in {"MSG_NONE", "MSG_UNKNOWN"}}
+    v2_contract = (Path(__file__).resolve().parents[3] / "libs/protocol/nostos_protocol.h").read_text()
+    v2_ids = {name: int(value, 16) for name, value in re.findall(r"(NOSTOS_\w+)\s*=\s*(0x[\dA-Fa-f]+)", v2_contract)}
+    expected = {value for name, value in ids.items() if name not in {"MSG_NONE", "MSG_UNKNOWN"}}
+    expected.update(v2_ids.values())
+    assert set(EVENT_NAMES) == expected
     for event_id, (symbol, label) in EVENT_NAMES.items():
-        assert ids[symbol] == event_id
+        assert ids.get(symbol, v2_ids.get(symbol)) == event_id
         for marker in ("UART_RX", "MESH_TX", "MESH_RX", "UART_TX"):
             text = f"I (100) LAYER_8_UART: {marker} source=0x0003 id=0x{event_id:02x} api=failed"
             parsed = parse_line(text)
@@ -208,6 +219,14 @@ def test_message_interpretation_matches_c_contract_and_preserves_outcome():
             assert parsed["event"]["result"] == "failed"
             assert parsed["category"] == "ERROR"  # Interpretation is not success.
     assert parse_line("MESH_RX source=3 id=0x99 result=queued")["event"]["known"] is False
+    v2=parse_line("I (100) NOSTOS_V2: MESH_RX type=0x13 source=1 address=0x0003 len=9 result=OK")
+    assert v2["event"]["hex"] == "0x13"
+    assert v2["event"]["source"] == "1"
+    assert v2["event"]["result"] == "OK"
+    assert v2["category"] == "MESH RX"
+    final_failure=parse_line("I (100) NOSTOS_V2: UART_TX type=0x51 source=1 len=18 result=OK api=failed")
+    assert final_failure["event"]["result"] == "failed"
+    assert final_failure["category"] == "ERROR"
     for text in ["STATUS id=0x13", "free text id=0x13", "MESH_TX id=0x130", "MESH_TX id=256", "MESH_TX id=0x13junk"]:
         assert parse_line(text)["event"] is None
     assert parse_line("ONOFF_RX src=0x0005 value=1")["category"] == "ONOFF RX"

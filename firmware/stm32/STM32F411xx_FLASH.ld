@@ -7,7 +7,9 @@
 **  Author		: STM32CubeMX
 **
 **  Abstract    : Linker script for STM32F411RETx series
-**                512Kbytes FLASH and 128Kbytes RAM
+**                256Kbytes application FLASH and 128Kbytes RAM
+**                Sectors 6-7 (0x08040000-0x0807FFFF) are reserved for the
+**                dual-sector NOSTOS v2 checkpoint journal.
 **
 **                Set heap size, stack size and stack location according
 **                to application requirements.
@@ -56,7 +58,7 @@ ENTRY(Reset_Handler)
 MEMORY
 {
 RAM (xrw)      : ORIGIN = 0x20000000, LENGTH = 128K
-FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 512K
+FLASH (rx)      : ORIGIN = 0x8000000, LENGTH = 256K
 }
 
 /* Highest address of the user mode stack */

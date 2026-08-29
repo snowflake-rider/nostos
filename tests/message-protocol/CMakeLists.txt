@@ -38,6 +38,7 @@ add_executable(test_stm32_outputs test_stm32_outputs.c
     ${STM32}/MyApp/service/uart_service.c
     ${STM32}/MyApp/service/message_router.c ${STM32}/MyApp/service/safety_service.c
     ${STM32}/MyApp/service/safety_detector.c
+    ${STM32}/MyApp/service/message_protocol_checkpoint.c
     ${STM32}/MyApp/service/message_protocol_service.c
     ${STM32}/MyApp/service/alert.c ${STM32}/MyApp/service/audio_service.c
     ${STM32}/MyApp/hw/rgb_led.c ${STM32}/MyApp/hw/buzzer.c ${STM32}/MyApp/hw/vs1003b.c
@@ -50,6 +51,16 @@ target_link_libraries(test_stm32_outputs PRIVATE nostos_protocol)
 target_compile_options(test_stm32_outputs PRIVATE -Wall -Wextra -Wpedantic -Werror)
 target_compile_definitions(test_stm32_outputs PRIVATE NOSTOS_PROTOCOL_V2=1)
 add_test(NAME message_protocol_stm32_outputs COMMAND test_stm32_outputs)
+add_executable(test_checkpoint_flash test_checkpoint_flash.c
+    ${STM32}/MyApp/service/message_protocol_checkpoint.c
+    ${STM32}/MyApp/service/protocol_checkpoint_flash.c)
+target_include_directories(test_checkpoint_flash PRIVATE fakes ${STM32}/Core/Inc
+    ${STM32}/MyApp/service ${STM32}/MyApp/hw ${STM32}/MyApp/common)
+target_link_libraries(test_checkpoint_flash PRIVATE nostos_protocol)
+target_compile_options(test_checkpoint_flash PRIVATE -Wall -Wextra -Wpedantic -Werror)
+target_compile_definitions(test_checkpoint_flash PRIVATE
+    NOSTOS_PROTOCOL_V2=1 NOSTOS_CHECKPOINT_HOST_TEST=1)
+add_test(NAME message_protocol_checkpoint_flash COMMAND test_checkpoint_flash)
 add_executable(test_esp32_runtime test_esp32_runtime.c)
 add_dependencies(test_esp32_runtime message_protocol_fixtures)
 target_include_directories(test_esp32_runtime PRIVATE fakes ../../firmware/esp32/main "${CMAKE_CURRENT_BINARY_DIR}")

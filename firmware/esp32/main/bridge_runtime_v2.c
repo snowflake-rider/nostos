@@ -66,6 +66,10 @@ static nostos_result_t process_one(void)
     ESP_LOGI(TAG,"%s type=0x%02x source=%u len=%u result=%s api=%s",
         job.direction==NOSTOS_TO_MESH?"MESH_TX":"UART_TX",job.wire[1],job.wire[2],
         (unsigned)job.length,nostos_result_name(r),sent?"accepted":"failed");
+    /* STM32 persists every accepted v2 frame before applying it.  Pace only
+       successful UART jobs so ordinary bursts do not outrun that boundary. */
+    if(r==NOSTOS_OK && sent && job.direction==NOSTOS_TO_UART)
+        vTaskDelay(pdMS_TO_TICKS(20));
     return r==NOSTOS_OK && !sent?NOSTOS_IO_ERROR:r;
 }
 static void worker_task(void *arg)
@@ -84,7 +88,15 @@ static nostos_result_t consume_uart_byte(uint8_t byte)
 {
     uint8_t wire[NOSTOS_WIRE_MAX]; size_t n=0;
     nostos_result_t r=nostos_uart_feed(&parser,byte,now_ms(),wire,&n);
-    return r==NOSTOS_OK?enqueue(NOSTOS_TO_MESH,wire,n,0):r;
+    if(r!=NOSTOS_OK) return r;
+    nostos_result_t queued=enqueue(NOSTOS_TO_MESH,wire,n,0);
+    if(n>=NOSTOS_HEADER_SIZE) {
+        ESP_LOGI(TAG,"UART_RX type=0x%02x source=%u len=%u result=%s",
+            wire[1],wire[2],(unsigned)n,nostos_result_name(queued));
+    } else {
+        ESP_LOGW(TAG,"UART_RX malformed len=%u result=%s",(unsigned)n,nostos_result_name(queued));
+    }
+    return queued;
 }
 static void uart_task(void *arg)
 {
@@ -110,7 +122,13 @@ void bridge_runtime_mesh_rx(const uint8_t *wire,size_t length,uint16_t source,ui
 {
     if(source==own || !worker || own!=peers[CONFIG_NOSTOS_LOCAL_SOURCE-1].mesh_address) return;
     nostos_result_t r=enqueue(NOSTOS_TO_UART,wire,length,source);
-    ESP_LOGI(TAG,"MESH_RX address=0x%04x len=%u result=%s",source,(unsigned)length,nostos_result_name(r));
+    if(length>=NOSTOS_HEADER_SIZE) {
+        ESP_LOGI(TAG,"MESH_RX type=0x%02x source=%u address=0x%04x len=%u result=%s",
+            wire[1],wire[2],source,(unsigned)length,nostos_result_name(r));
+    } else {
+        ESP_LOGW(TAG,"MESH_RX malformed address=0x%04x len=%u result=%s",
+            source,(unsigned)length,nostos_result_name(r));
+    }
 }
 void bridge_runtime_mesh_complete(int error)
 {

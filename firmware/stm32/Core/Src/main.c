@@ -105,6 +105,18 @@ int main(void)
   app_init(&hspi2, &huart1, &hi2c1);
   /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 진단 복사본. */
   uart_service_set_tx_trace(&huart2);
+#if NOSTOS_PROTOCOL_V2
+  if (app_protocol_v2_ready())
+  {
+    static uint8_t ready[] = "NOSTOS_V2_BOOT=READY source=2 session=1\r\n";
+    (void)HAL_UART_Transmit(&huart2, ready, (uint16_t)(sizeof(ready) - 1U), 20U);
+  }
+  else
+  {
+    static uint8_t failed[] = "NOSTOS_V2_BOOT=NOT_READY\r\n";
+    (void)HAL_UART_Transmit(&huart2, failed, (uint16_t)(sizeof(failed) - 1U), 20U);
+  }
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */

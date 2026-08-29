@@ -18,11 +18,26 @@
 GPIO_TypeDef test_gpio_a,test_gpio_b,test_gpio_c;
 static uint32_t tick;
 static bool dreq=true, spi_error=false;
+static bool uart_error=false;
 static uint8_t sdi[32], uart_frame[NOSTOS_UART_FRAME_MAX];
 static size_t sdi_n, uart_n;
 static unsigned sdi_calls;
 static uint8_t *interrupt_byte;
 static bool distance_ok=true;
+static nostos_result_t checkpoint_commit_result=NOSTOS_OK;
+static int checkpoint_fail_at=-1;
+static message_protocol_checkpoint_t committed_checkpoints[4];
+static size_t checkpoint_commit_count;
+nostos_result_t message_protocol_service_checkpoint_commit(
+    const message_protocol_checkpoint_t *checkpoint)
+{
+    CHECK(checkpoint!=NULL);
+    size_t index=checkpoint_commit_count;
+    if(index<4U) committed_checkpoints[index]=*checkpoint;
+    ++checkpoint_commit_count;
+    return checkpoint_fail_at>=0 && index==(size_t)checkpoint_fail_at?
+        NOSTOS_IO_ERROR:checkpoint_commit_result;
+}
 void ultrasonic_init(void) {}
 bool ultrasonic_read(float *cm) { if(distance_ok) *cm=100.0f; return distance_ok; }
 bool mpu6050_init(I2C_HandleTypeDef *i2c) { (void)i2c; return true; }
@@ -52,7 +67,11 @@ HAL_StatusTypeDef HAL_SPI_TransmitReceive(SPI_HandleTypeDef *spi,uint8_t *tx,uin
 HAL_StatusTypeDef HAL_SPI_Transmit(SPI_HandleTypeDef *spi,uint8_t *tx,uint16_t n,uint32_t timeout)
 { (void)spi;(void)tx;(void)n;(void)timeout; return spi_error?HAL_ERROR:HAL_OK; }
 HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *uart,uint8_t *tx,uint16_t n,uint32_t timeout)
-{ (void)uart; CHECK(n<=sizeof(uart_frame) && timeout==20); memcpy(uart_frame,tx,n); uart_n=n; return HAL_OK; }
+{
+    (void)uart; CHECK(n<=sizeof(uart_frame) && timeout==20);
+    if(uart_error) return HAL_ERROR;
+    memcpy(uart_frame,tx,n); uart_n=n; return HAL_OK;
+}
 static nostos_result_t deliver(nostos_message_t m)
 {
     uint8_t w[64], f[NOSTOS_UART_FRAME_MAX]; size_t n=0,fn=0;
@@ -64,10 +83,103 @@ static nostos_result_t deliver(nostos_message_t m)
 }
 static nostos_message_t msg(uint8_t type,uint16_t seq)
 { nostos_message_t m={.type=type,.source_id=2,.session_id=1,.sequence=seq}; m.payload.incident=(nostos_incident_ref_t){1,1}; return m; }
+static void approve_all(nostos_endpoint_t *endpoint,uint32_t session)
+{
+    for(uint8_t source=1;source<=NOSTOS_NODE_COUNT;++source) {
+        const nostos_rx_window_t *window=&endpoint->receiver.windows[source-1U];
+        if(window->approved && window->session_id==session) continue;
+        CHECK(nostos_receiver_approve_session(&endpoint->receiver,source,session,0)==NOSTOS_OK);
+    }
+}
+static void test_checkpoint_contract(UART_HandleTypeDef *uart)
+{
+    CHECK(message_protocol_service_init(uart,3,1,VS1003B_STATUS_OK)==NOSTOS_OK);
+    nostos_endpoint_t *endpoint=message_protocol_service_endpoint(); CHECK(endpoint);
+    approve_all(endpoint,1);
+    endpoint->sender.next_sequence=9;
+    message_protocol_checkpoint_t checkpoint;
+    CHECK(message_protocol_service_checkpoint(&checkpoint)==NOSTOS_OK);
+    CHECK(message_protocol_checkpoint_valid(&checkpoint));
+    CHECK(checkpoint.source_id==3 && checkpoint.session_id==1 && checkpoint.next_sequence==9);
+
+    message_protocol_checkpoint_t invalid=checkpoint;
+    invalid.source_id=0;
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+    CHECK(message_protocol_service_restore(uart,VS1003B_STATUS_OK,&invalid)==NOSTOS_BAD_VALUE);
+    invalid=checkpoint; invalid.session_id=0;
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+    invalid=checkpoint; invalid.next_sequence=(uint32_t)UINT16_MAX+2U;
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+    invalid=checkpoint; invalid.next_incident=0;
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+    invalid=checkpoint; invalid.windows[0].seen=1;
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+    invalid=checkpoint; invalid.incidents[0]=(nostos_incident_record_t){
+        .used=true,.source_id=4,.kind=NOSTOS_FALL,.ref={1,1}};
+    CHECK(!message_protocol_checkpoint_valid(&invalid));
+
+    message_protocol_service_shutdown();
+    CHECK(message_protocol_service_restore(uart,VS1003B_STATUS_OK,&checkpoint)==NOSTOS_OK);
+    endpoint=message_protocol_service_endpoint(); CHECK(endpoint);
+    CHECK(endpoint->sender.next_sequence==9 && endpoint->receiver.windows[0].approved);
+
+    checkpoint_commit_count=0; checkpoint_commit_result=NOSTOS_IO_ERROR;
+    checkpoint_fail_at=-1; uart_n=0;
+    CHECK(message_protocol_service_publish_event(NOSTOS_STOP)==NOSTOS_IO_ERROR);
+    CHECK(checkpoint_commit_count==1 && committed_checkpoints[0].next_sequence==10);
+    CHECK(endpoint->sender.next_sequence==9 && uart_n==0);
+
+    checkpoint_commit_count=0; checkpoint_commit_result=NOSTOS_OK;
+    CHECK(message_protocol_service_publish_event(NOSTOS_STOP)==NOSTOS_OK);
+    CHECK(checkpoint_commit_count==2);
+    CHECK(committed_checkpoints[0].next_sequence==10);
+    CHECK(committed_checkpoints[1].next_sequence==10);
+    CHECK(endpoint->sender.next_sequence==10 && uart_n>0);
+
+    checkpoint_commit_count=0; checkpoint_fail_at=1; uart_n=0;
+    CHECK(message_protocol_service_publish_event(NOSTOS_STOP)==NOSTOS_IO_ERROR);
+    CHECK(checkpoint_commit_count==2 && committed_checkpoints[0].next_sequence==11);
+    CHECK(committed_checkpoints[1].next_sequence==11 && uart_n>0);
+    CHECK(message_protocol_service_endpoint()==NULL);
+
+    message_protocol_checkpoint_t after_final_failure=committed_checkpoints[0];
+    CHECK(message_protocol_service_restore(uart,VS1003B_STATUS_OK,&after_final_failure)==NOSTOS_OK);
+    endpoint=message_protocol_service_endpoint(); CHECK(endpoint);
+    checkpoint_commit_count=0; checkpoint_fail_at=-1; uart_error=true; uart_n=0;
+    CHECK(message_protocol_service_publish_event(NOSTOS_STOP)==NOSTOS_IO_ERROR);
+    CHECK(checkpoint_commit_count==2);
+    CHECK(committed_checkpoints[0].next_sequence==12);
+    CHECK(committed_checkpoints[1].next_sequence==12);
+    CHECK(endpoint->sender.next_sequence==12 && uart_n==0);
+    CHECK(message_protocol_service_endpoint()!=NULL);
+    uart_error=false;
+
+    checkpoint_commit_count=0; checkpoint_fail_at=0;
+    CHECK(message_protocol_service_publish_event(NOSTOS_FALL)==NOSTOS_IO_ERROR);
+    CHECK(checkpoint_commit_count==1 && committed_checkpoints[0].next_incident==2);
+    CHECK(message_protocol_service_endpoint()!=NULL);
+    checkpoint_commit_count=0; checkpoint_fail_at=-1;
+    CHECK(message_protocol_service_publish_event(NOSTOS_FALL)==NOSTOS_OK);
+    CHECK(checkpoint_commit_count==2);
+    CHECK(committed_checkpoints[0].next_incident==3);
+    CHECK(committed_checkpoints[1].next_incident==3);
+
+    message_protocol_service_shutdown();
+    CHECK(message_protocol_service_init(uart,3,1,VS1003B_STATUS_OK)==NOSTOS_OK);
+    endpoint=message_protocol_service_endpoint(); CHECK(endpoint); approve_all(endpoint,1);
+    checkpoint_commit_count=0; checkpoint_commit_result=NOSTOS_IO_ERROR;
+    checkpoint_fail_at=-1;
+    CHECK(deliver(msg(NOSTOS_STOP,0))==NOSTOS_IO_ERROR);
+    CHECK(message_protocol_service_endpoint()==NULL);
+    message_protocol_service_process();
+    CHECK(!audio_service_is_playing());
+    checkpoint_commit_result=NOSTOS_OK; checkpoint_commit_count=0; checkpoint_fail_at=-1;
+}
 int main(void)
 {
     UART_HandleTypeDef uart={0}; SPI_HandleTypeDef spi={0}; uint16_t mode=0;
     CHECK(vs1003b_init(&spi,&mode)==VS1003B_STATUS_OK && mode==0x800);
+    test_checkpoint_contract(&uart);
     CHECK(message_protocol_service_init(&uart,3,1,VS1003B_STATUS_OK)==NOSTOS_OK);
     CHECK(uart_service_init(&uart)==HAL_OK);
     nostos_endpoint_t *e=message_protocol_service_endpoint(); CHECK(e);

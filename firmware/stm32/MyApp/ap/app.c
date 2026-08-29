@@ -195,3 +195,12 @@ message_type_t app_get_last_message(void)
 {
     return last_message;
 }
+
+bool app_protocol_v2_ready(void)
+{
+#if NOSTOS_PROTOCOL_V2
+    return protocol_debug_boot_status==NOSTOS_OK;
+#else
+    return false;
+#endif
+}

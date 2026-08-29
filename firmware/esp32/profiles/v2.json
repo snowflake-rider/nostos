@@ -1,0 +1,21 @@
+{
+  "protocol": 2,
+  "target": "esp32s3",
+  "peers": {
+    "76": {
+      "source": 1,
+      "mesh_address": "0x0003",
+      "usb_serial": "14:C1:9F:CE:EC:74"
+    },
+    "D6": {
+      "source": 2,
+      "mesh_address": "0x0005",
+      "usb_serial": "14:C1:9F:CE:F0:D4"
+    },
+    "B6": {
+      "source": 3,
+      "mesh_address": "0x0006",
+      "usb_serial": "44:1B:F6:FF:BA:B4"
+    }
+  }
+}

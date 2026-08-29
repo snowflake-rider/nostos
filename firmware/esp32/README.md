@@ -32,3 +32,14 @@ idf.py build
 ## v2 프로토콜 선택 경로
 
 `CONFIG_NOSTOS_PROTOCOL_V2=y`일 때 새 프레임/최대64B 본문을 처리하는 `bridge_runtime_v2.c`를 빌드합니다. 기본은 기존v1이며 실제 provisioned 주소↔source 설정 없이 v2를 시작하지 않습니다. UART 핀·Mesh 키·Relay 설정을 자동 변경하지 않습니다. [구현 계약과 배포 경계](../../libs/protocol/V2.md) · [호스트 one-stop 테스트](../../tests/message-protocol/README.md).
+
+검증된 세 보드 프로필은 [profiles/v2.json](profiles/v2.json)에 있습니다. 각 빌드는 별도
+`build-v2-*`와 생성 `sdkconfig`를 사용하므로 공용 설정을 덮어쓰지 않습니다.
+
+```sh
+bash firmware/esp32/scripts/v2-profile.sh build D6
+bash firmware/esp32/scripts/v2-profile.sh app-flash D6 --port /dev/cu.usbmodem21301
+```
+
+`app-flash`는 선택한 보드의 USB serial·VID/PID와 포트 점유를 다시 검사한 뒤 app partition만
+기록합니다. Mesh 설정이 있는 NVS, partition table, bootloader는 쓰거나 지우지 않습니다.

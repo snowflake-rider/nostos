@@ -16,8 +16,15 @@ EVENT_NAMES = {
     0x13: ("MSG_STOP_REQUEST", "정지 요청"),
     0x20: ("MSG_REAR_SAFE", "후방 안전"),
     0x21: ("MSG_REAR_WARNING", "후방 경고"),
+    0x22: ("NOSTOS_REAR_UNKNOWN", "후방 상태 불명"),
     0x30: ("MSG_FALL_DETECTED", "낙차 감지"),
     0x31: ("MSG_SOS", "SOS"),
+    0x40: ("NOSTOS_SPEED", "속도 상태"),
+    0x41: ("NOSTOS_ENVIRONMENT", "환경 상태"),
+    0x42: ("NOSTOS_FALL_CLEAR", "낙차 해제"),
+    0x43: ("NOSTOS_SOS_CLEAR", "SOS 해제"),
+    0x50: ("NOSTOS_HEARTBEAT", "상태 확인"),
+    0x51: ("NOSTOS_ACK", "적용 응답"),
 }
 EVENT_LINE = re.compile(r"^(?:[IWEVD] \(\d+\) [^:]+: )?(UART_RX|MESH_TX|MESH_RX|UART_TX)\s")
 
@@ -27,7 +34,7 @@ def decode_event(text):
     if not match:
         return None
     fields = dict(FIELDS.findall(text))
-    raw_id = fields.get("id", "")
+    raw_id = fields.get("id") or fields.get("type", "")
     if not re.fullmatch(r"0[xX][0-9a-fA-F]{1,2}|[0-9]{1,3}", raw_id):
         return None
     event_id = int(raw_id, 16 if raw_id.lower().startswith("0x") else 10)
@@ -36,7 +43,9 @@ def decode_event(text):
     symbol, label = EVENT_NAMES.get(event_id, (None, "알 수 없는 메시지"))
     return {"id": event_id, "hex": f"0x{event_id:02X}", "symbol": symbol,
             "label": label, "known": symbol is not None, "stage": match[1],
-            "source": fields.get("source"), "result": fields.get("result") or fields.get("api")}
+            "source": fields.get("source") or fields.get("address"),
+            # API is the final transport attempt; it overrides an internal OK.
+            "result": fields.get("api") or fields.get("result")}
 
 
 class LineDecoder:
@@ -77,12 +86,23 @@ class LineDecoder:
 
 def parse_line(text):
     uptime = UPTIME.match(text)
-    failed = bool(re.search(r"\b(?:api=failed|result=(?:invalid|not_ready|full)|[A-Z_]*FAILED|ERROR|panic|Guru Meditation)\b", text))
+    fields = dict(FIELDS.findall(text))
+    event_line = EVENT_LINE.match(text) is not None
+    result = fields.get("result", "")
+    api = fields.get("api", "")
+    event_failed = event_line and (
+        (result and result.lower() not in {"ok", "queued", "accepted"}) or
+        (api and api.lower() not in {"ok", "accepted"})
+    )
+    failed = event_failed or bool(re.search(
+        r"\b(?:[A-Z_]*FAILED|ERROR|panic|Guru Meditation)\b", text))
     error = text.startswith("E (") or failed
     level = "error" if error else "warning" if text.startswith("W (") else "info"
     category = "OTHER"
-    for marker, label in (("UART_RX id=", "UART RX"), ("MESH_TX id=", "MESH TX"),
-                          ("MESH_RX source=", "MESH RX"), ("UART_TX id=", "UART TX"),
+    for marker, label in (("UART_RX id=", "UART RX"), ("UART_RX type=", "UART RX"),
+                          ("MESH_TX id=", "MESH TX"), ("MESH_TX type=", "MESH TX"),
+                          ("MESH_RX source=", "MESH RX"), ("MESH_RX type=", "MESH RX"),
+                          ("UART_TX id=", "UART TX"), ("UART_TX type=", "UART TX"),
                           ("ONOFF_RX src=", "ONOFF RX")):
         if marker in text:
             category = label
