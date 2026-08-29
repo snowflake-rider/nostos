@@ -1,0 +1,53 @@
+{
+  "version": "v1",
+  "packageRevision": "display-dht11",
+  "packagedAt": "2026-08-29",
+  "baseCommit": "ecc715232ab588715b2ffced43d2df6dc917524d",
+  "sourceSnapshots": {
+    "stm32": "firmware/stm32-layer2",
+    "esp32": "firmware/esp32",
+    "protocol": "libs/protocol"
+  },
+  "defaults": {
+    "protocol": "v1-one-byte",
+    "stm32ProtocolV2": false,
+    "buttonOutputTest": false,
+    "ssd1306Display": true,
+    "dht11Sensor": true,
+    "esp32ProtocolV2": false
+  },
+  "stm32Image": {
+    "kind": "release-build",
+    "flashAddress": "0x08000000",
+    "bytes": 137632,
+    "sha256": "d76589510f81d40f09ac5a31a373481dca448e919d495a7a267f6620eaaf91b0",
+    "buildVerified": true,
+    "flashVerified": false,
+    "flashStatus": "not-written-macos-device-access",
+    "verifiedStlinkSerials": []
+  },
+  "previousStm32Deployment": {
+    "bytes": 134980,
+    "sha256": "594092890103a958bbe42ceb3afea063a0a8023e5dc80b735f79b30dcbf53fa3",
+    "verifiedStlinkSerials": [
+      "066DFF485277504867161930",
+      "066DFF505567494867071811",
+      "066EFF3134584B3043121635"
+    ]
+  },
+  "esp32Image": {
+    "kind": "release-build",
+    "bytes": 915856,
+    "sha256": "36b9b2cee94e87db863ae07d636e71b254d8cfb253b7b75b05f1f2ab6cb9eaf8",
+    "appPartitionBytes": 1536000,
+    "freeBytes": 620144,
+    "buildVerified": true,
+    "flashVerified": false
+  },
+  "targets": {
+    "stm32": "STM32F411xC_xE",
+    "esp32": "esp32s3",
+    "espIdf": "v5.5.5",
+    "uart": "115200-8N1"
+  }
+}
