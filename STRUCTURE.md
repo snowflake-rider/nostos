@@ -9,6 +9,7 @@
 nostos/
 ├── .gitignore                    로컬 생성물·보존 예외 제외 규칙
 ├── README.md                     빠른 시작과 일상 명령
+├── PINS.md                       현재 배선과 미적용 대체 핀 제안
 ├── STRUCTURE.md                  구조·의존성·버전·릴리스 기준(이 문서)
 ├── AGENTS.md                     작업 절차와 검증 규칙
 ├── releases/
