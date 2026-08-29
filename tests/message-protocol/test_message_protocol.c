@@ -39,7 +39,8 @@ static void codec(void)
         if(m.type==NOSTOS_HEARTBEAT) CHECK(m.payload.status==3);
         if(m.type==NOSTOS_ACK) CHECK(m.payload.ack.source_id==3 && m.payload.ack.session_id==1 &&
             m.payload.ack.sequence==7 && m.payload.ack.type==NOSTOS_STOP && m.payload.ack.result==0);
-        CHECK(nostos_type_info(nostos_types[i].type)!=NULL);
+        const nostos_type_info_t *registered=nostos_type_info(nostos_types[i].type);
+        CHECK(registered==&nostos_types[i] && registered->encode_payload && registered->decode_payload);
         bool covered=false;
         for(size_t j=0;j<COUNT(fixtures);++j) covered|=fixtures[j].type==nostos_types[i].type;
         CHECK(covered);
@@ -54,6 +55,7 @@ static void codec(void)
         CHECK(nostos_message_encode(&m,w,f->length-1,&n)==NOSTOS_BAD_LENGTH);
         CHECK(n==999 && memcmp(w,unchanged,sizeof(w))==0);
     }
+    CHECK(nostos_type_info(0x14)==NULL && nostos_type_info(0xff)==NULL);
     nostos_message_t e=message(NOSTOS_ENVIRONMENT,7), decoded;
     e.payload.environment=(nostos_environment_t){362,603,NOSTOS_VALID,NOSTOS_VALID};
     const uint8_t golden[]={2,0x41,2,1,0,0,0,7,0,0x89,0x79}; uint8_t w[64];

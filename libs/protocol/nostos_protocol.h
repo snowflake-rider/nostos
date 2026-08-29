@@ -56,7 +56,7 @@ typedef struct {
     uint16_t sequence;
     uint8_t result; /* 0=applied/queued, 1=duplicate, 2=unsupported, 3=rejected */
 } nostos_ack_t;
-typedef struct {
+typedef struct nostos_message {
     uint8_t type, source_id;
     uint32_t session_id;
     uint16_t sequence;
@@ -68,7 +68,16 @@ typedef struct {
         nostos_ack_t ack;
     } payload;
 } nostos_message_t;
-typedef struct { uint8_t type, payload_size; const char *name; } nostos_type_info_t;
+typedef nostos_result_t (*nostos_payload_encode_fn)(const nostos_message_t *message,
+    uint8_t *payload);
+typedef nostos_result_t (*nostos_payload_decode_fn)(const uint8_t *payload,
+    nostos_message_t *message);
+typedef struct {
+    uint8_t type, payload_size;
+    const char *name;
+    nostos_payload_encode_fn encode_payload;
+    nostos_payload_decode_fn decode_payload;
+} nostos_type_info_t;
 extern const nostos_type_info_t nostos_types[NOSTOS_TYPE_COUNT];
 const nostos_type_info_t *nostos_type_info(uint8_t type);
 const char *nostos_result_name(nostos_result_t result);
