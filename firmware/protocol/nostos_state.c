@@ -21,23 +21,17 @@ nostos_result_t nostos_receiver_approve_session(nostos_receiver_t *r, uint8_t so
     nostos_rx_window_t *w=&r->windows[source-1];
     if (w->approved && session<=w->session_id) return NOSTOS_STALE;
     *w=(nostos_rx_window_t){.session_id=session,.floor=floor,.approved=true};
-    /* Previous values are retained for diagnostics but not advertised as fresh. */
+    /* A source session is a strict data epoch. Never expose values, incidents,
+     * or queued requests that were created by the replaced process lifetime. */
     nostos_node_state_t *n=&r->shared_data.nodes[source-1];
-    n->reachability.seen=false;
-    n->health.report.seen=false;
-    n->environment.temperature_c_x10.quality=NOSTOS_UNMEASURED;
-    n->environment.humidity_pct_x10.quality=NOSTOS_UNMEASURED;
-    n->ride.speed_kmh_x10.quality=NOSTOS_UNMEASURED;
-    n->ride.distance_mm.quality=NOSTOS_UNMEASURED;
-    /* Drop pending requests from the replaced source epoch, preserve others. */
-    if (r->pending_stop.pending &&
-        r->pending_stop.message.source_id==source) {
-        r->pending_stop.pending=false;
-    }
-    if (r->pending_button.pending &&
-        r->pending_button.message.source_id==source) {
-        r->pending_button.pending=false;
-    }
+    *n=(nostos_node_state_t){.source_id=source};
+    if (r->pending_stop.message.source_id==source)
+        r->pending_stop=(nostos_request_slot_t){0};
+    if (r->pending_button.message.source_id==source)
+        r->pending_button=(nostos_request_slot_t){0};
+    for (size_t i=0; i<NOSTOS_INCIDENT_CAPACITY; ++i)
+        if (r->incidents[i].source_id==source)
+            r->incidents[i]=(nostos_incident_record_t){0};
     return NOSTOS_OK;
 }
 static nostos_result_t window_check(const nostos_rx_window_t *w, const nostos_message_t *m)

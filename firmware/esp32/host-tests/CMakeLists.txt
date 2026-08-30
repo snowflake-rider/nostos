@@ -25,5 +25,19 @@ foreach(test_name event_protocol event_bridge serial_command)
     target_compile_options(test_${test_name} PRIVATE -Wall -Wextra -Wpedantic -Werror)
     add_test(NAME ${test_name} COMMAND test_${test_name})
 endforeach()
+
+add_executable(test_v2_boot_boundary test_v2_boot_boundary.c
+    ../../protocol/nostos_bridge.c ../../protocol/nostos_protocol.c)
+target_include_directories(test_v2_boot_boundary PRIVATE ../../protocol)
+target_compile_options(test_v2_boot_boundary PRIVATE
+    -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+if(ENABLE_SANITIZERS)
+    target_compile_options(test_v2_boot_boundary PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(test_v2_boot_boundary PRIVATE
+        -fsanitize=address,undefined)
+endif()
+add_test(NAME v2_boot_boundary COMMAND test_v2_boot_boundary)
+
 target_sources(test_serial_command PRIVATE ../main/serial_command.c)
 target_include_directories(test_serial_command PRIVATE ../main)

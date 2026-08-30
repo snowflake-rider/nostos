@@ -4,11 +4,15 @@
 #include "mesh_node.h"
 #include "nostos_bridge.h"
 #include "sensor_link.h"
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+#include "xoss_ble.h"
+#endif
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "nvs.h"
 #include <inttypes.h>
@@ -46,6 +50,10 @@ static identity_state_t identity;
 static portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;
 static TaskHandle_t worker;
 static QueueHandle_t events;
+static StaticSemaphore_t reset_mutex_control;
+static SemaphoreHandle_t reset_mutex;
+static bool stm_boot_reset_in_progress;
+static uint32_t stm_boot_epoch;
 
 static StaticQueue_t ride_queue_control;
 static uint8_t ride_queue_storage[sizeof(sensor_link_ride_t)];
@@ -84,6 +92,95 @@ static void counter_increment(uint32_t *counter)
     portEXIT_CRITICAL(&lock);
 }
 
+static void reset_epoch_counters_locked(void)
+{
+    accepted = 0U;
+    rejected = 0U;
+    /* Mesh completion callbacks have no transaction/epoch token and can arrive
+     * after an STM boot boundary. Keep these two ESP-uptime totals monotonic so
+     * a delayed old completion is never attributed to a freshly zeroed epoch. */
+    ride_uart_ok = 0U;
+    ride_uart_failed = 0U;
+    ride_uart_deferred = 0U;
+    identity_uart_ok = 0U;
+    identity_uart_failed = 0U;
+    approve_uart_ok = 0U;
+    approve_uart_failed = 0U;
+    control_received = 0U;
+    control_rejected = 0U;
+    control_overflow = 0U;
+    identity_advertised_once = false;
+    identity_last_tx_ms = 0U;
+}
+
+static esp_err_t reset_xoss_runtime_session(void)
+{
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+    return xoss_ble_reset_runtime_session();
+#else
+    return ESP_OK;
+#endif
+}
+
+/* Worker-only. The gate makes Mesh RX and UART/XOSS producers reject work
+ * while both FreeRTOS queues and the locked bridge are moved to one epoch. */
+static bool begin_stm_boot_boundary(void)
+{
+    portENTER_CRITICAL(&lock);
+    stm_boot_reset_in_progress = true;
+    portEXIT_CRITICAL(&lock);
+
+    if (reset_mutex == NULL || control_queue == NULL || ride_queue == NULL) {
+        ESP_LOGE(TAG, "STM_BOOT_RESET_NOT_READY gate=closed");
+        return false;
+    }
+
+    if (xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(1000U)) != pdTRUE) {
+        ESP_LOGE(TAG, "STM_BOOT_QUEUE_RESET_TIMEOUT");
+        return false;
+    }
+
+    (void)xQueueReset(control_queue);
+    (void)xQueueReset(ride_queue);
+
+    portENTER_CRITICAL(&lock);
+    uint8_t source = identity.local_source;
+    nostos_result_t reset_result = identity.bridge_initialized
+        ? nostos_bridge_init(&bridge, source, peers)
+        : NOSTOS_NOT_READY;
+    if (reset_result == NOSTOS_OK) {
+        ++stm_boot_epoch;
+        if (stm_boot_epoch == 0U) stm_boot_epoch = 1U;
+        reset_epoch_counters_locked();
+    }
+    portEXIT_CRITICAL(&lock);
+    xSemaphoreGive(reset_mutex);
+
+    if (reset_result != NOSTOS_OK) {
+        ESP_LOGE(TAG, "STM_BOOT_RESET_FAILED result=%s",
+                 nostos_result_name(reset_result));
+        return false;
+    }
+
+    esp_err_t xoss_result = reset_xoss_runtime_session();
+    if (xoss_result != ESP_OK) {
+        ESP_LOGE(TAG, "STM_BOOT_XOSS_RESET_FAILED err=%s",
+                 esp_err_to_name(xoss_result));
+        return false;
+    }
+
+    return true;
+}
+
+static void end_stm_boot_boundary(void)
+{
+    portENTER_CRITICAL(&lock);
+    stm_boot_reset_in_progress = false;
+    uint32_t epoch = stm_boot_epoch;
+    portEXIT_CRITICAL(&lock);
+    ESP_LOGI(TAG, "STM_BOOT_RUNTIME_RESET epoch=%" PRIu32, epoch);
+}
+
 static uint16_t get16le(const uint8_t *bytes)
 {
     return (uint16_t)((uint16_t)bytes[0] | (uint16_t)((uint16_t)bytes[1] << 8));
@@ -109,12 +206,15 @@ static bool bridge_ready(void)
     uint8_t source;
     uint16_t primary;
     bool initialized;
+    bool resetting;
     portENTER_CRITICAL(&lock);
     source = identity.local_source;
     primary = identity.primary_address;
     initialized = identity.bridge_initialized;
+    resetting = stm_boot_reset_in_progress;
     portEXIT_CRITICAL(&lock);
-    return initialized && source != 0U && source_for_address(primary) == source &&
+    return !resetting && initialized && source != 0U &&
+           source_for_address(primary) == source &&
            mesh_node_ready() && mesh_node_primary() == primary;
 }
 
@@ -273,7 +373,8 @@ static bool advertise_current_identity(bool force)
 {
     uint32_t now = now_ms();
     portENTER_CRITICAL(&lock);
-    bool waiting = identity.bridge_initialized && identity.identity_loaded &&
+    bool waiting = !stm_boot_reset_in_progress &&
+                   identity.bridge_initialized && identity.identity_loaded &&
                    identity.identity_waiting_ack && identity.session_id != 0U;
     uint8_t source = identity.local_source;
     uint32_t session = identity.session_id;
@@ -313,9 +414,18 @@ static bool process_local_control(void)
                        !identity.identity_session_from_hello;
         uint32_t session = identity.session_id;
         portEXIT_CRITICAL(&lock);
-        if ((advance || session == 0U) && !advance_identity_session()) {
-            counter_increment(&identity_uart_failed);
-            return true;
+        bool new_stm_boot = advance || session == 0U;
+        if (new_stm_boot) {
+            if (!begin_stm_boot_boundary()) {
+                counter_increment(&identity_uart_failed);
+                return true;
+            }
+            if (!advance_identity_session()) {
+                counter_increment(&identity_uart_failed);
+                ESP_LOGE(TAG, "STM_BOOT_IDENTITY_ADVANCE_FAILED gate=closed");
+                return true;
+            }
+            end_stm_boot_boundary();
         }
         (void)advertise_current_identity(true);
         return true;
@@ -325,7 +435,8 @@ static bool process_local_control(void)
         bool matched;
         uint16_t primary = mesh_node_primary();
         portENTER_CRITICAL(&lock);
-        matched = identity.bridge_initialized && identity.session_id != 0U &&
+        matched = !stm_boot_reset_in_progress &&
+                  identity.bridge_initialized && identity.session_id != 0U &&
                   identity.primary_address == primary &&
                   message.identity.source_id == identity.local_source &&
                   message.identity.session_id == identity.session_id;
@@ -356,11 +467,15 @@ static nostos_result_t enqueue_remote(const uint8_t *wire, size_t length,
     bool ready = bridge_ready();
     uint32_t now = now_ms();
     portENTER_CRITICAL(&lock);
-    nostos_result_t result = identity.bridge_initialized
+    nostos_result_t result = stm_boot_reset_in_progress
+        ? NOSTOS_NOT_READY
+        : identity.bridge_initialized
         ? nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length,
                                mesh_source, now, ready)
         : NOSTOS_NOT_READY;
-    if (result == NOSTOS_OK) ++accepted; else ++rejected;
+    if (!stm_boot_reset_in_progress) {
+        if (result == NOSTOS_OK) ++accepted; else ++rejected;
+    }
     portEXIT_CRITICAL(&lock);
     if (result == NOSTOS_OK) xTaskNotifyGive(worker);
     return result;
@@ -381,7 +496,9 @@ static nostos_result_t enqueue_local(const uint8_t *wire, size_t length)
     bool confirmed_now = false;
     portENTER_CRITICAL(&lock);
     nostos_result_t result = NOSTOS_SESSION_REQUIRED;
-    if (identity.bridge_initialized && identity.identity_loaded &&
+    if (stm_boot_reset_in_progress) {
+        result = NOSTOS_NOT_READY;
+    } else if (identity.bridge_initialized && identity.identity_loaded &&
         identity.session_id != 0U && claimed_source == identity.local_source &&
         claimed_session == identity.session_id) {
         /* A valid official packet proves that the STM accepted this identity,
@@ -394,7 +511,9 @@ static nostos_result_t enqueue_local(const uint8_t *wire, size_t length)
     } else if (identity.bridge_initialized && claimed_source != identity.local_source) {
         result = NOSTOS_UNAUTHORIZED;
     }
-    if (result == NOSTOS_OK) ++accepted; else ++rejected;
+    if (!stm_boot_reset_in_progress) {
+        if (result == NOSTOS_OK) ++accepted; else ++rejected;
+    }
     portEXIT_CRITICAL(&lock);
     if (result == NOSTOS_OK || confirmed_now) xTaskNotifyGive(worker);
     return result;
@@ -406,8 +525,9 @@ static bool process_sensor_ride(void)
     if (ride_queue == NULL || xQueuePeek(ride_queue, &ride, 0) != pdTRUE) return false;
     portENTER_CRITICAL(&lock);
     bool confirmed = identity.identity_confirmed;
+    bool resetting = stm_boot_reset_in_progress;
     portEXIT_CRITICAL(&lock);
-    if (!confirmed) {
+    if (!confirmed || resetting) {
         /* Keep only the latest atomic ride queued until v2 identity is confirmed. */
         return false;
     }
@@ -443,7 +563,9 @@ static nostos_result_t process_one(void)
     bool ready = bridge_ready();
     uint32_t now = now_ms();
     portENTER_CRITICAL(&lock);
-    nostos_result_t result = identity.bridge_initialized
+    nostos_result_t result = stm_boot_reset_in_progress
+        ? NOSTOS_EMPTY
+        : identity.bridge_initialized
         ? nostos_bridge_next(&bridge, now, ready, &job)
         : NOSTOS_EMPTY;
     portEXIT_CRITICAL(&lock);
@@ -493,12 +615,29 @@ static void queue_local_control(const sensor_link_message_t *message)
         counter_increment(&control_rejected);
         return;
     }
-    if (xQueueSend(control_queue, message, 0) != pdTRUE) {
+    if (reset_mutex == NULL ||
+        xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(100U)) != pdTRUE) {
+        ESP_LOGW(TAG, "LOCAL_CONTROL_QUEUE_BUSY type=0x%02x", message->type);
+        return;
+    }
+    portENTER_CRITICAL(&lock);
+    bool resetting = stm_boot_reset_in_progress;
+    portEXIT_CRITICAL(&lock);
+    bool allow_retry_hello = resetting && message->type == SENSOR_LINK_HELLO;
+    BaseType_t queued = (resetting && !allow_retry_hello) ? pdFALSE
+        : xQueueSend(control_queue, message, 0);
+    if (resetting && !allow_retry_hello) {
+        xSemaphoreGive(reset_mutex);
+        return;
+    }
+    if (queued != pdTRUE) {
         counter_increment(&control_overflow);
+        xSemaphoreGive(reset_mutex);
         ESP_LOGW(TAG, "LOCAL_CONTROL_QUEUE_FULL type=0x%02x", message->type);
         return;
     }
     counter_increment(&control_received);
+    xSemaphoreGive(reset_mutex);
     xTaskNotifyGive(worker);
 }
 
@@ -589,24 +728,34 @@ void bridge_runtime_mesh_rx(const uint8_t *wire, size_t length, uint16_t source,
 void bridge_runtime_mesh_complete(int error)
 {
     portENTER_CRITICAL(&lock);
-    if (error) ++async_failed; else ++async_ok;
+    if (!stm_boot_reset_in_progress && identity.identity_confirmed) {
+        if (error) ++async_failed; else ++async_ok;
+    }
     portEXIT_CRITICAL(&lock);
 }
 
 esp_err_t bridge_runtime_send_sensor_ride(bool valid, uint16_t kmh_x10,
                                           uint32_t distance_mm)
 {
-    if (!worker || !ride_queue) return ESP_ERR_INVALID_STATE;
+    if (!worker || !ride_queue || !reset_mutex) return ESP_ERR_INVALID_STATE;
     if (!valid && (kmh_x10 != 0U || distance_mm != 0U)) return ESP_ERR_INVALID_ARG;
     sensor_link_ride_t ride = {
         .valid = valid,
         .kmh_x10 = valid ? kmh_x10 : 0U,
         .distance_mm = valid ? distance_mm : 0U,
     };
-    if (xQueueOverwrite(ride_queue, &ride) != pdPASS) return ESP_FAIL;
+    if (xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(100U)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
     portENTER_CRITICAL(&lock);
-    if (!identity.identity_confirmed) ++ride_uart_deferred;
+    bool resetting = stm_boot_reset_in_progress;
+    bool confirmed = identity.identity_confirmed;
+    if (!resetting && !confirmed) ++ride_uart_deferred;
     portEXIT_CRITICAL(&lock);
+    BaseType_t queued = resetting ? pdFAIL : xQueueOverwrite(ride_queue, &ride);
+    xSemaphoreGive(reset_mutex);
+    if (resetting) return ESP_ERR_INVALID_STATE;
+    if (queued != pdPASS) return ESP_FAIL;
     xTaskNotifyGive(worker);
     return ESP_OK;
 }
@@ -622,19 +771,22 @@ void bridge_runtime_log_status(void)
     uint32_t approval_ok = approve_uart_ok, approval_bad = approve_uart_failed;
     uint32_t controls = control_received, controls_bad = control_rejected;
     uint32_t controls_full = control_overflow;
+    uint32_t epoch = stm_boot_epoch;
+    bool resetting = stm_boot_reset_in_progress;
     size_t pending = id.bridge_initialized ? bridge.count : 0U;
     portEXIT_CRITICAL(&lock);
     ESP_LOGI(TAG,
              "STATUS version=2 primary=0x%04x source=%u session=%" PRIu32
-             " confirmed=%u waiting_ack=%u pending=%u accepted=%" PRIu32
-             " rejected=%" PRIu32 " async_ok=%" PRIu32 " async_failed=%" PRIu32
+             " confirmed=%u waiting_ack=%u epoch=%" PRIu32 " resetting=%u"
+             " pending=%u accepted=%" PRIu32 " rejected=%" PRIu32
+             " async_ok_total=%" PRIu32 " async_failed_total=%" PRIu32
              " ride_uart_ok=%" PRIu32 " ride_uart_failed=%" PRIu32
              " ride_uart_deferred=%" PRIu32 " identity_uart_ok=%" PRIu32
              " identity_uart_failed=%" PRIu32 " approve_uart_ok=%" PRIu32
              " approve_uart_failed=%" PRIu32 " control_received=%" PRIu32
              " control_rejected=%" PRIu32 " control_overflow=%" PRIu32,
              id.primary_address, id.local_source, id.session_id, id.identity_confirmed,
-             id.identity_waiting_ack, (unsigned)pending, a, r, ok, bad,
+             id.identity_waiting_ack, epoch, resetting, (unsigned)pending, a, r, ok, bad,
              ride_ok, ride_bad, ride_deferred, id_ok, id_bad, approval_ok,
              approval_bad, controls, controls_bad, controls_full);
 }
@@ -656,6 +808,11 @@ esp_err_t bridge_runtime_init(void)
     err = uart_driver_install(DATA_UART, 512, 0, 16, &events, 0);
     if (err != ESP_OK) return err;
 
+    reset_mutex = xSemaphoreCreateMutexStatic(&reset_mutex_control);
+    if (reset_mutex == NULL) {
+        uart_driver_delete(DATA_UART);
+        return ESP_ERR_NO_MEM;
+    }
     ride_queue = xQueueCreateStatic(1U, sizeof(sensor_link_ride_t),
                                     ride_queue_storage, &ride_queue_control);
     control_queue = xQueueCreateStatic(CONTROL_QUEUE_LENGTH, sizeof(sensor_link_message_t),

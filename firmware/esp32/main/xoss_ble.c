@@ -13,6 +13,7 @@
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
+#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "sdkconfig.h"
 
@@ -35,11 +36,14 @@ typedef struct {
     xoss_event_kind_t kind;
     uint8_t length;
     uint8_t bytes[XOSS_NOTIFICATION_MAX];
+    uint32_t session_epoch;
 } xoss_event_t;
 
 static StaticQueue_t event_queue_control;
 static uint8_t event_queue_storage[XOSS_QUEUE_LENGTH * sizeof(xoss_event_t)];
 static QueueHandle_t event_queue;
+static StaticSemaphore_t runtime_mutex_control;
+static SemaphoreHandle_t runtime_mutex;
 static TaskHandle_t xoss_task_handle;
 static esp_gatt_if_t client_if = ESP_GATT_IF_NONE;
 static uint16_t connection_id;
@@ -58,6 +62,9 @@ static uint32_t notifications_dropped;
 static uint32_t rides_forwarded;
 static uint32_t rides_rejected;
 static uint32_t last_ride_ms;
+static uint32_t session_epoch;
+static bool ride_stale_reported;
+static bool reconnect_pending;
 static bool initialized;
 static bool scan_enabled;
 
@@ -80,13 +87,60 @@ static uint32_t now_ms(void)
 
 static bool enqueue_event(const xoss_event_t *event)
 {
-    if (event_queue == NULL || xQueueSend(event_queue, event, 0U) != pdPASS) {
+    QueueHandle_t queue;
+    SemaphoreHandle_t mutex;
+    portENTER_CRITICAL(&status_lock);
+    queue = event_queue;
+    mutex = runtime_mutex;
+    portEXIT_CRITICAL(&status_lock);
+    if (event == NULL || queue == NULL || mutex == NULL) {
         portENTER_CRITICAL(&status_lock);
         ++notifications_dropped;
         portEXIT_CRITICAL(&status_lock);
         return false;
     }
+    /* BLE callbacks must never wait behind the worker/reset boundary. */
+    if (xSemaphoreTake(mutex, 0U) != pdTRUE) {
+        portENTER_CRITICAL(&status_lock);
+        ++notifications_dropped;
+        portEXIT_CRITICAL(&status_lock);
+        return false;
+    }
+    xoss_event_t queued = *event;
+    queued.session_epoch = session_epoch;
+    BaseType_t result = xQueueSend(queue, &queued, 0U);
+    if (result == pdPASS && event->kind == XOSS_EVENT_NOTIFICATION) {
+        portENTER_CRITICAL(&status_lock);
+        ++notifications_received;
+        portEXIT_CRITICAL(&status_lock);
+    } else if (result != pdPASS) {
+        portENTER_CRITICAL(&status_lock);
+        ++notifications_dropped;
+        portEXIT_CRITICAL(&status_lock);
+    }
+    xSemaphoreGive(mutex);
+    if (result != pdPASS) {
+        return false;
+    }
     return true;
+}
+
+static void record_notification_drop(void)
+{
+    portENTER_CRITICAL(&status_lock);
+    ++notifications_dropped;
+    portEXIT_CRITICAL(&status_lock);
+}
+
+static void queue_disconnected_event(void)
+{
+    /* This latch is the lifecycle source of truth. The queue entry only wakes
+     * the worker, so a boot-boundary queue reset cannot lose reconnection. */
+    portENTER_CRITICAL(&status_lock);
+    reconnect_pending = true;
+    portEXIT_CRITICAL(&status_lock);
+    xoss_event_t disconnected = {.kind = XOSS_EVENT_DISCONNECTED};
+    (void)enqueue_event(&disconnected);
 }
 
 static void close_connection_after_setup_error(void)
@@ -169,17 +223,25 @@ static void mesh_ble_callback(
     }
     if (event != ESP_BLE_MESH_SCAN_BLE_ADVERTISING_PKT_EVT ||
         parameter == NULL || parameter->scan_ble_adv_pkt.data == NULL ||
-        mesh_node_primary() != CONFIG_NOSTOS_SOURCE1_ADDRESS ||
-        connecting || connected) {
+        mesh_node_primary() != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
         return;
     }
+
+    portENTER_CRITICAL(&status_lock);
+    bool connection_busy = connecting || connected;
+    portEXIT_CRITICAL(&status_lock);
+    if (connection_busy) return;
 
     esp_ble_mesh_ble_adv_rpt_t *report = &parameter->scan_ble_adv_pkt;
     bool name_match = advertised_name_matches(report->data, report->length);
     bool service_match = advertised_csc_service(report->data, report->length);
     if (!name_match && !service_match) return;
 
-    connecting = true;
+    portENTER_CRITICAL(&status_lock);
+    connection_busy = connecting || connected;
+    if (!connection_busy) connecting = true;
+    portEXIT_CRITICAL(&status_lock);
+    if (connection_busy) return;
     memcpy(remote_address, report->addr, sizeof(remote_address));
     (void)esp_ble_mesh_stop_ble_scanning();
     ESP_LOGI(TAG, "DISCOVERED name=%u csc=%u rssi=%d address=" ESP_BD_ADDR_STR,
@@ -187,10 +249,11 @@ static void mesh_ble_callback(
     esp_err_t result = esp_ble_gattc_open(
         client_if, remote_address, report->addr_type, true);
     if (result != ESP_OK) {
+        portENTER_CRITICAL(&status_lock);
         connecting = false;
+        portEXIT_CRITICAL(&status_lock);
         ESP_LOGE(TAG, "CONNECT_START_FAILED %s", esp_err_to_name(result));
-        xoss_event_t disconnected = {.kind = XOSS_EVENT_DISCONNECTED};
-        (void)enqueue_event(&disconnected);
+        queue_disconnected_event();
     }
 }
 
@@ -269,8 +332,11 @@ static void gattc_callback(
 
     switch (event) {
     case ESP_GATTC_CONNECT_EVT:
+        portENTER_CRITICAL(&status_lock);
         connecting = false;
         connected = true;
+        reconnect_pending = false;
+        portEXIT_CRITICAL(&status_lock);
         connection_id = parameter->connect.conn_id;
         memcpy(remote_address, parameter->connect.remote_bda, sizeof(remote_address));
         (void)esp_ble_gattc_send_mtu_req(client_if, connection_id);
@@ -316,7 +382,9 @@ static void gattc_callback(
         break;
     case ESP_GATTC_WRITE_DESCR_EVT:
         if (parameter->write.status == ESP_GATT_OK) {
+            portENTER_CRITICAL(&status_lock);
             subscribed = true;
+            portEXIT_CRITICAL(&status_lock);
             ESP_LOGI(TAG, "CSC_NOTIFY_READY circumference_mm=%d",
                 CONFIG_NOSTOS_XOSS_WHEEL_CIRCUMFERENCE_MM);
         } else {
@@ -333,32 +401,28 @@ static void gattc_callback(
             };
             memcpy(notification.bytes, parameter->notify.value,
                 parameter->notify.value_len);
-            if (enqueue_event(&notification)) {
-                portENTER_CRITICAL(&status_lock);
-                ++notifications_received;
-                portEXIT_CRITICAL(&status_lock);
-            }
+            (void)enqueue_event(&notification);
         } else {
-            portENTER_CRITICAL(&status_lock);
-            ++notifications_dropped;
-            portEXIT_CRITICAL(&status_lock);
+            record_notification_drop();
         }
         break;
     case ESP_GATTC_OPEN_EVT:
         if (parameter->open.status != ESP_GATT_OK) {
+            portENTER_CRITICAL(&status_lock);
             connecting = false;
-            xoss_event_t disconnected = {.kind = XOSS_EVENT_DISCONNECTED};
-            (void)enqueue_event(&disconnected);
+            portEXIT_CRITICAL(&status_lock);
+            queue_disconnected_event();
         }
         break;
     case ESP_GATTC_DISCONNECT_EVT: {
+        portENTER_CRITICAL(&status_lock);
         connecting = false;
         connected = false;
         subscribed = false;
+        portEXIT_CRITICAL(&status_lock);
         service_found = false;
         measurement_handle = 0U;
-        xoss_event_t disconnected = {.kind = XOSS_EVENT_DISCONNECTED};
-        (void)enqueue_event(&disconnected);
+        queue_disconnected_event();
         break;
     }
     default:
@@ -411,38 +475,104 @@ static void process_notification(const xoss_event_t *event)
 static void xoss_task(void *argument)
 {
     (void)argument;
-    bool stale_reported = false;
     for (;;) {
         xoss_event_t event;
+        bool notification_ready = false;
         if (xQueueReceive(event_queue, &event, pdMS_TO_TICKS(500U)) == pdTRUE) {
-            if (event.kind == XOSS_EVENT_NOTIFICATION) {
-                process_notification(&event);
-                stale_reported = false;
-            } else if (event.kind == XOSS_EVENT_DISCONNECTED) {
-                speed_sensor_reset(&speed_state);
-                (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
-                stale_reported = true;
-                vTaskDelay(pdMS_TO_TICKS(XOSS_RECONNECT_MS));
-                if (mesh_node_primary() == CONFIG_NOSTOS_SOURCE1_ADDRESS) {
-                    esp_err_t result = start_mesh_coexistence_scan();
-                    if (result != ESP_OK) {
-                        ESP_LOGE(TAG, "SCAN_RESTART_FAILED %s",
-                            esp_err_to_name(result));
-                    }
+            if (xSemaphoreTake(runtime_mutex, pdMS_TO_TICKS(1000U)) == pdTRUE) {
+                notification_ready = event.session_epoch == session_epoch &&
+                    event.kind == XOSS_EVENT_NOTIFICATION;
+                if (notification_ready) {
+                    process_notification(&event);
+                    ride_stale_reported = false;
                 }
+                xSemaphoreGive(runtime_mutex);
             }
         }
 
-        portENTER_CRITICAL(&status_lock);
-        uint32_t last = last_ride_ms;
-        portEXIT_CRITICAL(&status_lock);
-        if (!stale_reported && last != 0U &&
-            (uint32_t)(now_ms() - last) >= CONFIG_NOSTOS_XOSS_STALE_MS) {
-            (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
-            stale_reported = true;
-            ESP_LOGW(TAG, "RIDE_STALE");
+        bool reconnect = false;
+        bool report_stale = false;
+        if (xSemaphoreTake(runtime_mutex, pdMS_TO_TICKS(1000U)) == pdTRUE) {
+            portENTER_CRITICAL(&status_lock);
+            reconnect = reconnect_pending;
+            reconnect_pending = false;
+            uint32_t last = last_ride_ms;
+            portEXIT_CRITICAL(&status_lock);
+            if (reconnect) {
+                speed_sensor_reset(&speed_state);
+                (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
+                ride_stale_reported = true;
+            } else if (!ride_stale_reported && last != 0U &&
+                (uint32_t)(now_ms() - last) >= CONFIG_NOSTOS_XOSS_STALE_MS) {
+                (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
+                ride_stale_reported = true;
+                report_stale = true;
+            }
+            xSemaphoreGive(runtime_mutex);
+        }
+
+        if (reconnect) {
+            vTaskDelay(pdMS_TO_TICKS(XOSS_RECONNECT_MS));
+            if (mesh_node_primary() == CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+                esp_err_t result = start_mesh_coexistence_scan();
+                if (result != ESP_OK) {
+                    ESP_LOGE(TAG, "SCAN_RESTART_FAILED %s",
+                        esp_err_to_name(result));
+                    queue_disconnected_event();
+                }
+            }
+        }
+        if (report_stale) ESP_LOGW(TAG, "RIDE_STALE");
+    }
+}
+
+esp_err_t xoss_ble_reset_runtime_session(void)
+{
+    /* Only source 1 owns XOSS; the other provisioned nodes are safe no-ops. */
+    QueueHandle_t queue;
+    SemaphoreHandle_t mutex;
+    portENTER_CRITICAL(&status_lock);
+    queue = event_queue;
+    mutex = runtime_mutex;
+    portEXIT_CRITICAL(&status_lock);
+    if (queue == NULL || mutex == NULL) return ESP_OK;
+    if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000U)) != pdTRUE) {
+        return ESP_ERR_TIMEOUT;
+    }
+
+    ++session_epoch;
+    if (session_epoch == 0U) session_epoch = 1U;
+    uint32_t reset_epoch = session_epoch;
+    (void)xQueueReset(queue);
+    speed_sensor_reset(&speed_state);
+    ride_stale_reported = false;
+    portENTER_CRITICAL(&status_lock);
+    bool connection_preserved = connected;
+    bool connection_in_progress = connecting;
+    bool restore_disconnect = reconnect_pending;
+    notifications_received = 0U;
+    notifications_dropped = 0U;
+    rides_forwarded = 0U;
+    rides_rejected = 0U;
+    last_ride_ms = 0U;
+    portEXIT_CRITICAL(&status_lock);
+    if (restore_disconnect) {
+        xoss_event_t disconnected = {
+            .kind = XOSS_EVENT_DISCONNECTED,
+            .session_epoch = reset_epoch,
+        };
+        if (xQueueSend(queue, &disconnected, 0U) != pdPASS) {
+            xSemaphoreGive(mutex);
+            return ESP_FAIL;
         }
     }
+    xSemaphoreGive(mutex);
+
+    ESP_LOGI(TAG, "STM_BOOT_SESSION_RESET epoch=%" PRIu32
+        " connected=%u connecting=%u reconnect_pending=%u",
+        reset_epoch, connection_preserved, connection_in_progress,
+        restore_disconnect);
+    return ESP_OK;
 }
 
 esp_err_t xoss_ble_init(void)
@@ -453,17 +583,44 @@ esp_err_t xoss_ble_init(void)
     if (CONFIG_NOSTOS_XOSS_WHEEL_CIRCUMFERENCE_MM <= 0) {
         return ESP_ERR_INVALID_ARG;
     }
-    event_queue = xQueueCreateStatic(
+    SemaphoreHandle_t new_runtime_mutex =
+        xSemaphoreCreateMutexStatic(&runtime_mutex_control);
+    if (new_runtime_mutex == NULL) return ESP_ERR_NO_MEM;
+    QueueHandle_t new_event_queue = xQueueCreateStatic(
         XOSS_QUEUE_LENGTH,
         sizeof(xoss_event_t),
         event_queue_storage,
         &event_queue_control);
-    if (event_queue == NULL) return ESP_ERR_NO_MEM;
+    if (new_event_queue == NULL) return ESP_ERR_NO_MEM;
+
+    /* Fully initialize the session before either handle becomes observable. */
     speed_sensor_reset(&speed_state);
+    session_epoch = 1U;
+    ride_stale_reported = false;
+    service_found = false;
+    measurement_handle = 0U;
+    portENTER_CRITICAL(&status_lock);
+    connecting = false;
+    connected = false;
+    subscribed = false;
+    reconnect_pending = false;
+    notifications_received = 0U;
+    notifications_dropped = 0U;
+    rides_forwarded = 0U;
+    rides_rejected = 0U;
+    last_ride_ms = 0U;
+    initialized = false;
+    scan_enabled = false;
+    runtime_mutex = new_runtime_mutex;
+    event_queue = new_event_queue;
+    portEXIT_CRITICAL(&status_lock);
 
     if (xTaskCreate(xoss_task, "xoss_csc", 4096U, NULL, 4U,
         &xoss_task_handle) != pdPASS) {
+        portENTER_CRITICAL(&status_lock);
         event_queue = NULL;
+        runtime_mutex = NULL;
+        portEXIT_CRITICAL(&status_lock);
         return ESP_ERR_NO_MEM;
     }
     esp_err_t result = esp_ble_mesh_register_ble_callback(mesh_ble_callback);
@@ -472,7 +629,10 @@ esp_err_t xoss_ble_init(void)
     if (result != ESP_OK) {
         vTaskDelete(xoss_task_handle);
         xoss_task_handle = NULL;
+        portENTER_CRITICAL(&status_lock);
         event_queue = NULL;
+        runtime_mutex = NULL;
+        portEXIT_CRITICAL(&status_lock);
     } else {
         portENTER_CRITICAL(&status_lock);
         initialized = true;
@@ -491,9 +651,12 @@ void xoss_ble_log_status(void)
     uint32_t last = last_ride_ms;
     bool enabled = initialized;
     bool scanning = scan_enabled;
+    bool link_connected = connected;
+    bool notifications_enabled = subscribed;
     portEXIT_CRITICAL(&status_lock);
     ESP_LOGI(TAG, "STATUS enabled=%u scan_ready=%u connected=%u subscribed=%u notifications=%" PRIu32
         " dropped=%" PRIu32 " rides_forwarded=%" PRIu32 " rides_rejected=%" PRIu32
         " last_ride_ms=%" PRIu32,
-        enabled, scanning, connected, subscribed, received, dropped, forwarded, rejected, last);
+        enabled, scanning, link_connected, notifications_enabled, received,
+        dropped, forwarded, rejected, last);
 }

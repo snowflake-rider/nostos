@@ -81,6 +81,355 @@ static void session_and_sequence_replay_protection(void)
     CHECK(!receiver.pending_stop.pending);
 }
 
+static void check_report_equal(
+    const nostos_report_t *actual,
+    const nostos_report_t *expected)
+{
+    CHECK(actual->session_id == expected->session_id);
+    CHECK(actual->sequence == expected->sequence);
+    CHECK(actual->received_ms == expected->received_ms);
+    CHECK(actual->seen == expected->seen);
+}
+
+static void check_node_equal(
+    const nostos_node_state_t *actual,
+    const nostos_node_state_t *expected)
+{
+    CHECK(actual->source_id == expected->source_id);
+    check_report_equal(&actual->environment.report, &expected->environment.report);
+    CHECK(actual->environment.temperature_c_x10.value ==
+        expected->environment.temperature_c_x10.value);
+    CHECK(actual->environment.temperature_c_x10.quality ==
+        expected->environment.temperature_c_x10.quality);
+    CHECK(actual->environment.temperature_c_x10.has_value ==
+        expected->environment.temperature_c_x10.has_value);
+    CHECK(actual->environment.temperature_c_x10.value_received_ms ==
+        expected->environment.temperature_c_x10.value_received_ms);
+    CHECK(actual->environment.humidity_pct_x10.value ==
+        expected->environment.humidity_pct_x10.value);
+    CHECK(actual->environment.humidity_pct_x10.quality ==
+        expected->environment.humidity_pct_x10.quality);
+    CHECK(actual->environment.humidity_pct_x10.has_value ==
+        expected->environment.humidity_pct_x10.has_value);
+    CHECK(actual->environment.humidity_pct_x10.value_received_ms ==
+        expected->environment.humidity_pct_x10.value_received_ms);
+    check_report_equal(&actual->ride.report, &expected->ride.report);
+    CHECK(actual->ride.speed_kmh_x10.value == expected->ride.speed_kmh_x10.value);
+    CHECK(actual->ride.speed_kmh_x10.quality == expected->ride.speed_kmh_x10.quality);
+    CHECK(actual->ride.speed_kmh_x10.has_value == expected->ride.speed_kmh_x10.has_value);
+    CHECK(actual->ride.speed_kmh_x10.value_received_ms ==
+        expected->ride.speed_kmh_x10.value_received_ms);
+    CHECK(actual->ride.distance_mm.value == expected->ride.distance_mm.value);
+    CHECK(actual->ride.distance_mm.quality == expected->ride.distance_mm.quality);
+    CHECK(actual->ride.distance_mm.has_value == expected->ride.distance_mm.has_value);
+    CHECK(actual->ride.distance_mm.value_received_ms ==
+        expected->ride.distance_mm.value_received_ms);
+    CHECK(actual->fall.incident.session_id == expected->fall.incident.session_id);
+    CHECK(actual->fall.incident.incident_id == expected->fall.incident.incident_id);
+    check_report_equal(&actual->fall.last_report, &expected->fall.last_report);
+    CHECK(actual->fall.phase == expected->fall.phase);
+    check_report_equal(&actual->health.report, &expected->health.report);
+    CHECK(actual->health.status == expected->health.status);
+    CHECK(actual->reachability.last_valid_rx_ms == expected->reachability.last_valid_rx_ms);
+    CHECK(actual->reachability.seen == expected->reachability.seen);
+}
+
+static void check_window_equal(
+    const nostos_rx_window_t *actual,
+    const nostos_rx_window_t *expected)
+{
+    CHECK(actual->session_id == expected->session_id);
+    CHECK(actual->floor == expected->floor);
+    CHECK(actual->highest == expected->highest);
+    CHECK(actual->seen == expected->seen);
+    CHECK(actual->approved == expected->approved);
+    CHECK(actual->started == expected->started);
+}
+
+static void check_message_equal(
+    const nostos_message_t *actual,
+    const nostos_message_t *expected)
+{
+    CHECK(actual->type == expected->type);
+    CHECK(actual->source_id == expected->source_id);
+    CHECK(actual->session_id == expected->session_id);
+    CHECK(actual->sequence == expected->sequence);
+    CHECK(actual->payload.environment.temperature_c_x10 ==
+        expected->payload.environment.temperature_c_x10);
+    CHECK(actual->payload.environment.humidity_pct_x10 ==
+        expected->payload.environment.humidity_pct_x10);
+    CHECK(actual->payload.environment.temperature_quality ==
+        expected->payload.environment.temperature_quality);
+    CHECK(actual->payload.environment.humidity_quality ==
+        expected->payload.environment.humidity_quality);
+    CHECK(actual->payload.ride.valid == expected->payload.ride.valid);
+    CHECK(actual->payload.ride.kmh_x10 == expected->payload.ride.kmh_x10);
+    CHECK(actual->payload.ride.distance_mm == expected->payload.ride.distance_mm);
+    CHECK(actual->payload.incident.session_id ==
+        expected->payload.incident.session_id);
+    CHECK(actual->payload.incident.incident_id ==
+        expected->payload.incident.incident_id);
+    CHECK(actual->payload.status == expected->payload.status);
+    CHECK(actual->payload.ack.source_id == expected->payload.ack.source_id);
+    CHECK(actual->payload.ack.type == expected->payload.ack.type);
+    CHECK(actual->payload.ack.session_id == expected->payload.ack.session_id);
+    CHECK(actual->payload.ack.sequence == expected->payload.ack.sequence);
+    CHECK(actual->payload.ack.result == expected->payload.ack.result);
+}
+
+static void check_request_slot_empty(const nostos_request_slot_t *slot)
+{
+    const nostos_message_t empty_message = {0};
+    CHECK(!slot->pending);
+    check_message_equal(&slot->message, &empty_message);
+}
+
+static void check_incident_equal(
+    const nostos_incident_record_t *actual,
+    const nostos_incident_record_t *expected)
+{
+    CHECK(actual->source_id == expected->source_id);
+    CHECK(actual->kind == expected->kind);
+    CHECK(actual->ref.session_id == expected->ref.session_id);
+    CHECK(actual->ref.incident_id == expected->ref.incident_id);
+    CHECK(actual->used == expected->used);
+    CHECK(actual->closed == expected->closed);
+    CHECK(actual->muted == expected->muted);
+}
+
+static void new_session_clears_only_replaced_source(void)
+{
+    nostos_receiver_t receiver;
+    CHECK(nostos_receiver_init(&receiver, 1U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 10U, 0U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 3U, 20U, 0U) == NOSTOS_OK);
+
+    nostos_message_t message = {
+        .type = NOSTOS_ENVIRONMENT,
+        .source_id = 2U,
+        .session_id = 10U,
+        .sequence = 1U,
+        .payload.environment = {
+            .temperature_c_x10 = 250,
+            .humidity_pct_x10 = 500U,
+            .temperature_quality = NOSTOS_VALID,
+            .humidity_quality = NOSTOS_VALID,
+        },
+    };
+    CHECK(nostos_receiver_apply(&receiver, &message, 10U) == NOSTOS_OK);
+    message.type = NOSTOS_RIDE;
+    message.sequence = 2U;
+    message.payload.ride = (nostos_ride_t){true, 123U, 4567U};
+    CHECK(nostos_receiver_apply(&receiver, &message, 20U) == NOSTOS_OK);
+    message.type = NOSTOS_FALL;
+    message.sequence = 3U;
+    message.payload.incident = (nostos_incident_ref_t){10U, 1U};
+    CHECK(nostos_receiver_apply(&receiver, &message, 30U) == NOSTOS_OK);
+    size_t source2_incident_index = NOSTOS_INCIDENT_CAPACITY;
+    for (size_t index = 0U; index < NOSTOS_INCIDENT_CAPACITY; ++index) {
+        if (receiver.incidents[index].used &&
+            receiver.incidents[index].source_id == 2U) {
+            source2_incident_index = index;
+            break;
+        }
+    }
+    CHECK(source2_incident_index < NOSTOS_INCIDENT_CAPACITY);
+    message.type = NOSTOS_SPEED_DOWN;
+    message.sequence = 4U;
+    CHECK(nostos_receiver_apply(&receiver, &message, 40U) == NOSTOS_OK);
+    message.type = NOSTOS_STOP;
+    message.sequence = 5U;
+    CHECK(nostos_receiver_apply(&receiver, &message, 50U) == NOSTOS_OK);
+
+    message = (nostos_message_t){
+        .type = NOSTOS_ENVIRONMENT,
+        .source_id = 3U,
+        .session_id = 20U,
+        .sequence = 1U,
+        .payload.environment = {
+            .temperature_c_x10 = 300,
+            .humidity_pct_x10 = 600U,
+            .temperature_quality = NOSTOS_VALID,
+            .humidity_quality = NOSTOS_VALID,
+        },
+    };
+    CHECK(nostos_receiver_apply(&receiver, &message, 60U) == NOSTOS_OK);
+    message.type = NOSTOS_RIDE;
+    message.sequence = 2U;
+    message.payload.ride = (nostos_ride_t){true, 234U, 5678U};
+    CHECK(nostos_receiver_apply(&receiver, &message, 70U) == NOSTOS_OK);
+    message.type = NOSTOS_FALL;
+    message.sequence = 3U;
+    message.payload.incident = (nostos_incident_ref_t){20U, 1U};
+    CHECK(nostos_receiver_apply(&receiver, &message, 80U) == NOSTOS_OK);
+    size_t source3_incident_index = NOSTOS_INCIDENT_CAPACITY;
+    for (size_t index = 0U; index < NOSTOS_INCIDENT_CAPACITY; ++index) {
+        if (receiver.incidents[index].used &&
+            receiver.incidents[index].source_id == 3U) {
+            source3_incident_index = index;
+            break;
+        }
+    }
+    CHECK(source3_incident_index < NOSTOS_INCIDENT_CAPACITY);
+
+    nostos_node_state_t source3_node = receiver.shared_data.nodes[2];
+    nostos_rx_window_t source3_window = receiver.windows[2];
+    nostos_incident_record_t source3_incident =
+        receiver.incidents[source3_incident_index];
+    nostos_outputs_t outputs = nostos_receiver_outputs(&receiver, 80U);
+    CHECK(outputs.led == NOSTOS_LED_RED_BLINK);
+    CHECK(outputs.buzzer == NOSTOS_BUZZER_EMERGENCY);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 11U, 7U) == NOSTOS_OK);
+
+    const nostos_node_state_t empty_source2 = {.source_id = 2U};
+    check_node_equal(&receiver.shared_data.nodes[1], &empty_source2);
+    check_request_slot_empty(&receiver.pending_stop);
+    check_request_slot_empty(&receiver.pending_button);
+    CHECK(receiver.windows[1].approved);
+    CHECK(receiver.windows[1].session_id == 11U);
+    CHECK(receiver.windows[1].floor == 7U);
+    CHECK(!receiver.windows[1].started);
+    check_node_equal(&receiver.shared_data.nodes[2], &source3_node);
+    check_window_equal(&receiver.windows[2], &source3_window);
+
+    const nostos_incident_record_t *cleared =
+        &receiver.incidents[source2_incident_index];
+    CHECK(cleared->source_id == 0U);
+    CHECK(cleared->kind == 0U);
+    CHECK(cleared->ref.session_id == 0U);
+    CHECK(cleared->ref.incident_id == 0U);
+    CHECK(!cleared->used);
+    CHECK(!cleared->closed);
+    CHECK(!cleared->muted);
+    check_incident_equal(&receiver.incidents[source3_incident_index],
+        &source3_incident);
+
+    size_t source2_incidents = 0U;
+    size_t source3_incidents = 0U;
+    for (size_t index = 0U; index < NOSTOS_INCIDENT_CAPACITY; ++index) {
+        const nostos_incident_record_t *incident = &receiver.incidents[index];
+        if (incident->used && incident->source_id == 2U) ++source2_incidents;
+        if (incident->used && incident->source_id == 3U) ++source3_incidents;
+    }
+    CHECK(source2_incidents == 0U);
+    CHECK(source3_incidents == 1U);
+    outputs = nostos_receiver_outputs(&receiver, 81U);
+    CHECK(outputs.led == NOSTOS_LED_RED_BLINK);
+    CHECK(outputs.buzzer == NOSTOS_BUZZER_EMERGENCY);
+
+    /* Replacement rejects the old epoch, enforces the new floor inclusively,
+     * and leaves the other source replay window unchanged. */
+    nostos_message_t boundary = {
+        .type = NOSTOS_HEARTBEAT,
+        .source_id = 2U,
+        .session_id = 10U,
+        .sequence = 99U,
+    };
+    CHECK(nostos_receiver_apply(&receiver, &boundary, 82U) ==
+        NOSTOS_SESSION_REQUIRED);
+    boundary.session_id = 11U;
+    boundary.sequence = 6U;
+    CHECK(nostos_receiver_apply(&receiver, &boundary, 83U) == NOSTOS_STALE);
+    boundary.sequence = 7U;
+    CHECK(nostos_receiver_apply(&receiver, &boundary, 84U) == NOSTOS_OK);
+
+    nostos_message_t source3_replay = {
+        .type = NOSTOS_FALL,
+        .source_id = 3U,
+        .session_id = 20U,
+        .sequence = 3U,
+        .payload.incident = {20U, 1U},
+    };
+    CHECK(nostos_receiver_apply(&receiver, &source3_replay, 85U) ==
+        NOSTOS_DUPLICATE);
+    check_window_equal(&receiver.windows[2], &source3_window);
+
+    /* A later replacement of source 2 must not clear source 3 mailboxes. */
+    message.type = NOSTOS_SPEED_UP;
+    message.sequence = 4U;
+    CHECK(nostos_receiver_apply(&receiver, &message, 90U) == NOSTOS_OK);
+    message.type = NOSTOS_STOP;
+    message.sequence = 5U;
+    CHECK(nostos_receiver_apply(&receiver, &message, 100U) == NOSTOS_OK);
+    nostos_message_t source3_button = receiver.pending_button.message;
+    nostos_message_t source3_stop = receiver.pending_stop.message;
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 12U, 0U) == NOSTOS_OK);
+    CHECK(receiver.pending_button.pending);
+    check_message_equal(&receiver.pending_button.message, &source3_button);
+    CHECK(receiver.pending_stop.pending);
+    check_message_equal(&receiver.pending_stop.message, &source3_stop);
+}
+
+static void single_source_fall_ends_at_new_session(void)
+{
+    nostos_receiver_t receiver;
+    CHECK(nostos_receiver_init(&receiver, 1U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 30U, 0U) == NOSTOS_OK);
+    nostos_message_t fall = {
+        .type = NOSTOS_FALL,
+        .source_id = 2U,
+        .session_id = 30U,
+        .sequence = 1U,
+        .payload.incident = {30U, 1U},
+    };
+    CHECK(nostos_receiver_apply(&receiver, &fall, 10U) == NOSTOS_OK);
+    nostos_outputs_t outputs = nostos_receiver_outputs(&receiver, 10U);
+    CHECK(outputs.led == NOSTOS_LED_RED_BLINK);
+    CHECK(outputs.buzzer == NOSTOS_BUZZER_EMERGENCY);
+
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 31U, 0U) == NOSTOS_OK);
+    outputs = nostos_receiver_outputs(&receiver, 11U);
+    CHECK(outputs.led == NOSTOS_LED_OFF);
+    CHECK(outputs.buzzer == NOSTOS_BUZZER_OFF);
+}
+
+static void mixed_source_mailboxes_clear_selectively(void)
+{
+    nostos_receiver_t receiver;
+    CHECK(nostos_receiver_init(&receiver, 1U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 40U, 0U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 3U, 50U, 0U) == NOSTOS_OK);
+
+    nostos_message_t stop2 = {
+        .type = NOSTOS_STOP,
+        .source_id = 2U,
+        .session_id = 40U,
+        .sequence = 1U,
+    };
+    nostos_message_t button3 = {
+        .type = NOSTOS_SPEED_UP,
+        .source_id = 3U,
+        .session_id = 50U,
+        .sequence = 1U,
+    };
+    CHECK(nostos_receiver_apply(&receiver, &stop2, 10U) == NOSTOS_OK);
+    CHECK(nostos_receiver_apply(&receiver, &button3, 11U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 41U, 0U) == NOSTOS_OK);
+    check_request_slot_empty(&receiver.pending_stop);
+    CHECK(receiver.pending_button.pending);
+    check_message_equal(&receiver.pending_button.message, &button3);
+
+    nostos_receiver_clear_requests(&receiver);
+    nostos_message_t stop3 = {
+        .type = NOSTOS_STOP,
+        .source_id = 3U,
+        .session_id = 50U,
+        .sequence = 2U,
+    };
+    nostos_message_t button2 = {
+        .type = NOSTOS_SPEED_DOWN,
+        .source_id = 2U,
+        .session_id = 41U,
+        .sequence = 0U,
+    };
+    CHECK(nostos_receiver_apply(&receiver, &stop3, 20U) == NOSTOS_OK);
+    CHECK(nostos_receiver_apply(&receiver, &button2, 21U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 42U, 0U) == NOSTOS_OK);
+    check_request_slot_empty(&receiver.pending_button);
+    CHECK(receiver.pending_stop.pending);
+    check_message_equal(&receiver.pending_stop.message, &stop3);
+}
+
 static void ride_codec_and_shared_state(void)
 {
     const uint8_t expected[] = {
@@ -453,6 +802,9 @@ int main(void)
 {
     crc_and_frame_validation();
     session_and_sequence_replay_protection();
+    new_session_clears_only_replaced_source();
+    single_source_fall_ends_at_new_session();
+    mixed_source_mailboxes_clear_selectively();
     ride_codec_and_shared_state();
     retired_application_types_are_rejected();
     fall_is_the_only_emergency_output();

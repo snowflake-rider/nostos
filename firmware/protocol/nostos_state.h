@@ -55,7 +55,8 @@ typedef struct { nostos_led_t led; nostos_buzzer_t buzzer; } nostos_outputs_t;
 nostos_result_t nostos_receiver_init(nostos_receiver_t *receiver, uint8_t local_source);
 /* Trusted configuration only. No packet can approve its own session. Caller
  * restores approved session + sequence floor from durable state on reboot.
- * Same/lower session replacement is rejected; existing incidents survive. */
+ * Same/lower session replacement is rejected. A newer source session starts a
+ * strict empty epoch for that source while all other source state survives. */
 nostos_result_t nostos_receiver_approve_session(nostos_receiver_t *receiver,
     uint8_t source, uint32_t session, uint16_t sequence_floor);
 nostos_result_t nostos_receiver_apply(nostos_receiver_t *receiver,
