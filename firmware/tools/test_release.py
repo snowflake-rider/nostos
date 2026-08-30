@@ -8,6 +8,7 @@ import hashlib
 import importlib.util
 import io
 import json
+import os
 import subprocess
 import tempfile
 import unittest
@@ -20,6 +21,112 @@ SPEC = importlib.util.spec_from_file_location("nostos_release", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None
 release = importlib.util.module_from_spec(SPEC)
 SPEC.loader.exec_module(release)
+
+
+class Stm32CompilerMetadataTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name) / "firmware"
+        self.metadata = (
+            self.root / "stm32/build/Release/CMakeFiles/4.4.2/CMakeCCompiler.cmake"
+        )
+        self.metadata.parent.mkdir(parents=True)
+        self.compiler = self.root / "tool chain/bin/arm-none-eabi-gcc"
+        self.compiler.parent.mkdir(parents=True)
+        self.compiler.write_text("#!/usr/bin/env sh\n", encoding="utf-8")
+        self.compiler.chmod(0o755)
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def write_metadata(self, compiler: Path | str) -> None:
+        self.metadata.write_text(
+            f'set(CMAKE_C_COMPILER "{compiler}")\n'
+            'set(CMAKE_C_COMPILER_ID "GNU")\n',
+            encoding="utf-8",
+        )
+
+    def test_resolves_executable_from_cmake_build_metadata(self) -> None:
+        self.write_metadata(self.compiler)
+        with mock.patch.dict(os.environ, {"PATH": ""}):
+            self.assertEqual(release.stm32_build_compiler(self.root), self.compiler.resolve())
+
+    def test_rejects_missing_compiler_executable(self) -> None:
+        self.write_metadata(self.root / "missing/arm-none-eabi-gcc")
+        with self.assertRaisesRegex(release.ReleaseError, "missing or not executable"):
+            release.stm32_build_compiler(self.root)
+
+    def test_rejects_ambiguous_compiler_metadata(self) -> None:
+        self.write_metadata(self.compiler)
+        second_compiler = self.root / "other/bin/arm-none-eabi-gcc"
+        second_compiler.parent.mkdir(parents=True)
+        second_compiler.write_text("#!/usr/bin/env sh\n", encoding="utf-8")
+        second_compiler.chmod(0o755)
+        second_metadata = (
+            self.root / "stm32/build/Release/CMakeFiles/4.5.0/CMakeCCompiler.cmake"
+        )
+        second_metadata.parent.mkdir(parents=True)
+        second_metadata.write_text(
+            f'set(CMAKE_C_COMPILER "{second_compiler}")\n', encoding="utf-8"
+        )
+        with self.assertRaisesRegex(release.ReleaseError, "ambiguous"):
+            release.stm32_build_compiler(self.root)
+
+
+class Esp32IdfMetadataTest(unittest.TestCase):
+    def setUp(self) -> None:
+        self.temporary = tempfile.TemporaryDirectory()
+        self.root = Path(self.temporary.name) / "firmware"
+        self.cache = self.root / "esp32/build/CMakeCache.txt"
+        self.cache.parent.mkdir(parents=True)
+        self.python = self.root / "python env/bin/python"
+        self.python.parent.mkdir(parents=True)
+        base_python = self.python.with_name("python3.14")
+        base_python.write_text("#!/usr/bin/env sh\n", encoding="utf-8")
+        base_python.chmod(0o755)
+        self.python.symlink_to(base_python.name)
+        self.idf_root = self.root / "esp idf"
+        self.idf_script = self.idf_root / "tools/idf.py"
+        self.idf_script.parent.mkdir(parents=True)
+        self.idf_script.write_text("#!/usr/bin/env python\n", encoding="utf-8")
+
+    def tearDown(self) -> None:
+        self.temporary.cleanup()
+
+    def write_cache(self, python: Path | str) -> None:
+        self.cache.write_text(f"PYTHON:UNINITIALIZED={python}\n", encoding="utf-8")
+
+    def test_resolves_python_and_idf_script_from_build_metadata(self) -> None:
+        self.write_cache(self.python)
+        description = {"idf_path": str(self.idf_root)}
+        with mock.patch.dict(os.environ, {"PATH": ""}):
+            self.assertEqual(
+                release.esp32_build_idf_command(self.root, description),
+                [str(self.python.absolute()), str(self.idf_script.resolve())],
+            )
+
+    def test_rejects_missing_build_python(self) -> None:
+        self.write_cache(self.root / "missing/python")
+        with self.assertRaisesRegex(release.ReleaseError, "not an executable"):
+            release.esp32_build_idf_command(
+                self.root, {"idf_path": str(self.idf_root)}
+            )
+
+    @mock.patch.object(release.subprocess, "run")
+    def test_reads_idf_version_after_environment_notices(self, run: mock.Mock) -> None:
+        run.return_value = subprocess.CompletedProcess(
+            [],
+            0,
+            "Setting IDF_PATH environment variable\n"
+            "WARNING: IDF_PYTHON_ENV_PATH is missing\n"
+            "ESP-IDF v5.5.5\n",
+        )
+        self.assertEqual(
+            release.command_version(
+                [str(self.python), str(self.idf_script)], output_prefix="ESP-IDF "
+            ),
+            "ESP-IDF v5.5.5",
+        )
 
 
 class DevFlashTest(unittest.TestCase):

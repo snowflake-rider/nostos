@@ -1,0 +1,39 @@
+{
+  "name": "nostos-essence",
+  "version": "1.0.0",
+  "description": "An 84-second NOSTOS concept film built with Remotion",
+  "repository": {},
+  "license": "UNLICENSED",
+  "private": true,
+  "dependencies": {
+    "@remotion/captions": "4.0.518",
+    "@remotion/cli": "4.0.518",
+    "@remotion/media": "4.0.518",
+    "@remotion/tailwind-v4": "4.0.518",
+    "@remotion/transitions": "4.0.518",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "remotion": "4.0.518",
+    "tailwindcss": "4.0.0"
+  },
+  "devDependencies": {
+    "@remotion/eslint-config-flat": "4.0.518",
+    "@types/react": "19.2.7",
+    "@types/web": "0.0.166",
+    "eslint": "9.19.0",
+    "prettier": "3.8.1",
+    "typescript": "5.9.3"
+  },
+  "scripts": {
+    "dev": "remotion studio",
+    "build": "remotion bundle",
+    "upgrade": "remotion upgrade",
+    "lint": "eslint src && tsc",
+    "stills": "remotion still Scene01-Hook out/stills/scene01-hook.png --frame=97 && remotion still Scene02-Connect out/stills/scene02-connect.png --frame=112 && remotion still Scene03-Sensors out/stills/scene03-sensors.png --frame=187 && remotion still Scene04-Architecture out/stills/scene04-architecture.png --frame=202 && remotion still Scene05-Signals out/stills/scene05-signals.png --frame=202 && remotion still Scene06-Safety out/stills/scene06-safety.png --frame=217 && remotion still Scene07-Shared-State out/stills/scene07-shared-state.png --frame=172 && remotion still Scene08-Finale out/stills/scene08-finale.png --frame=120 && remotion still NostosEssence out/nostos-essence-cover.png --frame=2380",
+    "render": "remotion render NostosEssence out/nostos-essence.mp4 --codec=h264 --crf=18",
+    "check-media": "node -e \"const fs=require('node:fs');const files=['public/captions.json','public/audio/ambient.mp3','public/audio/scene01.mp3','public/audio/scene02.mp3','public/audio/scene03.mp3','public/audio/scene04.mp3','public/audio/scene05.mp3','public/audio/scene06.mp3','public/audio/scene07.mp3','public/audio/scene08.mp3','public/sfx/rear_warning.mp3','public/sfx/speed_down_request.mp3','public/sfx/speed_up_request.mp3','public/sfx/stop_request.mp3','public/video/nostos-ride-signals.mp4'];const missing=files.filter((file)=>{try{return fs.statSync(file).size===0}catch{return true}});if(missing.length){console.error('Missing or empty media:\\n'+missing.join('\\n'));process.exit(1)}console.log('Media check passed: '+files.length+' files')\""
+  },
+  "sideEffects": [
+    "*.css"
+  ]
+}

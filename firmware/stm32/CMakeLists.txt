@@ -26,7 +26,7 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
-option(NOSTOS_PROTOCOL_V2 "Use v2 endpoint; requires trusted boot/session provider" ON)
+option(NOSTOS_PROTOCOL_V2 "Use the thin STM32-to-ESP32 sensor/output link" ON)
 option(NOSTOS_FREERTOS "Run the STM32 application on FreeRTOS" ON)
 option(BUTTON_OUTPUT_TEST "Diagnostic button -> RGB -> VS1003B output mode" OFF)
 option(SSD1306_DISPLAY "Enable SSD1306 display on I2C1 PB8/PB9" ON)
@@ -73,11 +73,6 @@ enable_language(C ASM)
 
 # Create an executable object type
 add_executable(${CMAKE_PROJECT_NAME})
-if(NOSTOS_PROTOCOL_V2)
-    # The default boot hook fails closed. Still retain the public v2 init entry
-    # and its output/codec dependencies for trusted deployment integration.
-    target_link_options(${CMAKE_PROJECT_NAME} PRIVATE "-Wl,--undefined=message_protocol_service_init")
-endif()
 
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
@@ -109,11 +104,6 @@ file(GLOB_RECURSE MYAPP_SOURCES CONFIGURE_DEPENDS
 
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${MYAPP_SOURCES}
-    ../protocol/nostos_protocol.c
-    ../protocol/nostos_uart.c
-    ../protocol/nostos_state.c
-    ../protocol/nostos_endpoint.c
-    ../protocol/nostos_debug.c
     ../protocol/sensor_link.c
 )
 

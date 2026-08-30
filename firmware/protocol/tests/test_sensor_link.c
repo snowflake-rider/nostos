@@ -74,6 +74,121 @@ static void round_trip_ride(void)
     CHECK(message.ride.distance_mm == UINT32_C(0x11223344));
 }
 
+static void round_trip_local_producers(void)
+{
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t length = 0U;
+    sensor_link_parser_t parser = {0};
+    sensor_link_message_t message = {0};
+
+    CHECK(sensor_link_encode_event(0x30U, frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == SENSOR_LINK_EVENT_FRAME_SIZE);
+    CHECK(feed_frame(&parser, frame, length, 1U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_EVENT);
+    CHECK(message.event.type == 0x30U);
+
+    CHECK(sensor_link_encode_environment(
+        -123, 654U, 1U, 4U, frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == SENSOR_LINK_ENVIRONMENT_FRAME_SIZE);
+    CHECK(feed_frame(&parser, frame, length, 20U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_ENVIRONMENT);
+    CHECK(message.environment.temperature_c_x10 == -123);
+    CHECK(message.environment.humidity_pct_x10 == 654U);
+    CHECK(message.environment.temperature_quality == 1U);
+    CHECK(message.environment.humidity_quality == 4U);
+
+    CHECK(sensor_link_encode_shared_data_request(3U, frame, &length) ==
+        SENSOR_LINK_OK);
+    CHECK(length == SENSOR_LINK_SHARED_DATA_REQUEST_FRAME_SIZE);
+    CHECK(feed_frame(&parser, frame, length, 40U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_SHARED_DATA_REQUEST);
+    CHECK(message.shared_data_request.mask == 3U);
+}
+
+static void round_trip_outputs_and_golden_bytes(void)
+{
+    static const uint8_t ready_golden[SENSOR_LINK_READY_FRAME_SIZE] = {
+        0xA5U, 0x5AU, 0x01U, 0x0AU, 0x04U, 0x12U, 0x34U,
+        0x56U, 0x78U, 0x87U, 0xF2U,
+    };
+    static const uint8_t event_golden[SENSOR_LINK_OUTPUT_EVENT_FRAME_SIZE] = {
+        0xA5U, 0x5AU, 0x01U, 0x0BU, 0x06U, 0x12U, 0x34U,
+        0x56U, 0x78U, 0x02U, 0x30U, 0xCDU, 0xE3U,
+    };
+    static const uint8_t ride_golden[SENSOR_LINK_OUTPUT_RIDE_FRAME_SIZE] = {
+        0xA5U, 0x5AU, 0x01U, 0x0CU, 0x0CU, 0x44U, 0x33U,
+        0x22U, 0x11U, 0x03U, 0x01U, 0xE4U, 0x00U, 0xD4U,
+        0xC3U, 0xB2U, 0xA1U, 0x09U, 0xCDU,
+    };
+    static const uint8_t environment_golden[
+        SENSOR_LINK_OUTPUT_ENVIRONMENT_FRAME_SIZE] = {
+        0xA5U, 0x5AU, 0x01U, 0x0DU, 0x0BU, 0x0DU, 0x0CU,
+        0x0BU, 0x0AU, 0x01U, 0x85U, 0xFFU, 0x8EU, 0x02U,
+        0x01U, 0x04U, 0xC9U, 0xC9U,
+    };
+    static const uint8_t result_golden[SENSOR_LINK_OUTPUT_RESULT_FRAME_SIZE] = {
+        0xA5U, 0x5AU, 0x01U, 0x0EU, 0x05U, 0x12U, 0x34U,
+        0x56U, 0x78U, 0x03U, 0x58U, 0xFCU,
+    };
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t length = 0U;
+    sensor_link_parser_t parser = {0};
+    sensor_link_message_t message = {0};
+
+    CHECK(SENSOR_LINK_FRAME_SIZE == SENSOR_LINK_OUTPUT_RIDE_FRAME_SIZE);
+    CHECK(sensor_link_encode_ready(
+        UINT32_C(0x78563412), frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == sizeof(ready_golden));
+    CHECK(memcmp(frame, ready_golden, length) == 0);
+    CHECK(feed_frame(&parser, frame, length, 1U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_READY);
+    CHECK(message.ready.command_epoch == UINT32_C(0x78563412));
+
+    CHECK(sensor_link_encode_output_event(UINT32_C(0x78563412), 2U,
+        SENSOR_LINK_EVENT_FALL, frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == sizeof(event_golden));
+    CHECK(memcmp(frame, event_golden, length) == 0);
+    CHECK(feed_frame(&parser, frame, length, 20U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_EVENT);
+    CHECK(message.output_event.command_id == UINT32_C(0x78563412));
+    CHECK(message.output_event.source_id == 2U);
+    CHECK(message.output_event.event_type == SENSOR_LINK_EVENT_FALL);
+
+    CHECK(sensor_link_encode_output_ride(UINT32_C(0x11223344), 3U, true,
+        228U, UINT32_C(0xA1B2C3D4), frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == sizeof(ride_golden));
+    CHECK(memcmp(frame, ride_golden, length) == 0);
+    CHECK(feed_frame(&parser, frame, length, 40U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_RIDE);
+    CHECK(message.output_ride.command_id == UINT32_C(0x11223344));
+    CHECK(message.output_ride.source_id == 3U);
+    CHECK(message.output_ride.valid);
+    CHECK(message.output_ride.kmh_x10 == 228U);
+    CHECK(message.output_ride.distance_mm == UINT32_C(0xA1B2C3D4));
+
+    CHECK(sensor_link_encode_output_environment(UINT32_C(0x0A0B0C0D), 1U,
+        -123, 654U, 1U, 4U, frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == sizeof(environment_golden));
+    CHECK(memcmp(frame, environment_golden, length) == 0);
+    CHECK(feed_frame(&parser, frame, length, 70U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_ENVIRONMENT);
+    CHECK(message.output_environment.command_id == UINT32_C(0x0A0B0C0D));
+    CHECK(message.output_environment.source_id == 1U);
+    CHECK(message.output_environment.temperature_c_x10 == -123);
+    CHECK(message.output_environment.humidity_pct_x10 == 654U);
+    CHECK(message.output_environment.temperature_quality == 1U);
+    CHECK(message.output_environment.humidity_quality == 4U);
+
+    CHECK(sensor_link_encode_output_result(UINT32_C(0x78563412),
+        SENSOR_LINK_OUTPUT_HARDWARE_ERROR, frame, &length) == SENSOR_LINK_OK);
+    CHECK(length == sizeof(result_golden));
+    CHECK(memcmp(frame, result_golden, length) == 0);
+    CHECK(feed_frame(&parser, frame, length, 100U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_RESULT);
+    CHECK(message.output_result.command_id == UINT32_C(0x78563412));
+    CHECK(message.output_result.status == SENSOR_LINK_OUTPUT_HARDWARE_ERROR);
+}
+
 static void round_trip_handshake(void)
 {
     uint8_t frame[SENSOR_LINK_FRAME_SIZE];
@@ -109,7 +224,6 @@ static void round_trip_handshake(void)
     CHECK(sensor_link_encode_approve_session(
         3U, 0xA1B2C3D4U, 0x5678U, frame, &length) == SENSOR_LINK_OK);
     CHECK(length == SENSOR_LINK_APPROVE_SESSION_FRAME_SIZE);
-    CHECK(length == SENSOR_LINK_FRAME_SIZE);
     CHECK(frame[3] == SENSOR_LINK_APPROVE_SESSION);
     CHECK(frame[10] == 0x78U);
     CHECK(frame[11] == 0x56U);
@@ -156,6 +270,34 @@ static void invalid_encode_preserves_outputs(void)
     CHECK(sensor_link_encode_approve_session(0U, 1U, 0U, frame, &length) ==
         SENSOR_LINK_BAD_VALUE);
     CHECK(sensor_link_encode_identity_ack(1U, 0U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_event(0x12U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_environment(0, 0U, 5U, 0U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_shared_data_request(0U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_shared_data_request(4U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_ready(0U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_event(0U, 1U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_event(1U, 0U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_event(1U, 4U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_event(1U, 1U, 0x12U, frame, &length) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_ride(1U, 1U, false, 1U, 0U,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_ride(1U, 1U, false, 0U, 1U,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_environment(1U, 1U, 0, 0U, 5U, 0U,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_result(0U, SENSOR_LINK_OUTPUT_ACCEPTED,
+        frame, &length) == SENSOR_LINK_BAD_VALUE);
+    CHECK(sensor_link_encode_output_result(1U, 4U, frame, &length) ==
         SENSOR_LINK_BAD_VALUE);
     CHECK(length == 99U);
     CHECK(memcmp(frame, original, sizeof(frame)) == 0);
@@ -242,6 +384,105 @@ static void decoded_ride_values_are_validated(void)
     CHECK(message.type == 0xEEU);
 }
 
+static void decoded_output_values_are_validated(void)
+{
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t length = 0U;
+    sensor_link_parser_t parser = {0};
+    sensor_link_message_t message = {.type = 0xEEU};
+
+    CHECK(sensor_link_encode_ready(1U, frame, &length) == SENSOR_LINK_OK);
+    memset(&frame[5], 0, sizeof(uint32_t));
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 1U, &message) ==
+        SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_event(1U, 1U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_OK);
+    memset(&frame[5], 0, sizeof(uint32_t));
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 30U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_event(1U, 1U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[9] = 4U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 60U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_event(1U, 1U, SENSOR_LINK_EVENT_STOP,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[10] = 0x12U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 90U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_ride(1U, 1U, true, 10U, 20U,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[10] = 2U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 120U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_ride(1U, 1U, true, 10U, 20U,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[10] = 0U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 150U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_environment(
+        1U, 1U, 0, 0U, 0U, 0U, frame, &length) == SENSOR_LINK_OK);
+    frame[14] = 5U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 180U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+
+    CHECK(sensor_link_encode_output_result(1U, SENSOR_LINK_OUTPUT_ACCEPTED,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[9] = 4U;
+    refresh_fixture_crc(frame);
+    CHECK(feed_frame(&parser, frame, length, 210U, &message) == SENSOR_LINK_BAD_VALUE);
+    CHECK(message.type == 0xEEU);
+}
+
+static void output_crc_timeout_and_recovery(void)
+{
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t length = 0U;
+    sensor_link_parser_t parser = {0};
+    sensor_link_message_t message = {.type = 0xEEU};
+
+    CHECK(sensor_link_encode_output_ride(1U, 1U, true, 10U, 20U,
+        frame, &length) == SENSOR_LINK_OK);
+    frame[length - 1U] ^= 0x80U;
+    CHECK(feed_frame(&parser, frame, length, 1U, &message) == SENSOR_LINK_BAD_CRC);
+    CHECK(message.type == 0xEEU);
+    CHECK(parser.used == 0U);
+
+    CHECK(sensor_link_encode_output_event(2U, 2U, SENSOR_LINK_EVENT_SPEED_UP,
+        frame, &length) == SENSOR_LINK_OK);
+    CHECK(feed_frame(&parser, frame, length, 30U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_EVENT);
+    CHECK(message.output_event.command_id == 2U);
+
+    CHECK(sensor_link_encode_output_environment(
+        3U, 3U, 250, 500U, 1U, 1U, frame, &length) == SENSOR_LINK_OK);
+    CHECK(sensor_link_feed(&parser, frame[0], 100U, &message) == SENSOR_LINK_EMPTY);
+    CHECK(sensor_link_feed(&parser, frame[1], 101U, &message) == SENSOR_LINK_EMPTY);
+    CHECK(sensor_link_feed(&parser, frame[2],
+        101U + SENSOR_LINK_TIMEOUT_MS + 1U, &message) == SENSOR_LINK_TIMEOUT);
+    CHECK(parser.used == 0U);
+
+    CHECK(sensor_link_encode_output_result(
+        3U, SENSOR_LINK_OUTPUT_ACCEPTED, frame, &length) == SENSOR_LINK_OK);
+    CHECK(feed_frame(&parser, frame, length, 300U, &message) == SENSOR_LINK_OK);
+    CHECK(message.type == SENSOR_LINK_OUTPUT_RESULT);
+    CHECK(message.output_result.command_id == 3U);
+}
+
 static void length_timeout_and_preamble_resync(void)
 {
     sensor_link_parser_t parser = {0};
@@ -268,7 +509,8 @@ static void length_timeout_and_preamble_resync(void)
 
     const uint8_t bad_length_prefix[] = {
         SENSOR_LINK_PREAMBLE_0, SENSOR_LINK_PREAMBLE_1,
-        SENSOR_LINK_VERSION, SENSOR_LINK_HELLO, 8U,
+        SENSOR_LINK_VERSION, SENSOR_LINK_HELLO,
+        SENSOR_LINK_OUTPUT_RIDE_PAYLOAD_SIZE + 1U,
     };
     sensor_link_result_t result = SENSOR_LINK_EMPTY;
     for (size_t index = 0U; index < sizeof(bad_length_prefix); ++index) {
@@ -284,11 +526,15 @@ static void length_timeout_and_preamble_resync(void)
 int main(void)
 {
     round_trip_ride();
+    round_trip_local_producers();
+    round_trip_outputs_and_golden_bytes();
     round_trip_handshake();
     invalid_encode_preserves_outputs();
     crc_error_and_recovery();
     decoded_identity_values_are_validated();
     decoded_ride_values_are_validated();
+    decoded_output_values_are_validated();
+    output_crc_timeout_and_recovery();
     length_timeout_and_preamble_resync();
     return 0;
 }

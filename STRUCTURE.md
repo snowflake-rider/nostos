@@ -16,7 +16,9 @@ nostos/
 │   └── nostos-hardware-monitor/
 ├── docs/
 │   ├── bluetooth-setting/
-│   └── media/
+│   ├── media/
+│   └── schematics/
+│       └── nostos/
 ├── firmware/
 │   ├── README.md
 │   ├── VERSION

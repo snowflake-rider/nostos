@@ -74,6 +74,25 @@ static nostos_result_t decode_ride(const uint8_t *p, nostos_message_t *m)
     m->payload.ride=(nostos_ride_t){p[0]!=0U,kmh_x10,distance_mm};
     return NOSTOS_OK;
 }
+static nostos_result_t encode_shared_data_request(
+    const nostos_message_t *m,
+    uint8_t *p)
+{
+    uint8_t mask=m->payload.shared_data_request.mask;
+    if (!mask || (mask&(uint8_t)~NOSTOS_SHARED_DATA_MASK))
+        return NOSTOS_BAD_VALUE;
+    p[0]=mask;
+    return NOSTOS_OK;
+}
+static nostos_result_t decode_shared_data_request(
+    const uint8_t *p,
+    nostos_message_t *m)
+{
+    if (!p[0] || (p[0]&(uint8_t)~NOSTOS_SHARED_DATA_MASK))
+        return NOSTOS_BAD_VALUE;
+    m->payload.shared_data_request.mask=p[0];
+    return NOSTOS_OK;
+}
 static nostos_result_t encode_environment(const nostos_message_t *m, uint8_t *p)
 {
     const nostos_environment_t *e=&m->payload.environment;
@@ -128,6 +147,8 @@ const nostos_type_info_t nostos_types[NOSTOS_TYPE_COUNT] = {
     {NOSTOS_ENVIRONMENT,2U,"ENVIRONMENT",encode_environment,decode_environment},
     {NOSTOS_FALL_CLEAR,6U,"FALL_CLEAR",encode_incident,decode_incident},
     {NOSTOS_RIDE,7U,"RIDE",encode_ride,decode_ride},
+    {NOSTOS_SHARED_DATA_REQUEST,1U,"SHARED_DATA_REQUEST",
+        encode_shared_data_request,decode_shared_data_request},
     {NOSTOS_HEARTBEAT,1U,"HEARTBEAT",encode_heartbeat,decode_heartbeat},
     {NOSTOS_ACK,9U,"ACK",encode_ack,decode_ack}
 };

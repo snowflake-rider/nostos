@@ -17,7 +17,9 @@
 #include "vs1003b.h"
 #if NOSTOS_PROTOCOL_V2
 #include "message_protocol_service.h"
-volatile nostos_result_t protocol_debug_boot_status=NOSTOS_NOT_READY;
+volatile message_protocol_result_t protocol_debug_boot_status =
+    MESSAGE_PROTOCOL_NOT_READY;
+volatile bool protocol_debug_link_ready = false;
 #endif
 
 #define VS1003B_SCI_CLOCKF_ADDRESS 0x03U
@@ -119,8 +121,9 @@ void app_init(
     }
 
 #if NOSTOS_PROTOCOL_V2
-    /* No raw-v1 fallback when trusted session restore is not configured. */
-    protocol_debug_boot_status=message_protocol_service_boot(message_uart,vs1003b_debug_status);
+    protocol_debug_link_ready = false;
+    protocol_debug_boot_status = message_protocol_service_boot(
+        message_uart, vs1003b_debug_status);
 #else
     message_service_init(vs1003b_debug_status);
 #endif
@@ -170,6 +173,8 @@ void app_runtime_reset(void)
     alert_reset();
     buzzer_stop();
     vs1003b_debug_status = audio_service_stop();
+    sensor_view_service_clear_outputs();
+    display_service_reset_outputs();
 #else
     message_service_reset_outputs();
     vs1003b_debug_status = message_service_get_status()->audio_status;
@@ -220,6 +225,7 @@ void app_runtime_process_services(void)
 #if NOSTOS_PROTOCOL_V2
     message_protocol_service_process();
     sensor_sync_service_process();
+    protocol_debug_link_ready = message_protocol_service_is_ready();
     vs1003b_debug_audio_playing=audio_service_is_playing();
     vs1003b_debug_audio_position=audio_service_position();
     buzzer_debug_active=buzzer_is_active();

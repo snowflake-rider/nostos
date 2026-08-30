@@ -58,24 +58,19 @@ add_test(NAME sensor_sync_service COMMAND test_sensor_sync_service)
 add_executable(test_message_protocol_identity
     test_message_protocol_identity.c
     ../MyApp/service/message_protocol_service.c
-    ../../protocol/sensor_link.c
-    ../../protocol/nostos_protocol.c
-    ../../protocol/nostos_uart.c
-    ../../protocol/nostos_state.c
-    ../../protocol/nostos_endpoint.c)
+    ../../protocol/sensor_link.c)
 target_include_directories(test_message_protocol_identity PRIVATE
     fakes ../Core/Inc ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
 target_compile_options(test_message_protocol_identity PRIVATE
     -include ${CMAKE_CURRENT_SOURCE_DIR}/message_protocol_test_platform.h
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
-target_link_libraries(test_message_protocol_identity PRIVATE sensor_view_service)
 if(ENABLE_SANITIZERS)
     target_compile_options(test_message_protocol_identity PRIVATE
         -fsanitize=address,undefined -fno-omit-frame-pointer)
     target_link_options(test_message_protocol_identity PRIVATE
         -fsanitize=address,undefined)
 endif()
-add_test(NAME message_protocol_identity COMMAND test_message_protocol_identity)
+add_test(NAME thin_io_link COMMAND test_message_protocol_identity)
 
 # Exercise the real button/USART service APIs; only the hardware HAL is replaced.
 add_executable(test_button_uart test_button_uart.c

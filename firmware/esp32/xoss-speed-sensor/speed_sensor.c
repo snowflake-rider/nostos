@@ -171,6 +171,14 @@ void speed_sensor_reset(speed_sensor_state_t *state)
     }
 }
 
+void speed_sensor_rebaseline(speed_sensor_state_t *state)
+{
+    if (state == NULL) return;
+    state->previous_wheel_revolutions = 0U;
+    state->previous_wheel_event_time_1024 = 0U;
+    state->has_baseline = false;
+}
+
 const char *speed_sensor_result_name(speed_sensor_result_t result)
 {
     static const char *const names[] = {

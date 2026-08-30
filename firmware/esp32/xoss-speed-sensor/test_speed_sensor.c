@@ -195,6 +195,18 @@ static bool test_reset_and_bad_arguments(void)
     speed_sensor_sample_t sample;
     speed_sensor_reset(&state);
     CHECK(!state.has_baseline && state.distance_mm == 0U);
+
+    state = (speed_sensor_state_t){
+        .has_baseline = true,
+        .previous_wheel_revolutions = 10U,
+        .previous_wheel_event_time_1024 = 20U,
+        .distance_mm = 4321U
+    };
+    speed_sensor_rebaseline(&state);
+    CHECK(!state.has_baseline && state.distance_mm == 4321U);
+    CHECK(state.previous_wheel_revolutions == 0U);
+    CHECK(state.previous_wheel_event_time_1024 == 0U);
+
     CHECK(speed_sensor_update(&state, &measurement, 0U, &sample) ==
           SPEED_SENSOR_BAD_ARGUMENT);
     CHECK(speed_sensor_update(NULL, &measurement, 2105U, &sample) ==

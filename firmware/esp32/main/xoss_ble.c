@@ -26,6 +26,7 @@
 #define XOSS_NOTIFICATION_MAX 11U
 #define XOSS_QUEUE_LENGTH 8U
 #define XOSS_RECONNECT_MS 2000U
+#define XOSS_IDLE_REFRESH_MS 1000U
 
 typedef enum {
     XOSS_EVENT_NOTIFICATION,
@@ -62,6 +63,7 @@ static uint32_t notifications_dropped;
 static uint32_t rides_forwarded;
 static uint32_t rides_rejected;
 static uint32_t last_ride_ms;
+static uint32_t last_idle_refresh_ms;
 static uint32_t session_epoch;
 static bool ride_stale_reported;
 static bool reconnect_pending;
@@ -440,36 +442,61 @@ static void process_notification(const xoss_event_t *event)
         result = speed_sensor_update(&speed_state, &measurement,
             CONFIG_NOSTOS_XOSS_WHEEL_CIRCUMFERENCE_MM, &sample);
     }
-    bool distance_in_range = result == SPEED_SENSOR_OK && sample.valid &&
-        sample.distance_mm <= UINT32_MAX;
-    esp_err_t forward_result = distance_in_range
+    bool stopped_snapshot = result == SPEED_SENSOR_BASELINE ||
+        result == SPEED_SENSOR_REBASELINE;
+    uint64_t distance = result == SPEED_SENSOR_OK
+        ? sample.distance_mm : speed_state.distance_mm;
+    uint16_t speed = result == SPEED_SENSOR_OK ? sample.kmh_x10 : 0U;
+    bool snapshot_ready = ((result == SPEED_SENSOR_OK && sample.valid) ||
+        stopped_snapshot) && distance <= UINT32_MAX;
+    esp_err_t forward_result = snapshot_ready
         ? bridge_runtime_send_sensor_ride(
-            true, sample.kmh_x10, (uint32_t)sample.distance_mm)
+            true, speed, (uint32_t)distance)
         : ESP_ERR_INVALID_ARG;
-    if (distance_in_range && forward_result == ESP_OK) {
+    if (snapshot_ready && forward_result == ESP_OK) {
         portENTER_CRITICAL(&status_lock);
         ++rides_forwarded;
         last_ride_ms = now_ms();
         portEXIT_CRITICAL(&status_lock);
+        last_idle_refresh_ms = 0U;
         ESP_LOGI(TAG, "RIDE kmh_x10=%u distance_mm=%" PRIu32,
-            (unsigned)sample.kmh_x10, (uint32_t)sample.distance_mm);
-    } else if (result == SPEED_SENSOR_OK && sample.valid && !distance_in_range) {
+            (unsigned)speed, (uint32_t)distance);
+    } else if (((result == SPEED_SENSOR_OK && sample.valid) ||
+        stopped_snapshot) && distance > UINT32_MAX) {
         portENTER_CRITICAL(&status_lock);
         ++rides_rejected;
         portEXIT_CRITICAL(&status_lock);
         ESP_LOGW(TAG, "RIDE_DROP distance_mm=%" PRIu64 " exceeds uint32",
-            sample.distance_mm);
-    } else if (distance_in_range) {
+            distance);
+    } else if (snapshot_ready) {
         portENTER_CRITICAL(&status_lock);
         ++rides_rejected;
         portEXIT_CRITICAL(&status_lock);
         ESP_LOGW(TAG, "RIDE_FORWARD_FAILED %s", esp_err_to_name(forward_result));
-    } else if (result != SPEED_SENSOR_BASELINE && result != SPEED_SENSOR_NO_UPDATE) {
+    } else if (result != SPEED_SENSOR_BASELINE &&
+        result != SPEED_SENSOR_REBASELINE && result != SPEED_SENSOR_NO_UPDATE) {
         portENTER_CRITICAL(&status_lock);
         ++rides_rejected;
         portEXIT_CRITICAL(&status_lock);
         ESP_LOGW(TAG, "CSC_DROP %s", speed_sensor_result_name(result));
     }
+}
+
+static esp_err_t forward_stopped_ride(void)
+{
+    portENTER_CRITICAL(&status_lock);
+    bool distance_known = last_ride_ms != 0U;
+    portEXIT_CRITICAL(&status_lock);
+    if (!distance_known && !speed_state.has_baseline) {
+        return bridge_runtime_send_sensor_ride(false, 0U, 0U);
+    }
+    if (speed_state.distance_mm > UINT32_MAX) return ESP_ERR_INVALID_SIZE;
+    esp_err_t result = bridge_runtime_send_sensor_ride(
+        true, 0U, (uint32_t)speed_state.distance_mm);
+    portENTER_CRITICAL(&status_lock);
+    if (result == ESP_OK) ++rides_forwarded; else ++rides_rejected;
+    portEXIT_CRITICAL(&status_lock);
+    return result;
 }
 
 static void xoss_task(void *argument)
@@ -493,20 +520,30 @@ static void xoss_task(void *argument)
         bool reconnect = false;
         bool report_stale = false;
         if (xSemaphoreTake(runtime_mutex, pdMS_TO_TICKS(1000U)) == pdTRUE) {
+            uint32_t now = now_ms();
             portENTER_CRITICAL(&status_lock);
             reconnect = reconnect_pending;
             reconnect_pending = false;
             uint32_t last = last_ride_ms;
+            bool connection_alive = connected;
             portEXIT_CRITICAL(&status_lock);
             if (reconnect) {
-                speed_sensor_reset(&speed_state);
-                (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
+                speed_sensor_rebaseline(&speed_state);
+                (void)forward_stopped_ride();
+                last_idle_refresh_ms = now;
                 ride_stale_reported = true;
-            } else if (!ride_stale_reported && last != 0U &&
-                (uint32_t)(now_ms() - last) >= CONFIG_NOSTOS_XOSS_STALE_MS) {
-                (void)bridge_runtime_send_sensor_ride(false, 0U, 0U);
-                ride_stale_reported = true;
-                report_stale = true;
+            } else if (connection_alive && last != 0U &&
+                (uint32_t)(now - last) >= CONFIG_NOSTOS_XOSS_STALE_MS &&
+                (last_idle_refresh_ms == 0U ||
+                 (uint32_t)(now - last_idle_refresh_ms) >=
+                    XOSS_IDLE_REFRESH_MS)) {
+                if (forward_stopped_ride() == ESP_OK) {
+                    last_idle_refresh_ms = now;
+                }
+                if (!ride_stale_reported) {
+                    ride_stale_reported = true;
+                    report_stale = true;
+                }
             }
             xSemaphoreGive(runtime_mutex);
         }
@@ -544,7 +581,8 @@ esp_err_t xoss_ble_reset_runtime_session(void)
     if (session_epoch == 0U) session_epoch = 1U;
     uint32_t reset_epoch = session_epoch;
     (void)xQueueReset(queue);
-    speed_sensor_reset(&speed_state);
+    /* STM identity changed, not the BLE sensor session. Preserve the CSC
+     * baseline and cumulative distance so the new STM session can recover it. */
     ride_stale_reported = false;
     portENTER_CRITICAL(&status_lock);
     bool connection_preserved = connected;
@@ -554,7 +592,6 @@ esp_err_t xoss_ble_reset_runtime_session(void)
     notifications_dropped = 0U;
     rides_forwarded = 0U;
     rides_rejected = 0U;
-    last_ride_ms = 0U;
     portEXIT_CRITICAL(&status_lock);
     if (restore_disconnect) {
         xoss_event_t disconnected = {
@@ -609,6 +646,7 @@ esp_err_t xoss_ble_init(void)
     rides_forwarded = 0U;
     rides_rejected = 0U;
     last_ride_ms = 0U;
+    last_idle_refresh_ms = 0U;
     initialized = false;
     scan_enabled = false;
     runtime_mutex = new_runtime_mutex;

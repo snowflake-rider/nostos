@@ -1,39 +1,60 @@
 #ifndef MESSAGE_PROTOCOL_SERVICE_H
 #define MESSAGE_PROTOCOL_SERVICE_H
-#include "nostos_endpoint.h"
+
+#include "sensor_link.h"
+#include "stm32f4xx_hal.h"
 #include "vs1003b.h"
-/* v2 service. Application owns UART ISR handoff and trusted session restore. */
-nostos_result_t message_protocol_service_init(UART_HandleTypeDef *uart,
-    uint8_t source_id, uint32_t session_id, vs1003b_status_t audio_status);
-nostos_endpoint_t *message_protocol_service_endpoint(void);
+
+#include <stdbool.h>
+#include <stdint.h>
+
+typedef enum {
+    MESSAGE_PROTOCOL_OK = 0,
+    MESSAGE_PROTOCOL_NOT_READY,
+    MESSAGE_PROTOCOL_BAD_ARGUMENT,
+    MESSAGE_PROTOCOL_BAD_VALUE,
+    MESSAGE_PROTOCOL_IO_ERROR,
+} message_protocol_result_t;
+
 typedef struct {
-    uint32_t received, duplicates, rejected, overflows;
-    uint32_t sensor_received, sensor_rejected;
-    uint32_t hello_sent, hello_failures;
-    uint32_t identities, identity_acks;
-    uint32_t sessions_approved, control_rejected;
-    nostos_result_t last_result;
+    uint32_t received;
+    uint32_t rejected;
+    uint32_t overflows;
+    uint32_t hello_sent;
+    uint32_t hello_failures;
+    uint32_t ready_received;
+    uint32_t output_accepted;
+    uint32_t output_duplicates;
+    uint32_t output_rejected;
+    uint32_t output_hardware_errors;
+    uint32_t result_sent;
+    uint32_t result_failures;
+    sensor_link_result_t last_link_result;
 } message_protocol_stats_t;
+
+/* Starts the paired local UART link. HELLO repeats until READY is parsed. */
+message_protocol_result_t message_protocol_service_boot(
+    UART_HandleTypeDef *uart,
+    vs1003b_status_t audio_status);
+bool message_protocol_service_is_ready(void);
 const message_protocol_stats_t *message_protocol_service_stats(void);
-nostos_result_t message_protocol_service_receive(uint8_t byte, uint32_t received_ms);
-void message_protocol_service_process(void);
-/* Called by HAL Rx ISR; all parse/apply/output work is deferred to process(). */
+
+/* Called by the HAL UART ISR. Parsing and hardware work stay in process(). */
 void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms);
 void message_protocol_service_rx_error_isr(void);
-/* ISR 수신 링, 부분 프레임, 아직 재생하지 않은 요청 큐를 모두 비웁니다. */
 void message_protocol_service_clear_pending(void);
-nostos_result_t message_protocol_service_publish_event(uint8_t type);
-nostos_result_t message_protocol_service_publish_ride(
+void message_protocol_service_process(void);
+
+/* STM32 producer frames. These never create an official NOSTOS packet here. */
+message_protocol_result_t message_protocol_service_publish_event(
+    uint8_t event_type);
+message_protocol_result_t message_protocol_service_publish_ride(
     bool valid,
     uint16_t kmh_x10,
     uint32_t distance_mm);
-nostos_result_t message_protocol_service_publish_environment(
+message_protocol_result_t message_protocol_service_publish_environment(
     int16_t temperature_c_x10,
     uint16_t humidity_pct_x10,
-    nostos_quality_t quality);
-/* Prepare the local ESP32 UART link and request the provisioned source/session.
- * The NOSTOS endpoint remains unavailable until a valid local IDENTITY arrives. */
-nostos_result_t message_protocol_service_boot(
-    UART_HandleTypeDef *uart,
-    vs1003b_status_t audio_status);
-#endif
+    uint8_t quality);
+
+#endif /* MESSAGE_PROTOCOL_SERVICE_H */

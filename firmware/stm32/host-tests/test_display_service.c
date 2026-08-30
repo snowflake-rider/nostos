@@ -274,20 +274,12 @@ int main(void)
     CHECK(display_service_is_ready());
     CHECK(oled_init_count == 1U);
     CHECK(oled_update_count == 1U);
-    CHECK(drawn_count == 6U);
+    CHECK(drawn_count == 2U);
     CHECK(strcmp(drawn_lines[0], "NOSTOS") == 0);
-    CHECK(strcmp(drawn_lines[1], "N/A km/h") == 0);
-    CHECK(strcmp(drawn_lines[2], "N/A km") == 0);
-    CHECK(strcmp(drawn_lines[3], "N/A \xC2\xB0" "C") == 0);
-    CHECK(strcmp(drawn_lines[4], "N/A %") == 0);
-    CHECK(strcmp(drawn_lines[5],
+    CHECK(strcmp(drawn_lines[1],
         "Have an amazing ride! Remember, safety first.") == 0);
     CHECK(drawn_x[0] == 0U && drawn_y[0] == 1U);
-    CHECK(drawn_x[1] == 8 && drawn_y[1] == 12U);
-    CHECK(drawn_x[2] == 78 && drawn_y[2] == 12U);
-    CHECK(drawn_x[3] == 14 && drawn_y[3] == 23U);
-    CHECK(drawn_x[4] == 81 && drawn_y[4] == 23U);
-    CHECK(drawn_x[5] == 128 && drawn_y[5] == 39U);
+    CHECK(drawn_x[1] == 128 && drawn_y[1] == 39U);
     CHECK(inverted_text_count == 1U);
     CHECK(fill_rect_count == 2U);
     CHECK(fill_rect_x[0] == 0U && fill_rect_y[0] == 0U);
@@ -449,14 +441,11 @@ int main(void)
     CHECK(display_service_show_button_message(2U, MSG_SPEED_DOWN_REQUEST));
     fake_tick = 2600U;
     display_service_process();
-    CHECK(strcmp(drawn_lines[1], "N/A km/h") == 0);
-    CHECK(strcmp(drawn_lines[2], "N/A km") == 0);
-    CHECK(strcmp(drawn_lines[3], "N/A \xC2\xB0" "C") == 0);
-    CHECK(strcmp(drawn_lines[4], "N/A %") == 0);
-    CHECK(strcmp(drawn_lines[5],
+    CHECK(drawn_count == 3U);
+    CHECK(strcmp(drawn_lines[1],
         "Have an amazing ride! Remember, safety first.") == 0);
-    CHECK(drawn_x[5] == 122 && drawn_y[5] == 39U);
-    CHECK(strcmp(drawn_lines[6], "REAR: DECEL") == 0);
+    CHECK(drawn_x[1] == 122 && drawn_y[1] == 39U);
+    CHECK(strcmp(drawn_lines[2], "REAR: DECEL") == 0);
     CHECK(clear_rect_count == 0U);
     CHECK(inverted_rect_count == 10U);
 
@@ -464,7 +453,7 @@ int main(void)
     CHECK(display_service_show_button_message(3U, MSG_STOP_REQUEST));
     fake_tick = 2800U;
     display_service_process();
-    CHECK(strcmp(drawn_lines[6], "CENTER: STOP") == 0);
+    CHECK(strcmp(drawn_lines[2], "CENTER: STOP") == 0);
     CHECK(!display_service_is_ready());
     uint32_t retry_start = 2800U;
 
@@ -477,6 +466,14 @@ int main(void)
     display_service_process();
     CHECK(oled_init_count == 2U);
     CHECK(display_service_is_ready());
+
+    display_service_reset_outputs();
+    display_service_set_link_ready(true);
+    fake_tick += 200U;
+    display_service_process();
+    CHECK(drawn_count == 3U);
+    CHECK(strcmp(drawn_lines[2], "ESP32 READY") == 0);
+    CHECK(drawn_y[2] == 55U);
 
     puts("display_service tests passed");
     return 0;

@@ -1,0 +1,33 @@
+{
+  "name": "@nostos/hardware-monitor",
+  "module": "src/index.ts",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "bun run src/index.ts",
+    "dev": "bun run --watch src/index.ts",
+    "web": "bun run web:build && bun run web:start",
+    "web:start": "bun run src/web-server.ts",
+    "web:demo": "bun run web:build && bun run src/web-server.ts --demo",
+    "web:build": "vite build --config web/vite.config.ts",
+    "web:dev": "bun run src/web-dev.ts",
+    "test": "bun test",
+    "typecheck": "tsc --noEmit && tsc -p web/tsconfig.json"
+  },
+  "devDependencies": {
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^5.0.0",
+    "@types/bun": "1.3.14",
+    "typescript": "^5.9.3",
+    "vite": "^7.1.0"
+  },
+  "dependencies": {
+    "@opentui/core": "^0.5.8",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0"
+  },
+  "engines": {
+    "bun": ">=1.3.0"
+  }
+}

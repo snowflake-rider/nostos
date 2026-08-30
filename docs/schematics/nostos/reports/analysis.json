@@ -1,0 +1,6624 @@
+{
+  "analyzer_type": "schematic",
+  "schema_version": "1.4.0",
+  "summary": {
+    "total_findings": 17,
+    "by_severity": {
+      "error": 4,
+      "warning": 0,
+      "info": 13
+    }
+  },
+  "trust_summary": {
+    "total_findings": 17,
+    "trust_level": "mixed",
+    "by_confidence": {
+      "deterministic": 11,
+      "heuristic": 6,
+      "datasheet_backed": 0
+    },
+    "by_evidence_source": {
+      "datasheet": 0,
+      "topology": 15,
+      "heuristic_rule": 0,
+      "symbol_footprint": 0,
+      "bom": 2,
+      "geometry": 0,
+      "api_lookup": 0
+    },
+    "provenance_coverage_pct": 76.5,
+    "bom_coverage": {
+      "total_components": 16,
+      "with_mpn": 0,
+      "with_datasheet": 0,
+      "mpn_pct": 0.0,
+      "datasheet_pct": 0.0
+    }
+  },
+  "kicad_version": "10.0",
+  "file_version": "20260306",
+  "title_block": {
+    "title": "NOSTOS System Wiring",
+    "date": "2026-08-31",
+    "rev": "1.1",
+    "company": "NOSTOS",
+    "comment_1": "Based on PINS.md and firmware/stm32/nostos_stm32.ioc",
+    "comment_2": "STM32 NUCLEO-F411RE / 3.3V logic / Common GND",
+    "comment_3": "Documentation schematic - verify breakout module power ratings",
+    "comment_4": "Rider Head=Base, Mid=Base+DHT11, Tail=Base+MPU6050"
+  },
+  "statistics": {
+    "total_components": 18,
+    "unique_parts": 16,
+    "dnp_parts": 0,
+    "total_nets": 25,
+    "total_wires": 54,
+    "total_no_connects": 0,
+    "component_types": {
+      "ic": 5,
+      "diode": 1,
+      "switch": 4,
+      "resistor": 4,
+      "led": 3,
+      "buzzer": 1
+    },
+    "power_rails": [
+      {
+        "name": "+3V3",
+        "voltage": 3.3
+      },
+      {
+        "name": "GND",
+        "voltage": null
+      }
+    ],
+    "missing_mpn": [
+      "U1",
+      "U2",
+      "DS1",
+      "U3",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "R1",
+      "D1",
+      "R2",
+      "D2",
+      "R3",
+      "D3",
+      "BZ1",
+      "U4",
+      "U5",
+      "R4"
+    ],
+    "missing_footprint": [
+      "U1",
+      "U2",
+      "DS1",
+      "U3",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "R1",
+      "D1",
+      "R2",
+      "D2",
+      "R3",
+      "D3",
+      "BZ1",
+      "U4",
+      "U5",
+      "R4"
+    ]
+  },
+  "findings": [
+    {
+      "reference": "BZ1",
+      "value": "ACTIVE BUZZER MODULE",
+      "type": "buzzer",
+      "signal_net": "__unnamed_7",
+      "has_transistor_driver": false,
+      "detector": "detect_buzzer_speakers",
+      "rule_id": "BZ-DET",
+      "category": "audio",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "buzzer BZ1 (ACTIVE BUZZER MODULE) on __unnamed_7",
+      "description": "Detected buzzer BZ1 driven via __unnamed_7.",
+      "components": [
+        "BZ1"
+      ],
+      "nets": [
+        "__unnamed_7"
+      ],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Audio",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "driver_ic": "U1",
+      "direct_gpio_drive": true,
+      "provenance": {
+        "evidence": "buzzer_topology",
+        "confidence": "deterministic",
+        "claimed_components": [
+          "BZ1"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "buzzer_speaker_circuits:75742d1a87e3",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:buzzer_speaker_circuits-75742d1a87e3"
+    },
+    {
+      "standard": "FCC Part 15",
+      "region": "US",
+      "reason": "Wireless module detected: U2",
+      "detector": "suggest_certifications",
+      "rule_id": "CERT-001",
+      "category": "certification",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "Wireless module detected: U2",
+      "description": "FCC Part 15: Wireless module detected: U2",
+      "components": [],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Certifications",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "detection_id": "suggested_certifications:7727701db685",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:suggested_certifications-7727701db685"
+    },
+    {
+      "category": "i2c_bus",
+      "net": "I2C1_SCL",
+      "line": "SCL",
+      "devices": [
+        "U1",
+        "U4"
+      ],
+      "has_pullup": false,
+      "pullup_resistor": null,
+      "pullup_rail": null,
+      "detector": "detect_design_observations",
+      "rule_id": "DO-DET",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "I2C SCL bus on I2C1_SCL",
+      "description": "I2C SCL bus detected with 2 device(s)",
+      "components": [
+        "U1",
+        "U4"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Design Observations",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "obs_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U1",
+          "U4"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DO-DET-u1"
+    },
+    {
+      "category": "i2c_bus",
+      "net": "I2C1_SDA",
+      "line": "SDA",
+      "devices": [
+        "U1",
+        "U4"
+      ],
+      "has_pullup": false,
+      "pullup_resistor": null,
+      "pullup_rail": null,
+      "detector": "detect_design_observations",
+      "rule_id": "DO-DET",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "I2C SDA bus on I2C1_SDA",
+      "description": "I2C SDA bus detected with 2 device(s)",
+      "components": [
+        "U1",
+        "U4"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Design Observations",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "obs_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U1",
+          "U4"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DO-DET-u1#1"
+    },
+    {
+      "category": "decoupling",
+      "component": "U1",
+      "value": "NUCLEO-F411RE",
+      "rails_without_caps": [
+        "+3V3"
+      ],
+      "rails_with_caps": [],
+      "detector": "detect_design_observations",
+      "rule_id": "DO-DET",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "IC U1 missing decoupling on +3V3",
+      "description": "IC power pin(s) without decoupling capacitors",
+      "components": [
+        "U1"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Design Observations",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "obs_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U1"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DO-DET-u1#2"
+    },
+    {
+      "category": "decoupling",
+      "component": "U4",
+      "value": "MPU6050 (RIDER TAIL, ON)",
+      "rails_without_caps": [
+        "+3V3"
+      ],
+      "rails_with_caps": [],
+      "detector": "detect_design_observations",
+      "rule_id": "DO-DET",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "IC U4 missing decoupling on +3V3",
+      "description": "IC power pin(s) without decoupling capacitors",
+      "components": [
+        "U4"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Design Observations",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "obs_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U4"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DO-DET-u4"
+    },
+    {
+      "category": "decoupling",
+      "component": "U5",
+      "value": "DHT11 (RIDER MID, ON)",
+      "rails_without_caps": [
+        "+3V3"
+      ],
+      "rails_with_caps": [],
+      "detector": "detect_design_observations",
+      "rule_id": "DO-DET",
+      "severity": "info",
+      "confidence": "heuristic",
+      "evidence_source": "topology",
+      "summary": "IC U5 missing decoupling on +3V3",
+      "description": "IC power pin(s) without decoupling capacitors",
+      "components": [
+        "U5"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Design Observations",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "obs_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U5"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DO-DET-u5"
+    },
+    {
+      "detector": "audit_datasheet_coverage",
+      "rule_id": "DS-001",
+      "severity": "error",
+      "confidence": "deterministic",
+      "evidence_source": "bom",
+      "category": "verification",
+      "summary": "No datasheets directory found and no BOM parts have MPNs. Review is a consistency check only \u2014 manufacturer specs cannot be verified.",
+      "components": [],
+      "nets": [],
+      "pins": [],
+      "datasheets_dir": null,
+      "datasheet_file_count": 0,
+      "bom_size": 18,
+      "mpn_coverage_percent": 0.0,
+      "recommendation": "Before reporting 'verified' findings, (1) populate the MPN field on BOM parts, (2) run the datasheet sync skill (digikey, mouser, lcsc, or element14) to download PDFs into ./datasheets/, then re-run analysis. If datasheets are unreachable, state every pin-level and electrical claim as 'per symbol/library' (consistency), not 'verified against datasheet' (correctness).",
+      "report_context": {
+        "section": "Datasheet Coverage",
+        "impact": "Report wording must avoid 'verified' / 'datasheet-confirmed' language for every BOM part \u2014 none have manufacturer evidence attached.",
+        "standard_ref": ""
+      },
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:DS-001:9820bbea68d9"
+    },
+    {
+      "ref": "D1",
+      "value": "RED",
+      "type": "indicator_led",
+      "drive_method": "resistor_limited",
+      "detector": "audit_led_circuits",
+      "rule_id": "LA-AUD",
+      "category": "led_control",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "LED D1 (RED) [resistor_limited]",
+      "description": "LED audit: D1 using resistor_limited drive method.",
+      "components": [
+        "D1",
+        "R1",
+        "U1"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "LED Audit",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "series_resistor": {
+        "ref": "R1",
+        "ohms": 330.0
+      },
+      "driver_source": "U1",
+      "provenance": {
+        "evidence": "led_audit",
+        "confidence": "deterministic",
+        "claimed_components": [
+          "D1"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:LA-AUD-d1"
+    },
+    {
+      "ref": "D2",
+      "value": "GREEN",
+      "type": "indicator_led",
+      "drive_method": "resistor_limited",
+      "detector": "audit_led_circuits",
+      "rule_id": "LA-AUD",
+      "category": "led_control",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "LED D2 (GREEN) [resistor_limited]",
+      "description": "LED audit: D2 using resistor_limited drive method.",
+      "components": [
+        "D2",
+        "R2",
+        "U1"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "LED Audit",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "series_resistor": {
+        "ref": "R2",
+        "ohms": 330.0
+      },
+      "driver_source": "U1",
+      "provenance": {
+        "evidence": "led_audit",
+        "confidence": "deterministic",
+        "claimed_components": [
+          "D2"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:LA-AUD-d2"
+    },
+    {
+      "ref": "D3",
+      "value": "BLUE",
+      "type": "indicator_led",
+      "drive_method": "resistor_limited",
+      "detector": "audit_led_circuits",
+      "rule_id": "LA-AUD",
+      "category": "led_control",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "LED D3 (BLUE) [resistor_limited]",
+      "description": "LED audit: D3 using resistor_limited drive method.",
+      "components": [
+        "D3",
+        "R3",
+        "U1"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "LED Audit",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "series_resistor": {
+        "ref": "R3",
+        "ohms": 330.0
+      },
+      "driver_source": "U1",
+      "provenance": {
+        "evidence": "led_audit",
+        "confidence": "deterministic",
+        "claimed_components": [
+          "D3"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:LA-AUD-d3"
+    },
+    {
+      "detector": "validate_i2c_bus",
+      "rule_id": "PR-001",
+      "category": "protocol_integrity",
+      "summary": "I2C bus I2C1_SDA/I2C1_SCL: SCL missing pull-up",
+      "description": "I2C bus with 1 device(s) (U4) has no pull-up on SCL net I2C1_SCL.",
+      "components": [
+        "U4"
+      ],
+      "nets": [
+        "I2C1_SCL",
+        "I2C1_SDA"
+      ],
+      "pins": [],
+      "severity": "error",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "recommendation": "Add a 4.7k pull-up resistor from SCL to VDD.",
+      "fix_params": {
+        "type": "add_component",
+        "components": [
+          {
+            "type": "resistor",
+            "value": "4.7k",
+            "net_from": "I2C1_SCL",
+            "net_to": "<VDD>"
+          }
+        ],
+        "basis": "I2C spec requires pull-ups on SCL"
+      },
+      "report_context": {
+        "section": "Protocol Integrity",
+        "impact": "I2C bus non-functional",
+        "standard_ref": "I2C specification UM10204 section 3.1.1"
+      },
+      "provenance": {
+        "evidence": "pr_i2c_spec",
+        "confidence": "deterministic",
+        "claimed_components": [],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "finding_id": "schematic:validation_findings-73694c17f7d1",
+      "detection_id": "validation_findings:73694c17f7d1",
+      "stages": [
+        "schematic"
+      ]
+    },
+    {
+      "detector": "validate_i2c_bus",
+      "rule_id": "PR-001",
+      "category": "protocol_integrity",
+      "summary": "I2C bus I2C1_SDA/I2C1_SCL: SDA missing pull-up",
+      "description": "I2C bus with 1 device(s) (U4) has no pull-up on SDA net I2C1_SDA.",
+      "components": [
+        "U4"
+      ],
+      "nets": [
+        "I2C1_SCL",
+        "I2C1_SDA"
+      ],
+      "pins": [],
+      "severity": "error",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "recommendation": "Add a 4.7k pull-up resistor from SDA to VDD.",
+      "fix_params": {
+        "type": "add_component",
+        "components": [
+          {
+            "type": "resistor",
+            "value": "4.7k",
+            "net_from": "I2C1_SDA",
+            "net_to": "<VDD>"
+          }
+        ],
+        "basis": "I2C spec requires pull-ups on SDA"
+      },
+      "report_context": {
+        "section": "Protocol Integrity",
+        "impact": "I2C bus non-functional",
+        "standard_ref": "I2C specification UM10204 section 3.1.1"
+      },
+      "provenance": {
+        "evidence": "pr_i2c_spec",
+        "confidence": "deterministic",
+        "claimed_components": [],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "finding_id": "schematic:validation_findings-73694c17f7d1#1",
+      "detection_id": "validation_findings:73694c17f7d1",
+      "stages": [
+        "schematic"
+      ]
+    },
+    {
+      "ref": "U4",
+      "value": "MPU6050 (RIDER TAIL, ON)",
+      "type": "motion",
+      "interface": "i2c",
+      "interrupt_pins": [],
+      "bus_peers": [],
+      "detector": "detect_sensor_interfaces",
+      "rule_id": "SI-DET",
+      "category": "sensors",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "Sensor U4 (MPU6050 (RIDER TAIL, ON)) [motion/i2c]",
+      "description": "Detected motion sensor IC U4.",
+      "components": [
+        "U4"
+      ],
+      "nets": [
+        "I2C1_SCL",
+        "I2C1_SDA"
+      ],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Sensors",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "sensor_ic_topology",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U4"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "sensor_interfaces:edb0d45683a2",
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:sensor_interfaces-edb0d45683a2"
+    },
+    {
+      "detector": "audit_sourcing_gate",
+      "rule_id": "SS-001",
+      "severity": "error",
+      "confidence": "deterministic",
+      "evidence_source": "bom",
+      "category": "sourcing",
+      "summary": "Sourcing blocker: BOM has <50% MPN coverage (0/16 unique parts). Board is not pre-fab ready.",
+      "description": "Sourcing audit: 0 of 16 unique BOM lines (grouped by value + footprint) carry a manufacturer part number (0.0%). Pre-fab readiness requires 100% coverage; production assembly requires all parts sourceable via one of the supported distributors.",
+      "components": [
+        "BZ1",
+        "D1",
+        "D2",
+        "D3",
+        "DS1",
+        "R1",
+        "R2",
+        "R3",
+        "R4",
+        "SW1",
+        "SW2",
+        "SW3",
+        "SW4",
+        "U1",
+        "U2",
+        "U3",
+        "U4",
+        "U5"
+      ],
+      "nets": [],
+      "pins": [],
+      "mpn_coverage_percent": 0.0,
+      "missing_mpn_lines": 16,
+      "missing_mpn_refs": 18,
+      "total_bom_lines": 16,
+      "recommendation": "Populate the MPN field on the listed refs (use the digikey / mouser / lcsc / element14 skill to search by value/footprint when the MPN isn't already known).",
+      "report_context": {
+        "section": "Sourcing",
+        "impact": "Pre-fab gate: board cannot be ordered until MPN coverage reaches 100%.",
+        "standard_ref": ""
+      },
+      "stages": [
+        "pre_fab"
+      ],
+      "finding_id": "schematic:SS-001:bz1"
+    },
+    {
+      "detector": "detect_wireless_modules",
+      "rule_id": "WL-001",
+      "category": "wireless",
+      "reference": "U2",
+      "value": "ESP32-S3 BLE MESH BRIDGE",
+      "wireless_type": "wifi_ble",
+      "antenna_net": null,
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "summary": "wifi/ble module U2 (ESP32-S3 BLE MESH BRIDGE)",
+      "description": "Detected wifi_ble wireless module U2 (ESP32-S3 BLE MESH BRIDGE).",
+      "components": [
+        "U2"
+      ],
+      "nets": [],
+      "pins": [],
+      "recommendation": "",
+      "report_context": {
+        "section": "Wireless",
+        "impact": "",
+        "standard_ref": ""
+      },
+      "provenance": {
+        "evidence": "wireless_antenna_match",
+        "confidence": "heuristic",
+        "claimed_components": [
+          "U2"
+        ],
+        "excluded_by": [],
+        "suppressed_candidates": []
+      },
+      "detection_id": "wireless_modules:df08a1b72da2",
+      "stages": [
+        "schematic",
+        "bring_up"
+      ],
+      "finding_id": "schematic:wireless_modules-df08a1b72da2"
+    },
+    {
+      "detector": "audit_lifecycle_skipped",
+      "rule_id": "LC-007",
+      "severity": "info",
+      "confidence": "deterministic",
+      "evidence_source": "topology",
+      "category": "lifecycle",
+      "summary": "Lifecycle audit not run \u2014 --lifecycle flag not passed",
+      "description": "Component lifecycle / obsolescence audit was not run this session. Reason: --lifecycle flag not passed (run with --lifecycle to query DigiKey / Mouser / LCSC / element14 for obsolescence + operating-temp coverage; requires network + API keys). The review cannot report active / NRND / EOL / obsolete status, last-time-buy windows, or operating-temperature coverage for any BOM part. Treat the lifecycle section of the report as 'not performed'.",
+      "components": [],
+      "nets": [],
+      "pins": [],
+      "recommendation": "Run with --lifecycle (requires DIGIKEY_CLIENT_ID / MOUSER_SEARCH_API_KEY / ELEMENT14_API_KEY env vars; LCSC needs no auth) to populate this section. If intentionally skipped, note it explicitly in the report's 'Not Performed' section.",
+      "report_context": {
+        "section": "Component Lifecycle",
+        "impact": "No obsolescence / temperature-grade evidence available.",
+        "standard_ref": ""
+      },
+      "stages": [
+        "schematic"
+      ],
+      "finding_id": "schematic:LC-007:8ddf539c9727"
+    }
+  ],
+  "assessments": [],
+  "bom": [
+    {
+      "value": "ACTIVE BUZZER MODULE",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "BZ1"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "buzzer"
+    },
+    {
+      "value": "RED",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "D1"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "led"
+    },
+    {
+      "value": "GREEN",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "D2"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "led"
+    },
+    {
+      "value": "BLUE",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "D3"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "led"
+    },
+    {
+      "value": "SSD1306 OLED (0x3C)",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "DS1"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "diode"
+    },
+    {
+      "value": "330R",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "R1",
+        "R2",
+        "R3"
+      ],
+      "quantity": 3,
+      "dnp": false,
+      "type": "resistor"
+    },
+    {
+      "value": "10k DHT PULL-UP",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "R4"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "resistor"
+    },
+    {
+      "value": "BTN1 SPEED UP",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "SW1"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "switch"
+    },
+    {
+      "value": "BTN2 SPEED DOWN",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "SW2"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "switch"
+    },
+    {
+      "value": "BTN3 STOP REQUEST",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "SW3"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "switch"
+    },
+    {
+      "value": "BTN4 LOCAL / MSG_NONE",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "SW4"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "switch"
+    },
+    {
+      "value": "NUCLEO-F411RE",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "U1"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "ic"
+    },
+    {
+      "value": "ESP32-S3 BLE MESH BRIDGE",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "U2"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "ic"
+    },
+    {
+      "value": "VS1003B AUDIO DECODER",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "U3"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "ic"
+    },
+    {
+      "value": "MPU6050 (RIDER TAIL, ON)",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "U4"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "ic"
+    },
+    {
+      "value": "DHT11 (RIDER MID, ON)",
+      "footprint": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "datasheet": "",
+      "description": "",
+      "references": [
+        "U5"
+      ],
+      "quantity": 1,
+      "dnp": false,
+      "type": "ic"
+    }
+  ],
+  "components": [
+    {
+      "reference": "U1",
+      "value": "NUCLEO-F411RE",
+      "lib_id": "Nostos:NUCLEO_F411RE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 210.82,
+      "y": 132.08,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10001",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "a6f71086-a651-4aa1-aaae-eb3799e83d3c",
+        "2": "69a648b9-6be5-4d3b-8aee-30bb2831d525",
+        "3": "abceeccb-c50b-446a-b68c-7651a0e80ecc",
+        "4": "ec2ef29d-d5ca-44bd-b60b-7873a9be1e66",
+        "5": "cc345ddf-70ba-476b-a7a3-8449ede4fb7d",
+        "6": "f65b141a-e209-40c7-a131-333d87c12f70",
+        "7": "b0c6903c-55c1-42ba-81b5-8c3d4a6afa78",
+        "8": "b494316d-3ebe-44f8-ae13-151c66ee704a",
+        "9": "08f4fc91-1f2c-40cc-b8a8-d11d27ecbe70",
+        "10": "7e5d3880-a9d7-4b65-8dbd-523550deccf4",
+        "11": "dc0171ae-2bd4-453f-bf95-189e260791bf",
+        "12": "25ef9ca0-1a01-4039-b1b2-d2da755134f7",
+        "13": "7cee1acc-dc24-4d77-92c8-21af54f43bce",
+        "14": "c8e79b1c-a791-4619-806c-c2d6374c2b08",
+        "15": "bd2dce5d-061e-4acd-9e6d-956186177497",
+        "16": "0f042923-575c-48c5-b608-0015ffb5a6d4",
+        "17": "bd1d5d3f-d010-4fc2-9c6a-3232f58f81aa",
+        "18": "f18f96d9-4491-4671-a92a-4b26056a33cb",
+        "19": "9d1ebdc6-138b-4bd8-a702-c8317f0cda9b",
+        "20": "1794429f-bd10-44d7-ae29-11cc4de19219",
+        "21": "bd889e88-ec03-49b5-b09e-78edc6bc83d3",
+        "22": "2cd2be95-0aa6-42af-bcd0-79e9d3cc1048"
+      },
+      "type": "ic",
+      "keywords": "",
+      "functional_class": "other_ic",
+      "_sheet": 0,
+      "category": "ic",
+      "pin_nets": {
+        "1": "UART_STM_TX_TO_ESP_RX",
+        "2": "UART_ESP_TX_TO_STM_RX",
+        "3": "I2C1_SCL",
+        "4": "I2C1_SDA",
+        "5": "VS_RST",
+        "6": "SPI2_MISO",
+        "7": "SPI2_MOSI",
+        "8": "SPI2_SCK",
+        "9": "VS_DREQ",
+        "10": "VS_XCS_ACTIVE_LOW",
+        "11": "VS_XDCS_ACTIVE_LOW",
+        "12": "DHT11_DATA",
+        "13": "+3V3",
+        "14": "GND",
+        "15": "__unnamed_0",
+        "16": "__unnamed_1",
+        "17": "__unnamed_2",
+        "18": "__unnamed_3",
+        "19": "__unnamed_4",
+        "20": "__unnamed_5",
+        "21": "__unnamed_6",
+        "22": "__unnamed_7"
+      }
+    },
+    {
+      "reference": "U2",
+      "value": "ESP32-S3 BLE MESH BRIDGE",
+      "lib_id": "Nostos:ESP32_S3_BRIDGE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 63.5,
+      "y": 99.06,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10002",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "ce94d15c-b2c2-48a8-bb19-cf3163cfba1a",
+        "2": "a1453adc-5d4d-45ba-8d93-5a3609894487",
+        "3": "6f286d9f-34e5-4f2c-b4b6-262dfa2db9d5"
+      },
+      "type": "ic",
+      "keywords": "",
+      "functional_class": "mcu",
+      "_sheet": 0,
+      "category": "ic",
+      "pin_nets": {
+        "1": "UART_STM_TX_TO_ESP_RX",
+        "2": "UART_ESP_TX_TO_STM_RX",
+        "3": "GND"
+      }
+    },
+    {
+      "reference": "DS1",
+      "value": "SSD1306 OLED (0x3C)",
+      "lib_id": "Nostos:SSD1306_MODULE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 63.5,
+      "y": 119.38,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10003",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "e3cdc0f3-ba82-4de6-9091-3d682ec3471a",
+        "2": "bb626afb-0789-46cd-8d3c-2c2a16df4131",
+        "3": "ff90d3aa-a3d8-424f-93fb-dd8fd8e071e5",
+        "4": "998e54ae-1de3-415b-8ab1-e373f0caeeda"
+      },
+      "type": "diode",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "diode",
+      "pin_nets": {
+        "1": "I2C1_SCL",
+        "2": "I2C1_SDA",
+        "3": "+3V3",
+        "4": "GND"
+      }
+    },
+    {
+      "reference": "U3",
+      "value": "VS1003B AUDIO DECODER",
+      "lib_id": "Nostos:VS1003B_MODULE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 93.98,
+      "y": 139.7,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10004",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "bcc13c28-1498-4ce8-9611-88828ea0d974",
+        "2": "df456bd3-b8be-4690-bac1-8a805a8972ab",
+        "3": "a0266272-c669-4b81-8344-16730251a371",
+        "4": "7f06432e-27dc-4e67-9e80-1faf13d74f80",
+        "5": "01e2c02f-ac29-43f5-940c-62461d8c74bb",
+        "6": "52159de8-72ed-4430-988e-b7eb827a144c",
+        "7": "ee3d0a02-c0cb-4d3a-a715-8d682b22caac",
+        "8": "f36bdd61-1d79-4db6-b1d1-49eff0e7507e"
+      },
+      "type": "ic",
+      "keywords": "",
+      "functional_class": "audio",
+      "_sheet": 0,
+      "category": "ic",
+      "pin_nets": {
+        "1": "VS_RST",
+        "2": "SPI2_MISO",
+        "3": "SPI2_MOSI",
+        "4": "SPI2_SCK",
+        "5": "VS_DREQ",
+        "6": "VS_XCS_ACTIVE_LOW",
+        "7": "VS_XDCS_ACTIVE_LOW",
+        "8": "GND"
+      }
+    },
+    {
+      "reference": "SW1",
+      "value": "BTN1 SPEED UP",
+      "lib_id": "Nostos:SW_PUSH",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 279.4,
+      "y": 93.98,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10010",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "63b85742-faa5-40d6-97f6-f8b7802fa65e",
+        "2": "8dc4e62c-027b-4c7f-8439-8a153361183d"
+      },
+      "type": "switch",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "switch",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_0"
+      }
+    },
+    {
+      "reference": "SW2",
+      "value": "BTN2 SPEED DOWN",
+      "lib_id": "Nostos:SW_PUSH",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 279.4,
+      "y": 99.06,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10011",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "909b924c-3a77-478c-a539-c123412d00f6",
+        "2": "31ab88a3-fef4-44d1-a7e6-4e3d79c09e41"
+      },
+      "type": "switch",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "switch",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_1"
+      }
+    },
+    {
+      "reference": "SW3",
+      "value": "BTN3 STOP REQUEST",
+      "lib_id": "Nostos:SW_PUSH",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 279.4,
+      "y": 104.14,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10012",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "db54fd67-dcd1-46a5-ba23-0b22b977c932",
+        "2": "2d949055-eeeb-4eb5-b17a-e606cd130d76"
+      },
+      "type": "switch",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "switch",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_2"
+      }
+    },
+    {
+      "reference": "SW4",
+      "value": "BTN4 LOCAL / MSG_NONE",
+      "lib_id": "Nostos:SW_PUSH",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 279.4,
+      "y": 109.22,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10013",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "e2d2c0f8-1b8f-48bc-958c-ecc235452ef6",
+        "2": "26b3f077-170c-4df2-9826-4119f666ff38"
+      },
+      "type": "switch",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "switch",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_3"
+      }
+    },
+    {
+      "reference": "R1",
+      "value": "330R",
+      "lib_id": "Nostos:R",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 257.81,
+      "y": 119.38,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10020",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "0955131c-1669-4794-aa07-a605225fc54b",
+        "2": "c64709b2-99b1-4137-828f-faf3d4f24020"
+      },
+      "type": "resistor",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "resistor",
+      "parsed_value": 330.0,
+      "pin_nets": {
+        "1": "__unnamed_4",
+        "2": "__unnamed_8"
+      }
+    },
+    {
+      "reference": "D1",
+      "value": "RED",
+      "lib_id": "Nostos:LED",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 281.94,
+      "y": 119.38,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10021",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "cf27a41d-5a03-45a6-a05f-507d8fcfd110",
+        "2": "8a39118f-c293-4a81-8571-5e4f2b9f0962"
+      },
+      "type": "led",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "led",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_8"
+      }
+    },
+    {
+      "reference": "R2",
+      "value": "330R",
+      "lib_id": "Nostos:R",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 257.81,
+      "y": 124.46,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10022",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "3aa18a5a-58a7-4fef-a029-45816056003a",
+        "2": "747d32e7-8e63-4e7c-a73b-f4dfa857ad46"
+      },
+      "type": "resistor",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "resistor",
+      "parsed_value": 330.0,
+      "pin_nets": {
+        "1": "__unnamed_5",
+        "2": "__unnamed_9"
+      }
+    },
+    {
+      "reference": "D2",
+      "value": "GREEN",
+      "lib_id": "Nostos:LED",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 281.94,
+      "y": 124.46,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10023",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "e6330c68-c3e1-460c-a749-b1e41fda49c5",
+        "2": "1e741849-5fd4-4bd6-a2ca-2801168c8b9e"
+      },
+      "type": "led",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "led",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_9"
+      }
+    },
+    {
+      "reference": "R3",
+      "value": "330R",
+      "lib_id": "Nostos:R",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 257.81,
+      "y": 129.54,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10024",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "2c76af30-8251-4383-8121-0e24b5ea38ab",
+        "2": "e55bae84-73f9-454f-8acd-d6bee3c4803f"
+      },
+      "type": "resistor",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "resistor",
+      "parsed_value": 330.0,
+      "pin_nets": {
+        "1": "__unnamed_6",
+        "2": "__unnamed_10"
+      }
+    },
+    {
+      "reference": "D3",
+      "value": "BLUE",
+      "lib_id": "Nostos:LED",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 281.94,
+      "y": 129.54,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10025",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "72bb1b60-442d-4987-b6ae-b605e5f409db",
+        "2": "e187d985-9003-4eab-992f-b7527f925882"
+      },
+      "type": "led",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "led",
+      "pin_nets": {
+        "2": "GND",
+        "1": "__unnamed_10"
+      }
+    },
+    {
+      "reference": "BZ1",
+      "value": "ACTIVE BUZZER MODULE",
+      "lib_id": "Nostos:ACTIVE_BUZZER_MODULE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 274.32,
+      "y": 144.78,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10030",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "b7bb1010-ccc6-4309-9190-da37dc8a6597",
+        "2": "506bfbee-37ab-4fd7-8ee3-0228a3c35be4",
+        "3": "d5b0664e-c6f3-45ba-aa20-667c38dcdc47"
+      },
+      "type": "buzzer",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "buzzer",
+      "pin_nets": {
+        "2": "+3V3",
+        "3": "GND",
+        "1": "__unnamed_7"
+      }
+    },
+    {
+      "reference": "U4",
+      "value": "MPU6050 (RIDER TAIL, ON)",
+      "lib_id": "Nostos:MPU6050_MODULE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 63.5,
+      "y": 195.58,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10040",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "dfc631b7-51f0-4e0b-8224-091539354019",
+        "2": "1f54d9bf-73d1-4308-9c44-9e67753ae47e",
+        "3": "6fea58e4-5bdd-4737-abba-0586cc6795dd",
+        "4": "0d81c69f-0817-46d4-afce-6aaf5b72f25e"
+      },
+      "type": "ic",
+      "keywords": "",
+      "functional_class": "sensor",
+      "_sheet": 0,
+      "category": "ic",
+      "pin_nets": {
+        "1": "I2C1_SCL",
+        "2": "I2C1_SDA",
+        "3": "+3V3",
+        "4": "GND"
+      }
+    },
+    {
+      "reference": "U5",
+      "value": "DHT11 (RIDER MID, ON)",
+      "lib_id": "Nostos:DHT11_MODULE",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 132.08,
+      "y": 195.58,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10041",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "ec90f5dd-f878-402b-86be-6c14ab59280d",
+        "2": "6ef4f7e8-2c50-4b50-9345-489152c6a786",
+        "3": "038459fb-c5c7-46a1-a5ce-c87bc187475f"
+      },
+      "type": "ic",
+      "keywords": "",
+      "functional_class": "other_ic",
+      "_sheet": 0,
+      "category": "ic",
+      "pin_nets": {
+        "1": "DHT11_DATA",
+        "2": "+3V3",
+        "3": "GND"
+      }
+    },
+    {
+      "reference": "R4",
+      "value": "10k DHT PULL-UP",
+      "lib_id": "Nostos:R",
+      "lib_name": "",
+      "footprint": "",
+      "datasheet": "",
+      "description": "",
+      "mpn": "",
+      "manufacturer": "",
+      "digikey": "",
+      "mouser": "",
+      "lcsc": "",
+      "element14": "",
+      "x": 165.1,
+      "y": 186.69,
+      "angle": 0.0,
+      "mirror_x": false,
+      "mirror_y": false,
+      "unit": 1,
+      "uuid": "00000000-0000-0000-0000-000066d10042",
+      "in_bom": true,
+      "dnp": false,
+      "on_board": true,
+      "pin_uuids": {
+        "1": "056b14e7-c06e-47ed-892a-a12fb7d3953e",
+        "2": "8508abf2-dd85-442b-b551-590ff1f3dc0c"
+      },
+      "type": "resistor",
+      "keywords": "",
+      "_sheet": 0,
+      "category": "resistor",
+      "parsed_value": 10000.0,
+      "pin_nets": {
+        "2": "DHT11_DATA",
+        "1": "+3V3"
+      }
+    }
+  ],
+  "nets": {
+    "UART_STM_TX_TO_ESP_RX": {
+      "name": "UART_STM_TX_TO_ESP_RX",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "1",
+          "pin_name": "PA9_D8_USART1_TX",
+          "pin_type": "output"
+        },
+        {
+          "component": "U2",
+          "pin_number": "1",
+          "pin_name": "GPIO18_UART1_RX",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "UART_STM_TX_TO_ESP_RX",
+          "type": "label"
+        }
+      ]
+    },
+    "UART_ESP_TX_TO_STM_RX": {
+      "name": "UART_ESP_TX_TO_STM_RX",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "2",
+          "pin_name": "PA10_D2_USART1_RX",
+          "pin_type": "input"
+        },
+        {
+          "component": "U2",
+          "pin_number": "2",
+          "pin_name": "GPIO17_UART1_TX",
+          "pin_type": "output"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "UART_ESP_TX_TO_STM_RX",
+          "type": "label"
+        }
+      ]
+    },
+    "I2C1_SCL": {
+      "name": "I2C1_SCL",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "3",
+          "pin_name": "PB8_D15_I2C1_SCL",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "DS1",
+          "pin_number": "1",
+          "pin_name": "SCL",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "U4",
+          "pin_number": "1",
+          "pin_name": "SCL",
+          "pin_type": "bidirectional"
+        }
+      ],
+      "point_count": 7,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "I2C1_SCL",
+          "type": "label"
+        }
+      ]
+    },
+    "I2C1_SDA": {
+      "name": "I2C1_SDA",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "4",
+          "pin_name": "PB9_D14_I2C1_SDA",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "DS1",
+          "pin_number": "2",
+          "pin_name": "SDA",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "U4",
+          "pin_number": "2",
+          "pin_name": "SDA",
+          "pin_type": "bidirectional"
+        }
+      ],
+      "point_count": 7,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "I2C1_SDA",
+          "type": "label"
+        }
+      ]
+    },
+    "VS_RST": {
+      "name": "VS_RST",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "5",
+          "pin_name": "PB1_CN10-24_VS_RST",
+          "pin_type": "output"
+        },
+        {
+          "component": "U3",
+          "pin_number": "1",
+          "pin_name": "XRST",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "VS_RST",
+          "type": "label"
+        }
+      ]
+    },
+    "SPI2_MISO": {
+      "name": "SPI2_MISO",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "6",
+          "pin_name": "PB14_CN10-28_SPI2_MISO",
+          "pin_type": "input"
+        },
+        {
+          "component": "U3",
+          "pin_number": "2",
+          "pin_name": "MISO",
+          "pin_type": "output"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "SPI2_MISO",
+          "type": "label"
+        }
+      ]
+    },
+    "SPI2_MOSI": {
+      "name": "SPI2_MOSI",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "7",
+          "pin_name": "PB15_CN10-26_SPI2_MOSI",
+          "pin_type": "output"
+        },
+        {
+          "component": "U3",
+          "pin_number": "3",
+          "pin_name": "MOSI",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "SPI2_MOSI",
+          "type": "label"
+        }
+      ]
+    },
+    "SPI2_SCK": {
+      "name": "SPI2_SCK",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "8",
+          "pin_name": "PB13_CN10-30_SPI2_SCK",
+          "pin_type": "output"
+        },
+        {
+          "component": "U3",
+          "pin_number": "4",
+          "pin_name": "SCLK",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "SPI2_SCK",
+          "type": "label"
+        }
+      ]
+    },
+    "VS_DREQ": {
+      "name": "VS_DREQ",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "9",
+          "pin_name": "PC5_CN10-6_VS_DREQ",
+          "pin_type": "input"
+        },
+        {
+          "component": "U3",
+          "pin_number": "5",
+          "pin_name": "DREQ",
+          "pin_type": "output"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "VS_DREQ",
+          "type": "label"
+        }
+      ]
+    },
+    "VS_XCS_ACTIVE_LOW": {
+      "name": "VS_XCS_ACTIVE_LOW",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "10",
+          "pin_name": "PC6_CN10-4_VS_XCS",
+          "pin_type": "output"
+        },
+        {
+          "component": "U3",
+          "pin_number": "6",
+          "pin_name": "XCS",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "VS_XCS_ACTIVE_LOW",
+          "type": "label"
+        }
+      ]
+    },
+    "VS_XDCS_ACTIVE_LOW": {
+      "name": "VS_XDCS_ACTIVE_LOW",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "11",
+          "pin_name": "PC8_CN10-2_VS_XDCS",
+          "pin_type": "output"
+        },
+        {
+          "component": "U3",
+          "pin_number": "7",
+          "pin_name": "XDCS",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 3,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "VS_XDCS_ACTIVE_LOW",
+          "type": "label"
+        }
+      ]
+    },
+    "DHT11_DATA": {
+      "name": "DHT11_DATA",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "12",
+          "pin_name": "PA1_A1_DHT11_DATA",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "U5",
+          "pin_number": "1",
+          "pin_name": "DATA",
+          "pin_type": "bidirectional"
+        },
+        {
+          "component": "R4",
+          "pin_number": "2",
+          "pin_name": "~",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 7,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "DHT11_DATA",
+          "type": "label"
+        }
+      ]
+    },
+    "+3V3": {
+      "name": "+3V3",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "13",
+          "pin_name": "+3V3",
+          "pin_type": "power_out"
+        },
+        {
+          "component": "DS1",
+          "pin_number": "3",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in"
+        },
+        {
+          "component": "BZ1",
+          "pin_number": "2",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in"
+        },
+        {
+          "component": "U4",
+          "pin_number": "3",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in"
+        },
+        {
+          "component": "U5",
+          "pin_number": "2",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in"
+        },
+        {
+          "component": "R4",
+          "pin_number": "1",
+          "pin_name": "~",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 12,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "+3V3",
+          "type": "label"
+        }
+      ]
+    },
+    "GND": {
+      "name": "GND",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "14",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "U2",
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "DS1",
+          "pin_number": "4",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "U3",
+          "pin_number": "8",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW1",
+          "pin_number": "2",
+          "pin_name": "2",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW2",
+          "pin_number": "2",
+          "pin_name": "2",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW3",
+          "pin_number": "2",
+          "pin_name": "2",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW4",
+          "pin_number": "2",
+          "pin_name": "2",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D1",
+          "pin_number": "2",
+          "pin_name": "K",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D2",
+          "pin_number": "2",
+          "pin_name": "K",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D3",
+          "pin_number": "2",
+          "pin_name": "K",
+          "pin_type": "passive"
+        },
+        {
+          "component": "BZ1",
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "U4",
+          "pin_number": "4",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        },
+        {
+          "component": "U5",
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 28,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [
+        {
+          "name": "GND",
+          "type": "label"
+        }
+      ]
+    },
+    "__unnamed_0": {
+      "name": "__unnamed_0",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "15",
+          "pin_name": "PB5_D4_BTN1",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW1",
+          "pin_number": "1",
+          "pin_name": "1",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PB5_D4_BTN1"
+    },
+    "__unnamed_1": {
+      "name": "__unnamed_1",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "16",
+          "pin_name": "PB10_D6_BTN2",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW2",
+          "pin_number": "1",
+          "pin_name": "1",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PB10_D6_BTN2"
+    },
+    "__unnamed_2": {
+      "name": "__unnamed_2",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "17",
+          "pin_name": "PA8_D7_BTN3",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW3",
+          "pin_number": "1",
+          "pin_name": "1",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PA8_D7_BTN3"
+    },
+    "__unnamed_3": {
+      "name": "__unnamed_3",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "18",
+          "pin_name": "PC7_D9_BTN4",
+          "pin_type": "passive"
+        },
+        {
+          "component": "SW4",
+          "pin_number": "1",
+          "pin_name": "1",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PC7_D9_BTN4"
+    },
+    "__unnamed_4": {
+      "name": "__unnamed_4",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "19",
+          "pin_name": "PA4_A2_RGB_R",
+          "pin_type": "output"
+        },
+        {
+          "component": "R1",
+          "pin_number": "1",
+          "pin_name": "~",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PA4_A2_RGB_R"
+    },
+    "__unnamed_5": {
+      "name": "__unnamed_5",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "20",
+          "pin_name": "PB0_A3_RGB_G",
+          "pin_type": "output"
+        },
+        {
+          "component": "R2",
+          "pin_number": "1",
+          "pin_name": "~",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PB0_A3_RGB_G"
+    },
+    "__unnamed_6": {
+      "name": "__unnamed_6",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "21",
+          "pin_name": "PC1_A4_RGB_B",
+          "pin_type": "output"
+        },
+        {
+          "component": "R3",
+          "pin_number": "1",
+          "pin_name": "~",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PC1_A4_RGB_B"
+    },
+    "__unnamed_7": {
+      "name": "__unnamed_7",
+      "pins": [
+        {
+          "component": "U1",
+          "pin_number": "22",
+          "pin_name": "PB4_D5_BUZZER",
+          "pin_type": "output"
+        },
+        {
+          "component": "BZ1",
+          "pin_number": "1",
+          "pin_name": "SIG",
+          "pin_type": "input"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": [],
+      "display_name": "U1.PB4_D5_BUZZER"
+    },
+    "__unnamed_8": {
+      "name": "__unnamed_8",
+      "pins": [
+        {
+          "component": "R1",
+          "pin_number": "2",
+          "pin_name": "~",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D1",
+          "pin_number": "1",
+          "pin_name": "A",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": []
+    },
+    "__unnamed_9": {
+      "name": "__unnamed_9",
+      "pins": [
+        {
+          "component": "R2",
+          "pin_number": "2",
+          "pin_name": "~",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D2",
+          "pin_number": "1",
+          "pin_name": "A",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": []
+    },
+    "__unnamed_10": {
+      "name": "__unnamed_10",
+      "pins": [
+        {
+          "component": "R3",
+          "pin_number": "2",
+          "pin_name": "~",
+          "pin_type": "passive"
+        },
+        {
+          "component": "D3",
+          "pin_number": "1",
+          "pin_name": "A",
+          "pin_type": "passive"
+        }
+      ],
+      "point_count": 2,
+      "no_connect": false,
+      "has_pwr_flag": false,
+      "labels": []
+    }
+  },
+  "subcircuits": [
+    {
+      "center_ic": "U1",
+      "ic_value": "NUCLEO-F411RE",
+      "ic_mpn": "",
+      "ic_lib_id": "Nostos:NUCLEO_F411RE",
+      "neighbor_components": [
+        {
+          "ref": "BZ1",
+          "value": "ACTIVE BUZZER MODULE",
+          "type": "buzzer"
+        },
+        {
+          "ref": "DS1",
+          "value": "SSD1306 OLED (0x3C)",
+          "type": "diode"
+        },
+        {
+          "ref": "R1",
+          "value": "330R",
+          "type": "resistor"
+        },
+        {
+          "ref": "R2",
+          "value": "330R",
+          "type": "resistor"
+        },
+        {
+          "ref": "R3",
+          "value": "330R",
+          "type": "resistor"
+        },
+        {
+          "ref": "R4",
+          "value": "10k DHT PULL-UP",
+          "type": "resistor"
+        },
+        {
+          "ref": "SW1",
+          "value": "BTN1 SPEED UP",
+          "type": "switch"
+        },
+        {
+          "ref": "SW2",
+          "value": "BTN2 SPEED DOWN",
+          "type": "switch"
+        },
+        {
+          "ref": "SW3",
+          "value": "BTN3 STOP REQUEST",
+          "type": "switch"
+        },
+        {
+          "ref": "SW4",
+          "value": "BTN4 LOCAL / MSG_NONE",
+          "type": "switch"
+        },
+        {
+          "ref": "U2",
+          "value": "ESP32-S3 BLE MESH BRIDGE",
+          "type": "ic"
+        },
+        {
+          "ref": "U3",
+          "value": "VS1003B AUDIO DECODER",
+          "type": "ic"
+        },
+        {
+          "ref": "U4",
+          "value": "MPU6050 (RIDER TAIL, ON)",
+          "type": "ic"
+        },
+        {
+          "ref": "U5",
+          "value": "DHT11 (RIDER MID, ON)",
+          "type": "ic"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "center_ic": "U2",
+      "ic_value": "ESP32-S3 BLE MESH BRIDGE",
+      "ic_mpn": "",
+      "ic_lib_id": "Nostos:ESP32_S3_BRIDGE",
+      "neighbor_components": [
+        {
+          "ref": "U1",
+          "value": "NUCLEO-F411RE",
+          "type": "ic"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "center_ic": "U3",
+      "ic_value": "VS1003B AUDIO DECODER",
+      "ic_mpn": "",
+      "ic_lib_id": "Nostos:VS1003B_MODULE",
+      "neighbor_components": [
+        {
+          "ref": "U1",
+          "value": "NUCLEO-F411RE",
+          "type": "ic"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "center_ic": "U4",
+      "ic_value": "MPU6050 (RIDER TAIL, ON)",
+      "ic_mpn": "",
+      "ic_lib_id": "Nostos:MPU6050_MODULE",
+      "neighbor_components": [
+        {
+          "ref": "DS1",
+          "value": "SSD1306 OLED (0x3C)",
+          "type": "diode"
+        },
+        {
+          "ref": "U1",
+          "value": "NUCLEO-F411RE",
+          "type": "ic"
+        }
+      ],
+      "description": ""
+    },
+    {
+      "center_ic": "U5",
+      "ic_value": "DHT11 (RIDER MID, ON)",
+      "ic_mpn": "",
+      "ic_lib_id": "Nostos:DHT11_MODULE",
+      "neighbor_components": [
+        {
+          "ref": "R4",
+          "value": "10k DHT PULL-UP",
+          "type": "resistor"
+        },
+        {
+          "ref": "U1",
+          "value": "NUCLEO-F411RE",
+          "type": "ic"
+        }
+      ],
+      "description": ""
+    }
+  ],
+  "ic_pin_analysis": [
+    {
+      "reference": "U1",
+      "value": "NUCLEO-F411RE",
+      "type": "ic",
+      "lib_id": "Nostos:NUCLEO_F411RE",
+      "mpn": "",
+      "description": "",
+      "datasheet": "",
+      "function": "",
+      "total_pins": 22,
+      "unconnected_pins": 0,
+      "pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "PA9_D8_USART1_TX",
+          "pin_type": "output",
+          "net": "UART_STM_TX_TO_ESP_RX",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "GPIO18_UART1_RX"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "PA10_D2_USART1_RX",
+          "pin_type": "input",
+          "net": "UART_ESP_TX_TO_STM_RX",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "GPIO17_UART1_TX"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "PB8_D15_I2C1_SCL",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SCL",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "1",
+              "pin_name": "SCL"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "SCL"
+            }
+          ]
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "PB9_D14_I2C1_SDA",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SDA",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "2",
+              "pin_name": "SDA"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "SDA"
+            }
+          ]
+        },
+        {
+          "pin_number": "5",
+          "pin_name": "PB1_CN10-24_VS_RST",
+          "pin_type": "output",
+          "net": "VS_RST",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "XRST"
+            }
+          ]
+        },
+        {
+          "pin_number": "6",
+          "pin_name": "PB14_CN10-28_SPI2_MISO",
+          "pin_type": "input",
+          "net": "SPI2_MISO",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "MISO"
+            }
+          ]
+        },
+        {
+          "pin_number": "7",
+          "pin_name": "PB15_CN10-26_SPI2_MOSI",
+          "pin_type": "output",
+          "net": "SPI2_MOSI",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "MOSI"
+            }
+          ]
+        },
+        {
+          "pin_number": "8",
+          "pin_name": "PB13_CN10-30_SPI2_SCK",
+          "pin_type": "output",
+          "net": "SPI2_SCK",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "SCLK"
+            }
+          ]
+        },
+        {
+          "pin_number": "9",
+          "pin_name": "PC5_CN10-6_VS_DREQ",
+          "pin_type": "input",
+          "net": "VS_DREQ",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "5",
+              "pin_name": "DREQ"
+            }
+          ]
+        },
+        {
+          "pin_number": "10",
+          "pin_name": "PC6_CN10-4_VS_XCS",
+          "pin_type": "output",
+          "net": "VS_XCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "6",
+              "pin_name": "XCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "11",
+          "pin_name": "PC8_CN10-2_VS_XDCS",
+          "pin_type": "output",
+          "net": "VS_XDCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "7",
+              "pin_name": "XDCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "12",
+          "pin_name": "PA1_A1_DHT11_DATA",
+          "pin_type": "bidirectional",
+          "net": "DHT11_DATA",
+          "connected_to": [
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "DATA"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "2",
+              "pin_name": "~"
+            }
+          ],
+          "resistors": [
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "direction": "pull-up",
+              "to_net": "+3V3"
+            }
+          ]
+        },
+        {
+          "pin_number": "13",
+          "pin_name": "+3V3",
+          "pin_type": "power_out",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "14",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        },
+        {
+          "pin_number": "15",
+          "pin_name": "PB5_D4_BTN1",
+          "pin_type": "passive",
+          "net": "__unnamed_0",
+          "connected_to": [
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "16",
+          "pin_name": "PB10_D6_BTN2",
+          "pin_type": "passive",
+          "net": "__unnamed_1",
+          "connected_to": [
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "17",
+          "pin_name": "PA8_D7_BTN3",
+          "pin_type": "passive",
+          "net": "__unnamed_2",
+          "connected_to": [
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "18",
+          "pin_name": "PC7_D9_BTN4",
+          "pin_type": "passive",
+          "net": "__unnamed_3",
+          "connected_to": [
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "19",
+          "pin_name": "PA4_A2_RGB_R",
+          "pin_type": "output",
+          "net": "__unnamed_4",
+          "connected_to": [
+            {
+              "ref": "R1",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "20",
+          "pin_name": "PB0_A3_RGB_G",
+          "pin_type": "output",
+          "net": "__unnamed_5",
+          "connected_to": [
+            {
+              "ref": "R2",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "21",
+          "pin_name": "PC1_A4_RGB_B",
+          "pin_type": "output",
+          "net": "__unnamed_6",
+          "connected_to": [
+            {
+              "ref": "R3",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "22",
+          "pin_name": "PB4_D5_BUZZER",
+          "pin_type": "output",
+          "net": "__unnamed_7",
+          "connected_to": [
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "1",
+              "pin_name": "SIG"
+            }
+          ]
+        }
+      ],
+      "power_pins": [
+        {
+          "pin_number": "13",
+          "pin_name": "+3V3",
+          "pin_type": "power_out",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "14",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "signal_pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "PA9_D8_USART1_TX",
+          "pin_type": "output",
+          "net": "UART_STM_TX_TO_ESP_RX",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "GPIO18_UART1_RX"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "PA10_D2_USART1_RX",
+          "pin_type": "input",
+          "net": "UART_ESP_TX_TO_STM_RX",
+          "connected_to": [
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "GPIO17_UART1_TX"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "PB8_D15_I2C1_SCL",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SCL",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "1",
+              "pin_name": "SCL"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "SCL"
+            }
+          ]
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "PB9_D14_I2C1_SDA",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SDA",
+          "connected_to": [
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "2",
+              "pin_name": "SDA"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "SDA"
+            }
+          ]
+        },
+        {
+          "pin_number": "5",
+          "pin_name": "PB1_CN10-24_VS_RST",
+          "pin_type": "output",
+          "net": "VS_RST",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "XRST"
+            }
+          ]
+        },
+        {
+          "pin_number": "6",
+          "pin_name": "PB14_CN10-28_SPI2_MISO",
+          "pin_type": "input",
+          "net": "SPI2_MISO",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "MISO"
+            }
+          ]
+        },
+        {
+          "pin_number": "7",
+          "pin_name": "PB15_CN10-26_SPI2_MOSI",
+          "pin_type": "output",
+          "net": "SPI2_MOSI",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "MOSI"
+            }
+          ]
+        },
+        {
+          "pin_number": "8",
+          "pin_name": "PB13_CN10-30_SPI2_SCK",
+          "pin_type": "output",
+          "net": "SPI2_SCK",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "SCLK"
+            }
+          ]
+        },
+        {
+          "pin_number": "9",
+          "pin_name": "PC5_CN10-6_VS_DREQ",
+          "pin_type": "input",
+          "net": "VS_DREQ",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "5",
+              "pin_name": "DREQ"
+            }
+          ]
+        },
+        {
+          "pin_number": "10",
+          "pin_name": "PC6_CN10-4_VS_XCS",
+          "pin_type": "output",
+          "net": "VS_XCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "6",
+              "pin_name": "XCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "11",
+          "pin_name": "PC8_CN10-2_VS_XDCS",
+          "pin_type": "output",
+          "net": "VS_XDCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "7",
+              "pin_name": "XDCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "12",
+          "pin_name": "PA1_A1_DHT11_DATA",
+          "pin_type": "bidirectional",
+          "net": "DHT11_DATA",
+          "connected_to": [
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "DATA"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "2",
+              "pin_name": "~"
+            }
+          ],
+          "resistors": [
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "direction": "pull-up",
+              "to_net": "+3V3"
+            }
+          ]
+        },
+        {
+          "pin_number": "15",
+          "pin_name": "PB5_D4_BTN1",
+          "pin_type": "passive",
+          "net": "__unnamed_0",
+          "connected_to": [
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "16",
+          "pin_name": "PB10_D6_BTN2",
+          "pin_type": "passive",
+          "net": "__unnamed_1",
+          "connected_to": [
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "17",
+          "pin_name": "PA8_D7_BTN3",
+          "pin_type": "passive",
+          "net": "__unnamed_2",
+          "connected_to": [
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "18",
+          "pin_name": "PC7_D9_BTN4",
+          "pin_type": "passive",
+          "net": "__unnamed_3",
+          "connected_to": [
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "1",
+              "pin_name": "1"
+            }
+          ]
+        },
+        {
+          "pin_number": "19",
+          "pin_name": "PA4_A2_RGB_R",
+          "pin_type": "output",
+          "net": "__unnamed_4",
+          "connected_to": [
+            {
+              "ref": "R1",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "20",
+          "pin_name": "PB0_A3_RGB_G",
+          "pin_type": "output",
+          "net": "__unnamed_5",
+          "connected_to": [
+            {
+              "ref": "R2",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "21",
+          "pin_name": "PC1_A4_RGB_B",
+          "pin_type": "output",
+          "net": "__unnamed_6",
+          "connected_to": [
+            {
+              "ref": "R3",
+              "value": "330R",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ]
+        },
+        {
+          "pin_number": "22",
+          "pin_name": "PB4_D5_BUZZER",
+          "pin_type": "output",
+          "net": "__unnamed_7",
+          "connected_to": [
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "1",
+              "pin_name": "SIG"
+            }
+          ]
+        }
+      ],
+      "decoupling_caps_by_rail": {}
+    },
+    {
+      "reference": "U2",
+      "value": "ESP32-S3 BLE MESH BRIDGE",
+      "type": "ic",
+      "lib_id": "Nostos:ESP32_S3_BRIDGE",
+      "mpn": "",
+      "description": "",
+      "datasheet": "",
+      "function": "microcontroller (ESP)",
+      "total_pins": 3,
+      "unconnected_pins": 0,
+      "pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "GPIO18_UART1_RX",
+          "pin_type": "input",
+          "net": "UART_STM_TX_TO_ESP_RX",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "PA9_D8_USART1_TX"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "GPIO17_UART1_TX",
+          "pin_type": "output",
+          "net": "UART_ESP_TX_TO_STM_RX",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "PA10_D2_USART1_RX"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "power_pins": [
+        {
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "signal_pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "GPIO18_UART1_RX",
+          "pin_type": "input",
+          "net": "UART_STM_TX_TO_ESP_RX",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "1",
+              "pin_name": "PA9_D8_USART1_TX"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "GPIO17_UART1_TX",
+          "pin_type": "output",
+          "net": "UART_ESP_TX_TO_STM_RX",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "PA10_D2_USART1_RX"
+            }
+          ]
+        }
+      ],
+      "decoupling_caps_by_rail": {}
+    },
+    {
+      "reference": "U3",
+      "value": "VS1003B AUDIO DECODER",
+      "type": "ic",
+      "lib_id": "Nostos:VS1003B_MODULE",
+      "mpn": "",
+      "description": "",
+      "datasheet": "",
+      "function": "",
+      "total_pins": 8,
+      "unconnected_pins": 0,
+      "pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "XRST",
+          "pin_type": "input",
+          "net": "VS_RST",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "5",
+              "pin_name": "PB1_CN10-24_VS_RST"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "MISO",
+          "pin_type": "output",
+          "net": "SPI2_MISO",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "6",
+              "pin_name": "PB14_CN10-28_SPI2_MISO"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "MOSI",
+          "pin_type": "input",
+          "net": "SPI2_MOSI",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "7",
+              "pin_name": "PB15_CN10-26_SPI2_MOSI"
+            }
+          ]
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "SCLK",
+          "pin_type": "input",
+          "net": "SPI2_SCK",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "PB13_CN10-30_SPI2_SCK"
+            }
+          ]
+        },
+        {
+          "pin_number": "5",
+          "pin_name": "DREQ",
+          "pin_type": "output",
+          "net": "VS_DREQ",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "9",
+              "pin_name": "PC5_CN10-6_VS_DREQ"
+            }
+          ]
+        },
+        {
+          "pin_number": "6",
+          "pin_name": "XCS",
+          "pin_type": "input",
+          "net": "VS_XCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "10",
+              "pin_name": "PC6_CN10-4_VS_XCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "7",
+          "pin_name": "XDCS",
+          "pin_type": "input",
+          "net": "VS_XDCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "11",
+              "pin_name": "PC8_CN10-2_VS_XDCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "8",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "power_pins": [
+        {
+          "pin_number": "8",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "signal_pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "XRST",
+          "pin_type": "input",
+          "net": "VS_RST",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "5",
+              "pin_name": "PB1_CN10-24_VS_RST"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "MISO",
+          "pin_type": "output",
+          "net": "SPI2_MISO",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "6",
+              "pin_name": "PB14_CN10-28_SPI2_MISO"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "MOSI",
+          "pin_type": "input",
+          "net": "SPI2_MOSI",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "7",
+              "pin_name": "PB15_CN10-26_SPI2_MOSI"
+            }
+          ]
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "SCLK",
+          "pin_type": "input",
+          "net": "SPI2_SCK",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "PB13_CN10-30_SPI2_SCK"
+            }
+          ]
+        },
+        {
+          "pin_number": "5",
+          "pin_name": "DREQ",
+          "pin_type": "output",
+          "net": "VS_DREQ",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "9",
+              "pin_name": "PC5_CN10-6_VS_DREQ"
+            }
+          ]
+        },
+        {
+          "pin_number": "6",
+          "pin_name": "XCS",
+          "pin_type": "input",
+          "net": "VS_XCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "10",
+              "pin_name": "PC6_CN10-4_VS_XCS"
+            }
+          ]
+        },
+        {
+          "pin_number": "7",
+          "pin_name": "XDCS",
+          "pin_type": "input",
+          "net": "VS_XDCS_ACTIVE_LOW",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "11",
+              "pin_name": "PC8_CN10-2_VS_XDCS"
+            }
+          ]
+        }
+      ],
+      "decoupling_caps_by_rail": {}
+    },
+    {
+      "reference": "U4",
+      "value": "MPU6050 (RIDER TAIL, ON)",
+      "type": "ic",
+      "lib_id": "Nostos:MPU6050_MODULE",
+      "mpn": "",
+      "description": "",
+      "datasheet": "",
+      "function": "IMU/motion sensor",
+      "total_pins": 4,
+      "unconnected_pins": 0,
+      "pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "SCL",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SCL",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "PB8_D15_I2C1_SCL"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "1",
+              "pin_name": "SCL"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "SDA",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SDA",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "PB9_D14_I2C1_SDA"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "2",
+              "pin_name": "SDA"
+            }
+          ]
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "13",
+              "pin_name": "+3V3"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "power_pins": [
+        {
+          "pin_number": "3",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "13",
+              "pin_name": "+3V3"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "4",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U5",
+              "value": "DHT11 (RIDER MID, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "signal_pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "SCL",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SCL",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "PB8_D15_I2C1_SCL"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "1",
+              "pin_name": "SCL"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "SDA",
+          "pin_type": "bidirectional",
+          "net": "I2C1_SDA",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "PB9_D14_I2C1_SDA"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "2",
+              "pin_name": "SDA"
+            }
+          ]
+        }
+      ],
+      "decoupling_caps_by_rail": {}
+    },
+    {
+      "reference": "U5",
+      "value": "DHT11 (RIDER MID, ON)",
+      "type": "ic",
+      "lib_id": "Nostos:DHT11_MODULE",
+      "mpn": "",
+      "description": "",
+      "datasheet": "",
+      "function": "",
+      "total_pins": 3,
+      "unconnected_pins": 0,
+      "pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "DATA",
+          "pin_type": "bidirectional",
+          "net": "DHT11_DATA",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "12",
+              "pin_name": "PA1_A1_DHT11_DATA"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "2",
+              "pin_name": "~"
+            }
+          ],
+          "resistors": [
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "direction": "pull-up",
+              "to_net": "+3V3"
+            }
+          ]
+        },
+        {
+          "pin_number": "2",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "13",
+              "pin_name": "+3V3"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "power_pins": [
+        {
+          "pin_number": "2",
+          "pin_name": "VCC_3V3",
+          "pin_type": "power_in",
+          "net": "+3V3",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "13",
+              "pin_name": "+3V3"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "2",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "VCC_3V3"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "1",
+              "pin_name": "~"
+            }
+          ],
+          "has_decoupling_cap": false,
+          "decoupling_caps": []
+        },
+        {
+          "pin_number": "3",
+          "pin_name": "GND",
+          "pin_type": "passive",
+          "net": "GND",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "14",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "type": "ic",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "DS1",
+              "value": "SSD1306 OLED (0x3C)",
+              "type": "diode",
+              "pin": "4",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "type": "ic",
+              "pin": "8",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "SW1",
+              "value": "BTN1 SPEED UP",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW2",
+              "value": "BTN2 SPEED DOWN",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW3",
+              "value": "BTN3 STOP REQUEST",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "SW4",
+              "value": "BTN4 LOCAL / MSG_NONE",
+              "type": "switch",
+              "pin": "2",
+              "pin_name": "2"
+            },
+            {
+              "ref": "D1",
+              "value": "RED",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D2",
+              "value": "GREEN",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "D3",
+              "value": "BLUE",
+              "type": "led",
+              "pin": "2",
+              "pin_name": "K"
+            },
+            {
+              "ref": "BZ1",
+              "value": "ACTIVE BUZZER MODULE",
+              "type": "buzzer",
+              "pin": "3",
+              "pin_name": "GND"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "type": "ic",
+              "pin": "4",
+              "pin_name": "GND"
+            }
+          ],
+          "has_decoupling_cap": true,
+          "decoupling_caps": [],
+          "note": "Ground net \u2014 decoupling caps listed on VCC/VDD pins"
+        }
+      ],
+      "signal_pins": [
+        {
+          "pin_number": "1",
+          "pin_name": "DATA",
+          "pin_type": "bidirectional",
+          "net": "DHT11_DATA",
+          "connected_to": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "type": "ic",
+              "pin": "12",
+              "pin_name": "PA1_A1_DHT11_DATA"
+            },
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "type": "resistor",
+              "pin": "2",
+              "pin_name": "~"
+            }
+          ],
+          "resistors": [
+            {
+              "ref": "R4",
+              "value": "10k DHT PULL-UP",
+              "direction": "pull-up",
+              "to_net": "+3V3"
+            }
+          ]
+        }
+      ],
+      "decoupling_caps_by_rail": {}
+    }
+  ],
+  "transistor_pin_analysis": [],
+  "design_analysis": {
+    "net_classification": {
+      "UART_STM_TX_TO_ESP_RX": "data",
+      "UART_ESP_TX_TO_STM_RX": "data",
+      "I2C1_SCL": "clock",
+      "I2C1_SDA": "data",
+      "VS_RST": "control",
+      "SPI2_MISO": "data",
+      "SPI2_MOSI": "data",
+      "SPI2_SCK": "clock",
+      "VS_DREQ": "signal",
+      "VS_XCS_ACTIVE_LOW": "chip_select",
+      "VS_XDCS_ACTIVE_LOW": "chip_select",
+      "DHT11_DATA": "signal",
+      "+3V3": "power",
+      "GND": "ground",
+      "__unnamed_0": "signal",
+      "__unnamed_1": "signal",
+      "__unnamed_2": "signal",
+      "__unnamed_3": "signal",
+      "__unnamed_4": "signal",
+      "__unnamed_5": "signal",
+      "__unnamed_6": "signal",
+      "__unnamed_7": "signal",
+      "__unnamed_8": "signal",
+      "__unnamed_9": "signal",
+      "__unnamed_10": "signal"
+    },
+    "power_domains": {
+      "ic_power_rails": {
+        "U1": {
+          "value": "NUCLEO-F411RE",
+          "power_rails": [
+            "+3V3"
+          ],
+          "io_rails": null
+        },
+        "U4": {
+          "value": "MPU6050 (RIDER TAIL, ON)",
+          "power_rails": [
+            "+3V3"
+          ],
+          "io_rails": null
+        },
+        "U5": {
+          "value": "DHT11 (RIDER MID, ON)",
+          "power_rails": [
+            "+3V3"
+          ],
+          "io_rails": null
+        }
+      },
+      "domain_groups": {
+        "+3V3": [
+          "U1",
+          "U4",
+          "U5"
+        ]
+      }
+    },
+    "cross_domain_signals": [],
+    "bus_analysis": {
+      "i2c": [
+        {
+          "net": "I2C1_SCL",
+          "line": "SCL",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "lib_id": "Nostos:MPU6050_MODULE"
+            }
+          ],
+          "load_count": 2,
+          "estimated_bus_capacitance_pF": 10,
+          "pull_ups": [],
+          "has_pull_up": false,
+          "speed_mode": null,
+          "voltage_level_V": null,
+          "pull_up_ohms": null,
+          "controller": null
+        },
+        {
+          "net": "I2C1_SDA",
+          "line": "SDA",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U4",
+              "value": "MPU6050 (RIDER TAIL, ON)",
+              "lib_id": "Nostos:MPU6050_MODULE"
+            }
+          ],
+          "load_count": 2,
+          "estimated_bus_capacitance_pF": 10,
+          "pull_ups": [],
+          "has_pull_up": false,
+          "speed_mode": null,
+          "voltage_level_V": null,
+          "pull_up_ohms": null,
+          "controller": null
+        }
+      ],
+      "spi": [
+        {
+          "bus_id": "SPI2",
+          "signals": {
+            "MISO": {
+              "net": "SPI2_MISO",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            },
+            "MOSI": {
+              "net": "SPI2_MOSI",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            },
+            "SCK": {
+              "net": "SPI2_SCK",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            }
+          },
+          "load_count": 2,
+          "chip_select_count": 0,
+          "bus_mode": "full_duplex",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "lib_id": "Nostos:VS1003B_MODULE"
+            }
+          ],
+          "controller": null
+        },
+        {
+          "bus_id": "pin_U3",
+          "signals": {
+            "MISO": {
+              "net": "SPI2_MISO",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            },
+            "MOSI": {
+              "net": "SPI2_MOSI",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            },
+            "SCK": {
+              "net": "SPI2_SCK",
+              "devices": [
+                "U1",
+                "U3"
+              ]
+            }
+          },
+          "load_count": 2,
+          "chip_select_count": 0,
+          "bus_mode": "full_duplex",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U3",
+              "value": "VS1003B AUDIO DECODER",
+              "lib_id": "Nostos:VS1003B_MODULE"
+            }
+          ],
+          "controller": null
+        }
+      ],
+      "uart": [
+        {
+          "net": "UART_STM_TX_TO_ESP_RX",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "lib_id": "Nostos:ESP32_S3_BRIDGE"
+            }
+          ],
+          "pin_count": 2
+        },
+        {
+          "net": "UART_ESP_TX_TO_STM_RX",
+          "devices": [
+            {
+              "ref": "U1",
+              "value": "NUCLEO-F411RE",
+              "lib_id": "Nostos:NUCLEO_F411RE"
+            },
+            {
+              "ref": "U2",
+              "value": "ESP32-S3 BLE MESH BRIDGE",
+              "lib_id": "Nostos:ESP32_S3_BRIDGE"
+            }
+          ],
+          "pin_count": 2
+        }
+      ],
+      "can": []
+    },
+    "differential_pairs": [],
+    "erc_warnings": [],
+    "passive_warnings": []
+  },
+  "connectivity_issues": {
+    "unconnected_pins": [],
+    "single_pin_nets": [],
+    "single_pin_net_findings": [],
+    "multi_driver_nets": [],
+    "power_net_summary": {
+      "+3V3": {
+        "pin_count": 6,
+        "components": [
+          "BZ1",
+          "DS1",
+          "R4",
+          "U1",
+          "U4",
+          "U5"
+        ]
+      },
+      "GND": {
+        "pin_count": 14,
+        "components": [
+          "BZ1",
+          "D1",
+          "D2",
+          "D3",
+          "DS1",
+          "SW1",
+          "SW2",
+          "SW3",
+          "SW4",
+          "U1",
+          "U2",
+          "U3",
+          "U4",
+          "U5"
+        ]
+      }
+    }
+  },
+  "labels": [
+    {
+      "name": "I2C1_SDA",
+      "type": "label",
+      "x": 119.38,
+      "y": 114.3,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "I2C1_SCL",
+      "type": "label",
+      "x": 88.9,
+      "y": 190.5,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "SPI2_MOSI",
+      "type": "label",
+      "x": 119.38,
+      "y": 134.62,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 88.9,
+      "y": 205.74,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "VS_XCS_ACTIVE_LOW",
+      "type": "label",
+      "x": 119.38,
+      "y": 149.86,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 88.9,
+      "y": 104.14,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 88.9,
+      "y": 129.54,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 88.9,
+      "y": 200.66,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 251.46,
+      "y": 149.86,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "DHT11_DATA",
+      "type": "label",
+      "x": 157.48,
+      "y": 193.04,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 157.48,
+      "y": 203.2,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "VS_DREQ",
+      "type": "label",
+      "x": 119.38,
+      "y": 144.78,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "UART_STM_TX_TO_ESP_RX",
+      "type": "label",
+      "x": 91.44,
+      "y": 93.98,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "DHT11_DATA",
+      "type": "label",
+      "x": 172.72,
+      "y": 167.64,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "SPI2_MISO",
+      "type": "label",
+      "x": 119.38,
+      "y": 129.54,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 172.72,
+      "y": 172.72,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 157.48,
+      "y": 198.12,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "VS_RST",
+      "type": "label",
+      "x": 119.38,
+      "y": 124.46,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 251.46,
+      "y": 144.78,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "UART_ESP_TX_TO_STM_RX",
+      "type": "label",
+      "x": 91.44,
+      "y": 99.06,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "I2C1_SCL",
+      "type": "label",
+      "x": 119.38,
+      "y": 109.22,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "DHT11_DATA",
+      "type": "label",
+      "x": 172.72,
+      "y": 193.04,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "SPI2_SCK",
+      "type": "label",
+      "x": 119.38,
+      "y": 139.7,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 294.64,
+      "y": 129.54,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 88.9,
+      "y": 124.46,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 294.64,
+      "y": 109.22,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "VS_XDCS_ACTIVE_LOW",
+      "type": "label",
+      "x": 119.38,
+      "y": 154.94,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "+3V3",
+      "type": "label",
+      "x": 157.48,
+      "y": 186.69,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 120.65,
+      "y": 160.02,
+      "angle": 0.0,
+      "_sheet": 0
+    },
+    {
+      "name": "GND",
+      "type": "label",
+      "x": 172.72,
+      "y": 177.8,
+      "angle": 180.0,
+      "_sheet": 0
+    },
+    {
+      "name": "I2C1_SDA",
+      "type": "label",
+      "x": 88.9,
+      "y": 195.58,
+      "angle": 0.0,
+      "_sheet": 0
+    }
+  ],
+  "no_connects": [],
+  "power_symbols": [],
+  "annotation_issues": {},
+  "label_shape_warnings": [],
+  "pwr_flag_warnings": [],
+  "footprint_filter_warnings": [],
+  "sourcing_audit": {
+    "total_bom_components": 18,
+    "mpn_coverage": "0/18",
+    "missing_mpn": [
+      "BZ1",
+      "D1",
+      "D2",
+      "D3",
+      "DS1",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5"
+    ],
+    "missing_digikey": [
+      "BZ1",
+      "D1",
+      "D2",
+      "D3",
+      "DS1",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5"
+    ],
+    "missing_lcsc": [
+      "BZ1",
+      "D1",
+      "D2",
+      "D3",
+      "DS1",
+      "R1",
+      "R2",
+      "R3",
+      "R4",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5"
+    ],
+    "mpn_percent": 0.0
+  },
+  "ground_domains": {
+    "ground_nets": {
+      "GND": {
+        "domain": "signal",
+        "connections": 14,
+        "components": [
+          "BZ1",
+          "D1",
+          "D2",
+          "D3",
+          "DS1",
+          "SW1",
+          "SW2",
+          "SW3",
+          "SW4",
+          "U1",
+          "U2",
+          "U3",
+          "U4",
+          "U5"
+        ]
+      }
+    },
+    "multiple_domains": false
+  },
+  "bus_topology": {
+    "bus_wire_count": 0,
+    "bus_entry_count": 0,
+    "unresolved": []
+  },
+  "wire_geometry": {
+    "total_wires": 54,
+    "total_length_mm": 1290.3,
+    "avg_length_mm": 23.9
+  },
+  "simulation_readiness": {
+    "total_components": 18,
+    "likely_simulatable": 8,
+    "needs_model": 10,
+    "components_without_model": [
+      "BZ1",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "U1",
+      "U2",
+      "U3",
+      "U4",
+      "U5"
+    ],
+    "simulatable_percent": 44.4
+  },
+  "property_issues": {},
+  "placement_analysis": {
+    "bounding_box": {
+      "x_min": 63.5,
+      "y_min": 94.0,
+      "x_max": 281.9,
+      "y_max": 195.6,
+      "width_mm": 218.4,
+      "height_mm": 101.6
+    },
+    "clusters": [
+      {
+        "region": "row0_col0",
+        "component_count": 2,
+        "types": {
+          "ic": 1,
+          "diode": 1
+        },
+        "references": [
+          "DS1",
+          "U2"
+        ]
+      },
+      {
+        "region": "row0_col3",
+        "component_count": 8,
+        "types": {
+          "switch": 4,
+          "resistor": 2,
+          "led": 2
+        },
+        "references": [
+          "D1",
+          "D2",
+          "R1",
+          "R2",
+          "SW1",
+          "SW2",
+          "SW3",
+          "SW4"
+        ]
+      },
+      {
+        "region": "row1_col0",
+        "component_count": 1,
+        "types": {
+          "ic": 1
+        },
+        "references": [
+          "U3"
+        ]
+      },
+      {
+        "region": "row1_col2",
+        "component_count": 1,
+        "types": {
+          "ic": 1
+        },
+        "references": [
+          "U1"
+        ]
+      },
+      {
+        "region": "row1_col3",
+        "component_count": 3,
+        "types": {
+          "resistor": 1,
+          "led": 1,
+          "buzzer": 1
+        },
+        "references": [
+          "BZ1",
+          "D3",
+          "R3"
+        ]
+      },
+      {
+        "region": "row2_col0",
+        "component_count": 1,
+        "types": {
+          "ic": 1
+        },
+        "references": [
+          "U4"
+        ]
+      },
+      {
+        "region": "row2_col1",
+        "component_count": 2,
+        "types": {
+          "ic": 1,
+          "resistor": 1
+        },
+        "references": [
+          "R4",
+          "U5"
+        ]
+      }
+    ],
+    "grid_size": "3x4"
+  },
+  "hierarchical_labels": {
+    "hierarchical_label_count": 0,
+    "global_label_count": 0
+  },
+  "rail_voltages": {
+    "+3V3": 3.3,
+    "GND": 0
+  },
+  "power_sequencing_validation": {
+    "power_tree": [],
+    "provenance": {
+      "evidence": "pseq_enable_chain",
+      "confidence": "heuristic",
+      "claimed_components": [],
+      "excluded_by": [],
+      "suppressed_candidates": []
+    }
+  },
+  "net_classifications": {
+    "I2C1_SDA": {
+      "type": "i2c",
+      "source": "protocol_detection"
+    },
+    "I2C1_SCL": {
+      "type": "i2c",
+      "source": "protocol_detection"
+    }
+  },
+  "text_annotations": [
+    {
+      "type": "text",
+      "text": "VS1003B supply is breakout-dependent. Confirm its VIN rating; all signal levels remain 3.3V.",
+      "x": 38.1,
+      "y": 166.37,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "NOSTOS SYSTEM WIRING",
+      "x": 20.32,
+      "y": 17.78,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Rider Mid: Base + DHT11 (ON)",
+      "x": 254.0,
+      "y": 240.03,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "STM32 NUCLEO-F411RE / 3.3V LOGIC / COMMON GND",
+      "x": 20.32,
+      "y": 24.13,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "DHT11_SENSOR=ON | PA1 / A1",
+      "x": 111.76,
+      "y": 216.408,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "VARIANTS",
+      "x": 254.0,
+      "y": 228.6,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "ACTIVE SENSORS",
+      "x": 34.29,
+      "y": 177.8,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Rider Tail: Base + MPU6050 (ON)",
+      "x": 254.0,
+      "y": 245.11,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Rider Head: Base configuration (SSD1306 + VS1003B)",
+      "x": 254.0,
+      "y": 234.95,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Active-Low with STM32 internal pull-up. BTN4 is local MSG_NONE; buzzer-off is not implemented.",
+      "x": 254.0,
+      "y": 114.3,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Signal mapping: PINS.md | MCU configuration: firmware/stm32/nostos_stm32.ioc",
+      "x": 20.32,
+      "y": 26.67,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "UART / DISPLAY / AUDIO",
+      "x": 34.29,
+      "y": 76.2,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "3.3V active buzzer only; higher-current loads require a transistor driver.",
+      "x": 252.73,
+      "y": 154.94,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "Common-cathode RGB; 330 ohm current-limiting resistor per channel.",
+      "x": 298.45,
+      "y": 134.62,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "MPU6050_SENSOR=ON | I2C1 PB8/PB9 | address 0x68/0x69",
+      "x": 38.1,
+      "y": 212.09,
+      "angle": 0.0
+    },
+    {
+      "type": "text",
+      "text": "CONTROLS / OUTPUTS",
+      "x": 255.27,
+      "y": 76.2,
+      "angle": 0.0
+    }
+  ],
+  "sleep_current_audit": {
+    "rails": {
+      "+3V3": {
+        "current_paths": [
+          {
+            "ref": "R4",
+            "value": "10k DHT PULL-UP",
+            "type": "pull_up",
+            "resistance_ohm": 10000.0,
+            "rail_voltage": 3.3,
+            "current_uA": 330.0,
+            "note": "worst-case (signal driven low)",
+            "likely_state": "worst-case (signal driven low)",
+            "realistic_uA": 330.0
+          }
+        ],
+        "total_uA": 330.0,
+        "always_on_uA": 0,
+        "conditional_uA": 330.0,
+        "realistic_uA": 330.0
+      }
+    },
+    "total_estimated_sleep_uA": 0.0,
+    "conditional_pull_up_uA": 330.0,
+    "realistic_total_uA": 330.0,
+    "observations": [
+      "Always-on current: 0.0 uA (0.00 mA)",
+      "Conditional current (pull-ups, worst-case): 330.0 uA (0.33 mA)",
+      "Realistic sleep estimate: 330.0 uA (0.33 mA)"
+    ]
+  },
+  "power_budget": {
+    "rails": {
+      "+3V3": {
+        "ic_count": 2,
+        "ics": [
+          {
+            "ref": "U4",
+            "value": "MPU6050 (RIDER TAIL, ON)",
+            "estimated_mA": 5
+          },
+          {
+            "ref": "U5",
+            "value": "DHT11 (RIDER MID, ON)",
+            "estimated_mA": 10
+          }
+        ],
+        "estimated_load_mA": 15
+      }
+    }
+  },
+  "bom_optimization": {
+    "unique_value_counts": {
+      "resistor": 2,
+      "capacitor": 0
+    },
+    "total_unique_footprints": 0,
+    "single_use_passive_values": 1
+  },
+  "test_coverage": {
+    "test_points": [],
+    "test_point_count": 0,
+    "covered_nets": [],
+    "uncovered_key_nets": [
+      {
+        "net": "UART_STM_TX_TO_ESP_RX",
+        "category": "uart"
+      },
+      {
+        "net": "UART_ESP_TX_TO_STM_RX",
+        "category": "uart"
+      },
+      {
+        "net": "I2C1_SCL",
+        "category": "i2c"
+      },
+      {
+        "net": "I2C1_SDA",
+        "category": "i2c"
+      },
+      {
+        "net": "VS_RST",
+        "category": "reset"
+      },
+      {
+        "net": "SPI2_MISO",
+        "category": "spi"
+      },
+      {
+        "net": "SPI2_MOSI",
+        "category": "spi"
+      },
+      {
+        "net": "SPI2_SCK",
+        "category": "spi"
+      },
+      {
+        "net": "+3V3",
+        "category": "power_rail"
+      }
+    ],
+    "observations": [
+      "No test points found in design",
+      "No debug connectors (SWD/JTAG/UART) identified",
+      "Key nets without test points: 2 i2c, 1 power_rail, 1 reset, 3 spi, 2 uart"
+    ]
+  },
+  "assembly_complexity": {
+    "total_components": 18,
+    "smd_count": 18,
+    "tht_count": 0,
+    "complexity_score": 40,
+    "difficulty_breakdown": {
+      "hard": 0,
+      "medium": 18,
+      "easy": 0
+    },
+    "package_breakdown": {
+      "unknown": 18
+    },
+    "unique_footprints": 1,
+    "observations": [
+      "Moderate assembly complexity (score 40/100)"
+    ]
+  },
+  "protocol_compliance": {
+    "protocols_checked": [
+      "spi",
+      "i2c"
+    ],
+    "findings": [
+      {
+        "protocol": "i2c",
+        "sda_net": "I2C1_SDA",
+        "scl_net": "I2C1_SCL",
+        "devices": [
+          {
+            "ref": "U1",
+            "value": "NUCLEO-F411RE",
+            "lib_id": "Nostos:NUCLEO_F411RE"
+          },
+          {
+            "ref": "U4",
+            "value": "MPU6050 (RIDER TAIL, ON)",
+            "lib_id": "Nostos:MPU6050_MODULE"
+          }
+        ],
+        "checks": {
+          "pull_ups_present": {
+            "sda": false,
+            "scl": false,
+            "status": "fail"
+          }
+        },
+        "issues": [
+          "SDA line missing pull-up resistor",
+          "SCL line missing pull-up resistor"
+        ]
+      },
+      {
+        "protocol": "spi",
+        "bus_id": "SPI2",
+        "load_count": 2,
+        "chip_select_count": 0,
+        "issues": [
+          "2 SPI devices but only 0 CS line(s) \u2014 need 1"
+        ]
+      },
+      {
+        "protocol": "spi",
+        "bus_id": "pin_U3",
+        "load_count": 2,
+        "chip_select_count": 0,
+        "issues": [
+          "2 SPI devices but only 0 CS line(s) \u2014 need 1"
+        ]
+      }
+    ],
+    "total_issues": 4
+  },
+  "project_settings": {
+    "symbol_libs": [
+      {
+        "name": "Nostos",
+        "type": "KiCad",
+        "uri": "${KIPRJMOD}/Nostos.kicad_sym",
+        "descr": "NOSTOS project symbols"
+      }
+    ]
+  },
+  "missing_info": {
+    "missing_mpn": [
+      "U1",
+      "U2",
+      "DS1",
+      "U3",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "R1",
+      "D1",
+      "R2",
+      "D2",
+      "R3",
+      "D3",
+      "BZ1",
+      "U4",
+      "U5",
+      "R4"
+    ],
+    "missing_footprint": [
+      "U1",
+      "U2",
+      "DS1",
+      "U3",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "R1",
+      "D1",
+      "R2",
+      "D2",
+      "R3",
+      "D3",
+      "BZ1",
+      "U4",
+      "U5",
+      "R4"
+    ]
+  },
+  "bom_lock": {
+    "total_bom_components": 18,
+    "components_with_mpn": 0,
+    "missing_mpn": [
+      "U1",
+      "U2",
+      "DS1",
+      "U3",
+      "SW1",
+      "SW2",
+      "SW3",
+      "SW4",
+      "R1",
+      "D1",
+      "R2",
+      "D2",
+      "R3",
+      "D3",
+      "BZ1",
+      "U4",
+      "U5",
+      "R4"
+    ],
+    "missing_mpn_count": 18,
+    "generic_values": [],
+    "lock_pct": 0,
+    "status": "fail"
+  },
+  "inputs": {
+    "source_files": [
+      "/Users/alexpereira/kafka/nostos/docs/schematics/nostos/nostos-wiring.kicad_sch"
+    ],
+    "source_hashes": {
+      "/Users/alexpereira/kafka/nostos/docs/schematics/nostos/nostos-wiring.kicad_sch": "2302de9b6d4af24b1c3722fca2bafe73100a80e1bb0eadaf484d8babb589cab1"
+    },
+    "run_id": "20260830T185137Z-f01746",
+    "config_hash": null,
+    "upstream_artifacts": {}
+  },
+  "compat": {
+    "minimum_consumer_version": "1.4.0",
+    "deprecated_fields": [],
+    "experimental_fields": []
+  },
+  "design_intent": {
+    "product_class": "prototype",
+    "ipc_class": 2,
+    "target_market": "hobby",
+    "expected_lifetime_years": 5,
+    "operating_temp_range": [
+      -10,
+      70
+    ],
+    "preferred_passive_size": "0603",
+    "test_coverage_target": 0.85,
+    "approved_manufacturers": [],
+    "confidence": 0.3,
+    "detection_signals": [],
+    "source": {
+      "ipc_class": "auto",
+      "product_class": "auto",
+      "target_market": "auto",
+      "expected_lifetime_years": "auto",
+      "operating_temp_range": "auto",
+      "preferred_passive_size": "auto",
+      "test_coverage_target": "auto",
+      "approved_manufacturers": "auto"
+    }
+  },
+  "audience_summary": {
+    "designer": {
+      "total_findings": 17,
+      "by_severity": {
+        "error": 4,
+        "warning": 0,
+        "info": 13
+      },
+      "by_category": {
+        "audio": 1,
+        "certification": 1,
+        "i2c_bus": 2,
+        "decoupling": 3,
+        "verification": 1,
+        "led_control": 3,
+        "protocol_integrity": 2,
+        "sensors": 1,
+        "sourcing": 1,
+        "wireless": 1,
+        "lifecycle": 1
+      },
+      "top_issues": [
+        {
+          "detector": "audit_datasheet_coverage",
+          "rule_id": "DS-001",
+          "severity": "error",
+          "confidence": "deterministic",
+          "evidence_source": "bom",
+          "category": "verification",
+          "summary": "No datasheets directory found and no BOM parts have MPNs. Review is a consistency check only \u2014 manufacturer specs cannot be verified.",
+          "components": [],
+          "nets": [],
+          "pins": [],
+          "datasheets_dir": null,
+          "datasheet_file_count": 0,
+          "bom_size": 18,
+          "mpn_coverage_percent": 0.0,
+          "recommendation": "Before reporting 'verified' findings, (1) populate the MPN field on BOM parts, (2) run the datasheet sync skill (digikey, mouser, lcsc, or element14) to download PDFs into ./datasheets/, then re-run analysis. If datasheets are unreachable, state every pin-level and electrical claim as 'per symbol/library' (consistency), not 'verified against datasheet' (correctness).",
+          "report_context": {
+            "section": "Datasheet Coverage",
+            "impact": "Report wording must avoid 'verified' / 'datasheet-confirmed' language for every BOM part \u2014 none have manufacturer evidence attached.",
+            "standard_ref": ""
+          },
+          "stages": [
+            "schematic"
+          ],
+          "finding_id": "schematic:DS-001:9820bbea68d9"
+        },
+        {
+          "detector": "validate_i2c_bus",
+          "rule_id": "PR-001",
+          "category": "protocol_integrity",
+          "summary": "I2C bus I2C1_SDA/I2C1_SCL: SCL missing pull-up",
+          "description": "I2C bus with 1 device(s) (U4) has no pull-up on SCL net I2C1_SCL.",
+          "components": [
+            "U4"
+          ],
+          "nets": [
+            "I2C1_SCL",
+            "I2C1_SDA"
+          ],
+          "pins": [],
+          "severity": "error",
+          "confidence": "deterministic",
+          "evidence_source": "topology",
+          "recommendation": "Add a 4.7k pull-up resistor from SCL to VDD.",
+          "fix_params": {
+            "type": "add_component",
+            "components": [
+              {
+                "type": "resistor",
+                "value": "4.7k",
+                "net_from": "I2C1_SCL",
+                "net_to": "<VDD>"
+              }
+            ],
+            "basis": "I2C spec requires pull-ups on SCL"
+          },
+          "report_context": {
+            "section": "Protocol Integrity",
+            "impact": "I2C bus non-functional",
+            "standard_ref": "I2C specification UM10204 section 3.1.1"
+          },
+          "provenance": {
+            "evidence": "pr_i2c_spec",
+            "confidence": "deterministic",
+            "claimed_components": [],
+            "excluded_by": [],
+            "suppressed_candidates": []
+          },
+          "finding_id": "schematic:validation_findings-73694c17f7d1",
+          "detection_id": "validation_findings:73694c17f7d1",
+          "stages": [
+            "schematic"
+          ]
+        },
+        {
+          "detector": "validate_i2c_bus",
+          "rule_id": "PR-001",
+          "category": "protocol_integrity",
+          "summary": "I2C bus I2C1_SDA/I2C1_SCL: SDA missing pull-up",
+          "description": "I2C bus with 1 device(s) (U4) has no pull-up on SDA net I2C1_SDA.",
+          "components": [
+            "U4"
+          ],
+          "nets": [
+            "I2C1_SCL",
+            "I2C1_SDA"
+          ],
+          "pins": [],
+          "severity": "error",
+          "confidence": "deterministic",
+          "evidence_source": "topology",
+          "recommendation": "Add a 4.7k pull-up resistor from SDA to VDD.",
+          "fix_params": {
+            "type": "add_component",
+            "components": [
+              {
+                "type": "resistor",
+                "value": "4.7k",
+                "net_from": "I2C1_SDA",
+                "net_to": "<VDD>"
+              }
+            ],
+            "basis": "I2C spec requires pull-ups on SDA"
+          },
+          "report_context": {
+            "section": "Protocol Integrity",
+            "impact": "I2C bus non-functional",
+            "standard_ref": "I2C specification UM10204 section 3.1.1"
+          },
+          "provenance": {
+            "evidence": "pr_i2c_spec",
+            "confidence": "deterministic",
+            "claimed_components": [],
+            "excluded_by": [],
+            "suppressed_candidates": []
+          },
+          "finding_id": "schematic:validation_findings-73694c17f7d1#1",
+          "detection_id": "validation_findings:73694c17f7d1",
+          "stages": [
+            "schematic"
+          ]
+        },
+        {
+          "detector": "audit_sourcing_gate",
+          "rule_id": "SS-001",
+          "severity": "error",
+          "confidence": "deterministic",
+          "evidence_source": "bom",
+          "category": "sourcing",
+          "summary": "Sourcing blocker: BOM has <50% MPN coverage (0/16 unique parts). Board is not pre-fab ready.",
+          "description": "Sourcing audit: 0 of 16 unique BOM lines (grouped by value + footprint) carry a manufacturer part number (0.0%). Pre-fab readiness requires 100% coverage; production assembly requires all parts sourceable via one of the supported distributors.",
+          "components": [
+            "BZ1",
+            "D1",
+            "D2",
+            "D3",
+            "DS1",
+            "R1",
+            "R2",
+            "R3",
+            "R4",
+            "SW1",
+            "SW2",
+            "SW3",
+            "SW4",
+            "U1",
+            "U2",
+            "U3",
+            "U4",
+            "U5"
+          ],
+          "nets": [],
+          "pins": [],
+          "mpn_coverage_percent": 0.0,
+          "missing_mpn_lines": 16,
+          "missing_mpn_refs": 18,
+          "total_bom_lines": 16,
+          "recommendation": "Populate the MPN field on the listed refs (use the digikey / mouser / lcsc / element14 skill to search by value/footprint when the MPN isn't already known).",
+          "report_context": {
+            "section": "Sourcing",
+            "impact": "Pre-fab gate: board cannot be ordered until MPN coverage reaches 100%.",
+            "standard_ref": ""
+          },
+          "stages": [
+            "pre_fab"
+          ],
+          "finding_id": "schematic:SS-001:bz1"
+        }
+      ]
+    },
+    "reviewer": {
+      "total_findings": 4,
+      "by_category": {
+        "verification": 1,
+        "protocol_integrity": 2,
+        "sourcing": 1
+      },
+      "top_issues": [
+        {
+          "rule_id": "DS-001",
+          "severity": "error",
+          "summary": "No datasheets directory found and no BOM parts have MPNs. Review is a consistency check only \u2014 manufacturer specs cannot be verified.",
+          "recommendation": "Before reporting 'verified' findings, (1) populate the MPN field on BOM parts, (2) run the datasheet sync skill (digikey, mouser, lcsc, or element14) to download PDFs into ./datasheets/, then re-run analysis. If datasheets are unreachable, state every pin-level and electrical claim as 'per symbol/library' (consistency), not 'verified against datasheet' (correctness).",
+          "category": "verification"
+        },
+        {
+          "rule_id": "PR-001",
+          "severity": "error",
+          "summary": "I2C bus I2C1_SDA/I2C1_SCL: SCL missing pull-up",
+          "recommendation": "Add a 4.7k pull-up resistor from SCL to VDD.",
+          "category": "protocol_integrity"
+        },
+        {
+          "rule_id": "PR-001",
+          "severity": "error",
+          "summary": "I2C bus I2C1_SDA/I2C1_SCL: SDA missing pull-up",
+          "recommendation": "Add a 4.7k pull-up resistor from SDA to VDD.",
+          "category": "protocol_integrity"
+        },
+        {
+          "rule_id": "SS-001",
+          "severity": "error",
+          "summary": "Sourcing blocker: BOM has <50% MPN coverage (0/16 unique parts). Board is not pre-fab ready.",
+          "recommendation": "Populate the MPN field on the listed refs (use the digikey / mouser / lcsc / element14 skill to search by value/footprint when the MPN isn't already known).",
+          "category": "sourcing"
+        }
+      ]
+    },
+    "manager": {
+      "risk_level": "moderate",
+      "blocker_count": 4,
+      "warning_count": 0,
+      "stage_readiness": {
+        "schematic": "needs_work",
+        "layout": "pass",
+        "pre_fab": "needs_work",
+        "bring_up": "pass"
+      },
+      "one_liner": "4 errors across 3 categories. Schematic, pre-fab stages have blockers."
+    }
+  },
+  "capability_mode_ref": {
+    "source": "analysis/capability_mode.json",
+    "run_id": "20260830T185137Z-f01746"
+  }
+}

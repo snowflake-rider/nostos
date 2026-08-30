@@ -53,6 +53,7 @@ static uint32_t display_tick;
 static uint8_t last_button_sender;
 static message_type_t last_button_type;
 static bool fall_active;
+static bool link_ready;
 static uint16_t ticker_scroll_px;
 static display_calibration_state_t calibration_state;
 static uint16_t calibration_progress_permille;
@@ -141,7 +142,12 @@ static void draw_text_centered(
 
 static void render_button_message(void)
 {
-    if (last_button_sender == 0U) return;
+    if (last_button_sender == 0U) {
+        if (link_ready) {
+            ssd1306_draw_text(0U, DISPLAY_MESSAGE_Y, "ESP32 READY");
+        }
+        return;
+    }
 
     const char *sender;
     if (last_button_sender == 1U) sender = "FRONT";
@@ -213,66 +219,59 @@ static void render_dashboard(
     ssd1306_draw_hline(0U, 32U, DISPLAY_WIDTH);
     ssd1306_fill_rect(63U, 11U, 1U, 21U);
 
-    char *out = line;
+    char *out;
     if (ride_valid)
     {
+        out = line;
         out = append_u16_x10(out, sensors->ride.kmh_x10);
         out = append_text(out, "km/h");
+        *out = '\0';
+        draw_text_centered(
+            0U,
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_FIRST_ROW_Y,
+            line);
     }
-    else
-    {
-        out = append_text(out, "N/A km/h");
-    }
-    *out = '\0';
-    draw_text_centered(0U, DISPLAY_CELL_WIDTH, DISPLAY_FIRST_ROW_Y, line);
 
-    out = line;
     if (ride_valid)
     {
+        out = line;
         uint32_t distance_km_x1000 = sensors->ride.distance_mm / 1000U;
         out = append_u32_x1000(out, distance_km_x1000);
         out = append_text(out, "km");
+        *out = '\0';
+        draw_text_centered(
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_FIRST_ROW_Y,
+            line);
     }
-    else
-    {
-        out = append_text(out, "N/A km");
-    }
-    *out = '\0';
-    draw_text_centered(
-        DISPLAY_CELL_WIDTH,
-        DISPLAY_CELL_WIDTH,
-        DISPLAY_FIRST_ROW_Y,
-        line);
 
-    out = line;
     if (environment_valid)
     {
+        out = line;
         out = append_i16_x10(out, sensors->environment.temperature_c_x10);
         out = append_text(out, "\xC2\xB0" "C");
+        *out = '\0';
+        draw_text_centered(
+            0U,
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_SECOND_ROW_Y,
+            line);
     }
-    else
-    {
-        out = append_text(out, "N/A \xC2\xB0" "C");
-    }
-    *out = '\0';
-    draw_text_centered(0U, DISPLAY_CELL_WIDTH, DISPLAY_SECOND_ROW_Y, line);
 
-    out = line;
     if (environment_valid)
     {
+        out = line;
         out = append_u16_x10(out, sensors->environment.humidity_pct_x10);
         out = append_text(out, "%");
+        *out = '\0';
+        draw_text_centered(
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_CELL_WIDTH,
+            DISPLAY_SECOND_ROW_Y,
+            line);
     }
-    else
-    {
-        out = append_text(out, "N/A %");
-    }
-    *out = '\0';
-    draw_text_centered(
-        DISPLAY_CELL_WIDTH,
-        DISPLAY_CELL_WIDTH,
-        DISPLAY_SECOND_ROW_Y,
-        line);
 
     render_ticker();
     ssd1306_draw_hline(0U, 52U, DISPLAY_WIDTH);
@@ -417,6 +416,7 @@ void display_service_init(I2C_HandleTypeDef *i2c)
     last_button_sender = 0U;
     last_button_type = MSG_NONE;
     fall_active = false;
+    link_ready = false;
     ticker_scroll_px = 0U;
     /* app_init may select CAL INIT before the OLED's first rendered frame. */
 #if FEATURE_SSD1306_DISPLAY
@@ -449,6 +449,18 @@ void display_service_process(void)
 bool display_service_is_ready(void)
 {
     return display_ready;
+}
+
+void display_service_set_link_ready(bool ready)
+{
+    link_ready = ready;
+}
+
+void display_service_reset_outputs(void)
+{
+    last_button_sender = 0U;
+    last_button_type = MSG_NONE;
+    fall_active = false;
 }
 
 void display_service_set_fall(bool active)

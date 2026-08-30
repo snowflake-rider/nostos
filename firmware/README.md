@@ -1,7 +1,8 @@
 # NOSTOS Firmware
 
-STM32F411RE가 입출력을 처리하고 ESP32-S3가 UART와 Bluetooth Mesh를 연결합니다. 이 디렉터리는 현재
-활성 소스 한 벌이며 기본 wire protocol은 v1입니다. 구조·버전 정책은 [STRUCTURE.md](../STRUCTURE.md)를 따릅니다.
+STM32F411RE는 sensor/button producer와 OLED·RGB·audio actuator를 담당하고, ESP32-S3가 공식 message
+생성·검증·상태·task scheduling과 Bluetooth Mesh를 단일 소유합니다. 이 디렉터리는 현재 활성 소스 한
+벌이며 기본 wire protocol은 v2입니다. 구조·버전 정책은 [STRUCTURE.md](../STRUCTURE.md)를 따릅니다.
 
 ## 명령
 

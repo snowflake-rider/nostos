@@ -1,0 +1,17 @@
+[
+  {"text":"그룹 라이딩에서 가장 위험한 순간은","startMs":250,"endMs":2350,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"다른 라이더가 상황을 볼 수 없는 순간입니다.","startMs":2350,"endMs":5000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"NOSTOS는 세 대의 자전거를 하나의 감각처럼 연결합니다.","startMs":6250,"endMs":10400,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"선두는 속도를, 중간은 온도와 습도를 감지합니다.","startMs":13250,"endMs":17800,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"후미는 움직임을 살핍니다. 세 센서가 하나의 그룹 상태가 됩니다.","startMs":17800,"endMs":23900,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"STM32가 로컬 입력을 판단하고 ESP32-S3가 메시지를 전달합니다.","startMs":25250,"endMs":31500,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"결과는 화면과 빛, 경고음 또는 음성으로 돌아옵니다.","startMs":31500,"endMs":37600,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"속도를 올리고, 줄이고, 정지합니다.","startMs":38250,"endMs":42000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"한 라이더의 의도가 모든 라이더가 이해하는 신호가 됩니다.","startMs":42000,"endMs":50000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"낙차나 SOS는 모두가 공유해야 할 긴급 상태가 됩니다.","startMs":51250,"endMs":57500,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"모든 노드가 함께 반응합니다.","startMs":57500,"endMs":63000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"각 라이더는 자신의 센서 하나만 보지 않습니다.","startMs":65250,"endMs":70000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"그룹 전체의 속도와 환경, 안전 상태를 봅니다.","startMs":70000,"endMs":75500,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"세 명의 라이더, 하나의 공유 상태.","startMs":76250,"endMs":79000,"timestampMs":null,"confidence":null,"pageBreakAfter":true},
+  {"text":"함께 출발하고, 함께 돌아옵니다. NOSTOS.","startMs":79000,"endMs":83500,"timestampMs":null,"confidence":null,"pageBreakAfter":true}
+]

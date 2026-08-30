@@ -1,0 +1,45 @@
+- main [ref=e3]:
+  - generic [ref=e4]:
+    - generic [ref=e8]:
+      - heading "NOSTOS Hardware Monitor" [level=1] [ref=e9]
+      - paragraph [ref=e10]: STM32 · live SWD diagnostics
+    - generic [ref=e11]:
+      - generic [ref=e12]:
+        - strong [ref=e14]: 0 / 3
+        - generic [ref=e15]: connected
+      - generic [ref=e16]:
+        - generic [ref=e17]: Sampling
+        - combobox "Sampling interval" [disabled] [ref=e18]:
+          - option "100 ms"
+          - option "250 ms" [selected]
+          - option "500 ms"
+          - option "1000 ms"
+      - button "Pause all" [disabled] [ref=e19]
+      - button "Reconnect all" [disabled] [ref=e22]
+  - region "Connected STM32 boards" [ref=e26]:
+    - article [ref=e27]:
+      - heading "Board 1" [level=2] [ref=e29]
+      - strong [ref=e32]: Loading monitor
+    - article [ref=e33]:
+      - heading "Board 2" [level=2] [ref=e35]
+      - strong [ref=e38]: Loading monitor
+    - article [ref=e39]:
+      - heading "Board 3" [level=2] [ref=e41]
+      - strong [ref=e44]: Loading monitor
+  - generic [ref=e45]:
+    - generic [ref=e46]:
+      - generic [ref=e50]: Local stream
+      - strong [ref=e51]: Reconnecting
+    - generic [ref=e52]:
+      - generic [ref=e53]: Sampling
+      - strong [ref=e54]: 250 ms
+    - generic [ref=e55]:
+      - generic [ref=e56]: Last update
+      - strong [ref=e57]: —
+    - generic [ref=e58]:
+      - generic [ref=e59]: Samples
+      - strong [ref=e60]: "0"
+    - generic [ref=e61]:
+      - generic [ref=e62]: Dropped
+      - strong [ref=e63]: "0"
+    - generic "Live activity" [ref=e64]

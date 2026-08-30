@@ -18,6 +18,10 @@ typedef enum {
 void display_service_init(I2C_HandleTypeDef *i2c);
 void display_service_process(void);
 bool display_service_is_ready(void);
+/* Shows paired ESP32 readiness on the dashboard after READY is accepted. */
+void display_service_set_link_ready(bool ready);
+/* Clears only ESP-commanded/output mirror presentation state. */
+void display_service_reset_outputs(void);
 /* Pure speed classification used by the five-circle dashboard indicator. */
 uint8_t speed_level_from_kmh_x10(bool valid, uint16_t kmh_x10);
 /* Displays whether any accepted local/remote fall incident is active. */

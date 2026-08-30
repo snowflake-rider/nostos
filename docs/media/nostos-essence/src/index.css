@@ -1,0 +1,11 @@
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  background: #050914;
+  font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", Inter,
+    "SF Pro Display", "Helvetica Neue", Arial, sans-serif;
+}

@@ -78,7 +78,8 @@ HAL_StatusTypeDef uart_service_send_message(message_type_t message)
     }
 
 #if NOSTOS_PROTOCOL_V2
-    uart_status=message_protocol_service_publish_event((uint8_t)message)==NOSTOS_OK?HAL_OK:HAL_ERROR;
+    uart_status = message_protocol_service_publish_event((uint8_t)message) ==
+        MESSAGE_PROTOCOL_OK ? HAL_OK : HAL_ERROR;
     if(uart_status==HAL_OK) ++tx_count;
     return uart_status;
 #else

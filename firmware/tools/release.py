@@ -421,21 +421,98 @@ def cmake_cache_values(path: Path) -> dict[str, str]:
     return result
 
 
-def command_version(command: str) -> str:
+def command_version(
+    command: str | list[str], *, output_prefix: str | None = None
+) -> str:
+    arguments = [command] if isinstance(command, str) else command
+    display = " ".join(arguments)
     try:
         result = subprocess.run(
-            [command, "--version"],
+            [*arguments, "--version"],
             check=True,
             stdout=subprocess.PIPE,
             stderr=subprocess.STDOUT,
             text=True,
         )
     except (FileNotFoundError, subprocess.CalledProcessError) as exc:
-        raise ReleaseError(f"unable to read {command} version after build") from exc
-    first_line = result.stdout.splitlines()[0].strip() if result.stdout.splitlines() else ""
+        raise ReleaseError(f"unable to read {display} version after build") from exc
+    lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+    first_line = (
+        next((line for line in lines if line.startswith(output_prefix)), "")
+        if output_prefix is not None
+        else (lines[0] if lines else "")
+    )
     if not first_line:
-        raise ReleaseError(f"empty {command} version output")
+        raise ReleaseError(f"empty {display} version output")
     return first_line
+
+
+def cmake_set_value(path: Path, variable: str) -> str | None:
+    try:
+        lines = path.read_text(encoding="utf-8").splitlines()
+    except FileNotFoundError as exc:
+        raise ReleaseError(f"missing build metadata: {path}") from exc
+    prefix = f'set({variable} "'
+    for line in lines:
+        if line.startswith(prefix) and line.endswith('")'):
+            return line[len(prefix) : -2]
+    return None
+
+
+def stm32_build_compiler(firmware_root: Path) -> Path:
+    metadata_root = firmware_root / "stm32/build/Release/CMakeFiles"
+    metadata_files = sorted(metadata_root.glob("*/CMakeCCompiler.cmake"))
+    if not metadata_files:
+        raise ReleaseError(
+            f"missing STM32 compiler metadata under {metadata_root}; rebuild STM32 first"
+        )
+
+    compilers: dict[Path, list[Path]] = {}
+    invalid: list[str] = []
+    for metadata_file in metadata_files:
+        configured = cmake_set_value(metadata_file, "CMAKE_C_COMPILER")
+        if not configured:
+            invalid.append(f"{metadata_file}: missing CMAKE_C_COMPILER")
+            continue
+        compiler = Path(configured)
+        if not compiler.is_absolute():
+            invalid.append(f"{metadata_file}: compiler path is not absolute")
+            continue
+        if not compiler.is_file() or not os.access(compiler, os.X_OK):
+            invalid.append(f"{metadata_file}: compiler is missing or not executable")
+            continue
+        compilers.setdefault(compiler.resolve(), []).append(metadata_file)
+
+    if len(compilers) == 1:
+        return next(iter(compilers))
+    if len(compilers) > 1:
+        configured = ", ".join(str(path) for path in sorted(compilers))
+        raise ReleaseError(f"ambiguous STM32 compiler metadata: {configured}")
+    detail = "; ".join(invalid) if invalid else "no usable compiler entry"
+    raise ReleaseError(f"unable to resolve STM32 compiler from build metadata: {detail}")
+
+
+def esp32_build_idf_command(
+    firmware_root: Path, description: dict[str, Any]
+) -> list[str]:
+    cache = cmake_cache_values(firmware_root / "esp32/build/CMakeCache.txt")
+    configured_python = cache.get("PYTHON")
+    configured_idf = description.get("idf_path")
+    if not isinstance(configured_python, str) or not configured_python:
+        raise ReleaseError("ESP32 build metadata is missing PYTHON")
+    if not isinstance(configured_idf, str) or not configured_idf:
+        raise ReleaseError("ESP32 project description is missing idf_path")
+
+    python = Path(configured_python)
+    idf_root = Path(configured_idf)
+    idf_script = idf_root / "tools/idf.py"
+    if not python.is_absolute() or not python.is_file() or not os.access(python, os.X_OK):
+        raise ReleaseError("ESP32 build Python is not an executable absolute path")
+    if not idf_root.is_absolute() or not idf_script.is_file():
+        raise ReleaseError("ESP32 build idf_path does not contain tools/idf.py")
+    # Keep the configured Python path instead of resolving its virtual-environment
+    # symlink; resolving it would bypass that environment's installed packages.
+    return [str(python.absolute()), str(idf_script.resolve())]
 
 
 def esp32_effective_build_policy(
@@ -509,7 +586,7 @@ def build_metadata(
         return {
             "generator": cache["CMAKE_GENERATOR"],
             "options": expected_options,
-            "compiler": command_version("arm-none-eabi-gcc"),
+            "compiler": command_version(str(stm32_build_compiler(firmware_root))),
         }
 
     if target == "esp32":
@@ -535,7 +612,10 @@ def build_metadata(
             "espIdf": expected_idf,
             "projectVersion": firmware_version,
             "buildPolicy": esp32_effective_build_policy(firmware_root, profile),
-            "idfCommand": command_version("idf.py"),
+            "idfCommand": command_version(
+                esp32_build_idf_command(firmware_root, description),
+                output_prefix="ESP-IDF ",
+            ),
         }
 
     raise ReleaseError(f"unknown build receipt target: {target}")

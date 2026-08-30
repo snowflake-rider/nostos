@@ -1,0 +1,2011 @@
+(export
+	(version "E")
+	(design
+		(source "/Users/alexpereira/kafka/nostos/docs/schematics/nostos/nostos-wiring.kicad_sch")
+		(date "2026-08-31T03:51:36")
+		(tool "Eeschema 10.0.6")
+		(sheet
+			(number "1")
+			(name "/")
+			(tstamps "/")
+			(title_block
+				(title "NOSTOS System Wiring")
+				(company "NOSTOS")
+				(rev "1.1")
+				(date "2026-08-31")
+				(source "nostos-wiring.kicad_sch")
+				(comment
+					(number "1")
+					(value "Based on PINS.md and firmware/stm32/nostos_stm32.ioc")
+				)
+				(comment
+					(number "2")
+					(value "STM32 NUCLEO-F411RE / 3.3V logic / Common GND")
+				)
+				(comment
+					(number "3")
+					(value "Documentation schematic - verify breakout module power ratings")
+				)
+				(comment
+					(number "4")
+					(value "Rider Head=Base, Mid=Base+DHT11, Tail=Base+MPU6050")
+				)
+				(comment
+					(number "5")
+					(value "")
+				)
+				(comment
+					(number "6")
+					(value "")
+				)
+				(comment
+					(number "7")
+					(value "")
+				)
+				(comment
+					(number "8")
+					(value "")
+				)
+				(comment
+					(number "9")
+					(value "")
+				)
+			)
+		)
+	)
+	(components
+		(comp
+			(ref "BZ1")
+			(value "ACTIVE BUZZER MODULE")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "ACTIVE_BUZZER_MODULE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10030")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "D1")
+			(value "RED")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "LED")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10021")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "D2")
+			(value "GREEN")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "LED")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10023")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "D3")
+			(value "BLUE")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "LED")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10025")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "DS1")
+			(value "SSD1306 OLED (0x3C)")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "SSD1306_MODULE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10003")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R1")
+			(value "330R")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "R")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10020")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R2")
+			(value "330R")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "R")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10022")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R3")
+			(value "330R")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "R")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10024")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "R4")
+			(value "10k DHT PULL-UP")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "R")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10042")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "SW1")
+			(value "BTN1 SPEED UP")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "SW_PUSH")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10010")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "SW2")
+			(value "BTN2 SPEED DOWN")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "SW_PUSH")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10011")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "SW3")
+			(value "BTN3 STOP REQUEST")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "SW_PUSH")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10012")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "SW4")
+			(value "BTN4 LOCAL / MSG_NONE")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "SW_PUSH")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10013")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U1")
+			(value "NUCLEO-F411RE")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "NUCLEO_F411RE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10001")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "8")
+						)
+						(pin
+							(num "9")
+						)
+						(pin
+							(num "10")
+						)
+						(pin
+							(num "11")
+						)
+						(pin
+							(num "12")
+						)
+						(pin
+							(num "13")
+						)
+						(pin
+							(num "14")
+						)
+						(pin
+							(num "15")
+						)
+						(pin
+							(num "16")
+						)
+						(pin
+							(num "17")
+						)
+						(pin
+							(num "18")
+						)
+						(pin
+							(num "19")
+						)
+						(pin
+							(num "20")
+						)
+						(pin
+							(num "21")
+						)
+						(pin
+							(num "22")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U2")
+			(value "ESP32-S3 BLE MESH BRIDGE")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "ESP32_S3_BRIDGE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10002")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U3")
+			(value "VS1003B AUDIO DECODER")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "VS1003B_MODULE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10004")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+						(pin
+							(num "5")
+						)
+						(pin
+							(num "6")
+						)
+						(pin
+							(num "7")
+						)
+						(pin
+							(num "8")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U4")
+			(value "MPU6050 (RIDER TAIL, ON)")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "MPU6050_MODULE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10040")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+						(pin
+							(num "4")
+						)
+					)
+				)
+			)
+		)
+		(comp
+			(ref "U5")
+			(value "DHT11 (RIDER MID, ON)")
+			(fields
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(libsource
+				(lib "Nostos")
+				(part "DHT11_MODULE")
+				(description "")
+			)
+			(property
+				(name "Sheetname")
+				(value "nostos-wiring")
+			)
+			(property
+				(name "Sheetfile")
+				(value "nostos-wiring.kicad_sch")
+			)
+			(sheetpath
+				(names "/")
+				(tstamps "/")
+			)
+			(tstamps "00000000-0000-0000-0000-000066d10041")
+			(units
+				(unit
+					(name "A")
+					(pins
+						(pin
+							(num "1")
+						)
+						(pin
+							(num "2")
+						)
+						(pin
+							(num "3")
+						)
+					)
+				)
+			)
+		)
+	)
+	(groups)
+	(variants)
+	(libparts
+		(libpart
+			(lib "Nostos")
+			(part "ACTIVE_BUZZER_MODULE")
+			(fields
+				(field
+					(name "Reference") "BZ")
+				(field
+					(name "Value") "Nostos_ACTIVE_BUZZER_MODULE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "SIG")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "VCC_3V3")
+					(type "power_in")
+				)
+				(pin
+					(num "3")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "DHT11_MODULE")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "Nostos_DHT11_MODULE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "DATA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "2")
+					(name "VCC_3V3")
+					(type "power_in")
+				)
+				(pin
+					(num "3")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "ESP32_S3_BRIDGE")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "Nostos_ESP32_S3_BRIDGE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "GPIO18_UART1_RX")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "GPIO17_UART1_TX")
+					(type "output")
+				)
+				(pin
+					(num "3")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "LED")
+			(fields
+				(field
+					(name "Reference") "D")
+				(field
+					(name "Value") "Nostos_LED")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "A")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "K")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "MPU6050_MODULE")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "Nostos_MPU6050_MODULE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "SCL")
+					(type "bidirectional")
+				)
+				(pin
+					(num "2")
+					(name "SDA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "3")
+					(name "VCC_3V3")
+					(type "power_in")
+				)
+				(pin
+					(num "4")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "NUCLEO_F411RE")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "Nostos_NUCLEO_F411RE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "PA9_D8_USART1_TX")
+					(type "output")
+				)
+				(pin
+					(num "2")
+					(name "PA10_D2_USART1_RX")
+					(type "input")
+				)
+				(pin
+					(num "3")
+					(name "PB8_D15_I2C1_SCL")
+					(type "bidirectional")
+				)
+				(pin
+					(num "4")
+					(name "PB9_D14_I2C1_SDA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "5")
+					(name "PB1_CN10-24_VS_RST")
+					(type "output")
+				)
+				(pin
+					(num "6")
+					(name "PB14_CN10-28_SPI2_MISO")
+					(type "input")
+				)
+				(pin
+					(num "7")
+					(name "PB15_CN10-26_SPI2_MOSI")
+					(type "output")
+				)
+				(pin
+					(num "8")
+					(name "PB13_CN10-30_SPI2_SCK")
+					(type "output")
+				)
+				(pin
+					(num "9")
+					(name "PC5_CN10-6_VS_DREQ")
+					(type "input")
+				)
+				(pin
+					(num "10")
+					(name "PC6_CN10-4_VS_XCS")
+					(type "output")
+				)
+				(pin
+					(num "11")
+					(name "PC8_CN10-2_VS_XDCS")
+					(type "output")
+				)
+				(pin
+					(num "12")
+					(name "PA1_A1_DHT11_DATA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "13")
+					(name "+3V3")
+					(type "power_out")
+				)
+				(pin
+					(num "14")
+					(name "GND")
+					(type "passive")
+				)
+				(pin
+					(num "15")
+					(name "PB5_D4_BTN1")
+					(type "passive")
+				)
+				(pin
+					(num "16")
+					(name "PB10_D6_BTN2")
+					(type "passive")
+				)
+				(pin
+					(num "17")
+					(name "PA8_D7_BTN3")
+					(type "passive")
+				)
+				(pin
+					(num "18")
+					(name "PC7_D9_BTN4")
+					(type "passive")
+				)
+				(pin
+					(num "19")
+					(name "PA4_A2_RGB_R")
+					(type "output")
+				)
+				(pin
+					(num "20")
+					(name "PB0_A3_RGB_G")
+					(type "output")
+				)
+				(pin
+					(num "21")
+					(name "PC1_A4_RGB_B")
+					(type "output")
+				)
+				(pin
+					(num "22")
+					(name "PB4_D5_BUZZER")
+					(type "output")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "R")
+			(fields
+				(field
+					(name "Reference") "R")
+				(field
+					(name "Value") "Nostos_R")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "~")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "~")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "SSD1306_MODULE")
+			(fields
+				(field
+					(name "Reference") "DS")
+				(field
+					(name "Value") "Nostos_SSD1306_MODULE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "SCL")
+					(type "bidirectional")
+				)
+				(pin
+					(num "2")
+					(name "SDA")
+					(type "bidirectional")
+				)
+				(pin
+					(num "3")
+					(name "VCC_3V3")
+					(type "power_in")
+				)
+				(pin
+					(num "4")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "SW_PUSH")
+			(fields
+				(field
+					(name "Reference") "SW")
+				(field
+					(name "Value") "Nostos_SW_PUSH")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "1")
+					(type "passive")
+				)
+				(pin
+					(num "2")
+					(name "2")
+					(type "passive")
+				)
+			)
+		)
+		(libpart
+			(lib "Nostos")
+			(part "VS1003B_MODULE")
+			(fields
+				(field
+					(name "Reference") "U")
+				(field
+					(name "Value") "Nostos_VS1003B_MODULE")
+				(field
+					(name "Footprint")
+				)
+				(field
+					(name "Datasheet")
+				)
+				(field
+					(name "Description")
+				)
+			)
+			(pins
+				(pin
+					(num "1")
+					(name "XRST")
+					(type "input")
+				)
+				(pin
+					(num "2")
+					(name "MISO")
+					(type "output")
+				)
+				(pin
+					(num "3")
+					(name "MOSI")
+					(type "input")
+				)
+				(pin
+					(num "4")
+					(name "SCLK")
+					(type "input")
+				)
+				(pin
+					(num "5")
+					(name "DREQ")
+					(type "output")
+				)
+				(pin
+					(num "6")
+					(name "XCS")
+					(type "input")
+				)
+				(pin
+					(num "7")
+					(name "XDCS")
+					(type "input")
+				)
+				(pin
+					(num "8")
+					(name "GND")
+					(type "passive")
+				)
+			)
+		)
+	)
+	(libraries
+		(library
+			(logical "Nostos")
+			(uri "${KIPRJMOD}/Nostos.kicad_sym")
+		)
+	)
+	(nets
+		(net
+			(code "1")
+			(name "/+3V3")
+			(class "Default")
+			(node
+				(ref "BZ1")
+				(pin "2")
+				(pinfunction "VCC_3V3_2")
+				(pintype "power_in")
+			)
+			(node
+				(ref "DS1")
+				(pin "3")
+				(pinfunction "VCC_3V3_3")
+				(pintype "power_in")
+			)
+			(node
+				(ref "R4")
+				(pin "1")
+				(pinfunction "~_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "13")
+				(pinfunction "+3V3_13")
+				(pintype "power_out")
+			)
+			(node
+				(ref "U4")
+				(pin "3")
+				(pinfunction "VCC_3V3_3")
+				(pintype "power_in")
+			)
+			(node
+				(ref "U5")
+				(pin "2")
+				(pinfunction "VCC_3V3_2")
+				(pintype "power_in")
+			)
+		)
+		(net
+			(code "2")
+			(name "/DHT11_DATA")
+			(class "Default")
+			(node
+				(ref "R4")
+				(pin "2")
+				(pinfunction "~_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "12")
+				(pinfunction "PA1_A1_DHT11_DATA_12")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U5")
+				(pin "1")
+				(pinfunction "DATA_1")
+				(pintype "bidirectional")
+			)
+		)
+		(net
+			(code "3")
+			(name "/GND")
+			(class "Default")
+			(node
+				(ref "BZ1")
+				(pin "3")
+				(pinfunction "GND_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "D1")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "D2")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "D3")
+				(pin "2")
+				(pinfunction "K_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "DS1")
+				(pin "4")
+				(pinfunction "GND_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "SW1")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "SW2")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "SW3")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "SW4")
+				(pin "2")
+				(pinfunction "2_2")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "14")
+				(pinfunction "GND_14")
+				(pintype "passive")
+			)
+			(node
+				(ref "U2")
+				(pin "3")
+				(pinfunction "GND_3")
+				(pintype "passive")
+			)
+			(node
+				(ref "U3")
+				(pin "8")
+				(pinfunction "GND_8")
+				(pintype "passive")
+			)
+			(node
+				(ref "U4")
+				(pin "4")
+				(pinfunction "GND_4")
+				(pintype "passive")
+			)
+			(node
+				(ref "U5")
+				(pin "3")
+				(pinfunction "GND_3")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "4")
+			(name "/I2C1_SCL")
+			(class "Default")
+			(node
+				(ref "DS1")
+				(pin "1")
+				(pinfunction "SCL_1")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U1")
+				(pin "3")
+				(pinfunction "PB8_D15_I2C1_SCL_3")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U4")
+				(pin "1")
+				(pinfunction "SCL_1")
+				(pintype "bidirectional")
+			)
+		)
+		(net
+			(code "5")
+			(name "/I2C1_SDA")
+			(class "Default")
+			(node
+				(ref "DS1")
+				(pin "2")
+				(pinfunction "SDA_2")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U1")
+				(pin "4")
+				(pinfunction "PB9_D14_I2C1_SDA_4")
+				(pintype "bidirectional")
+			)
+			(node
+				(ref "U4")
+				(pin "2")
+				(pinfunction "SDA_2")
+				(pintype "bidirectional")
+			)
+		)
+		(net
+			(code "6")
+			(name "/SPI2_MISO")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "6")
+				(pinfunction "PB14_CN10-28_SPI2_MISO_6")
+				(pintype "input")
+			)
+			(node
+				(ref "U3")
+				(pin "2")
+				(pinfunction "MISO_2")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "7")
+			(name "/SPI2_MOSI")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "7")
+				(pinfunction "PB15_CN10-26_SPI2_MOSI_7")
+				(pintype "output")
+			)
+			(node
+				(ref "U3")
+				(pin "3")
+				(pinfunction "MOSI_3")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "8")
+			(name "/SPI2_SCK")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "8")
+				(pinfunction "PB13_CN10-30_SPI2_SCK_8")
+				(pintype "output")
+			)
+			(node
+				(ref "U3")
+				(pin "4")
+				(pinfunction "SCLK_4")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "9")
+			(name "/UART_ESP_TX_TO_STM_RX")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "2")
+				(pinfunction "PA10_D2_USART1_RX_2")
+				(pintype "input")
+			)
+			(node
+				(ref "U2")
+				(pin "2")
+				(pinfunction "GPIO17_UART1_TX_2")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "10")
+			(name "/UART_STM_TX_TO_ESP_RX")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "1")
+				(pinfunction "PA9_D8_USART1_TX_1")
+				(pintype "output")
+			)
+			(node
+				(ref "U2")
+				(pin "1")
+				(pinfunction "GPIO18_UART1_RX_1")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "11")
+			(name "/VS_DREQ")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "9")
+				(pinfunction "PC5_CN10-6_VS_DREQ_9")
+				(pintype "input")
+			)
+			(node
+				(ref "U3")
+				(pin "5")
+				(pinfunction "DREQ_5")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "12")
+			(name "/VS_RST")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "5")
+				(pinfunction "PB1_CN10-24_VS_RST_5")
+				(pintype "output")
+			)
+			(node
+				(ref "U3")
+				(pin "1")
+				(pinfunction "XRST_1")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "13")
+			(name "/VS_XCS_ACTIVE_LOW")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "10")
+				(pinfunction "PC6_CN10-4_VS_XCS_10")
+				(pintype "output")
+			)
+			(node
+				(ref "U3")
+				(pin "6")
+				(pinfunction "XCS_6")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "14")
+			(name "/VS_XDCS_ACTIVE_LOW")
+			(class "Default")
+			(node
+				(ref "U1")
+				(pin "11")
+				(pinfunction "PC8_CN10-2_VS_XDCS_11")
+				(pintype "output")
+			)
+			(node
+				(ref "U3")
+				(pin "7")
+				(pinfunction "XDCS_7")
+				(pintype "input")
+			)
+		)
+		(net
+			(code "15")
+			(name "Net-(BZ1-SIG)")
+			(class "Default")
+			(node
+				(ref "BZ1")
+				(pin "1")
+				(pinfunction "SIG_1")
+				(pintype "input")
+			)
+			(node
+				(ref "U1")
+				(pin "22")
+				(pinfunction "PB4_D5_BUZZER_22")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "16")
+			(name "Net-(D1-A)")
+			(class "Default")
+			(node
+				(ref "D1")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R1")
+				(pin "2")
+				(pinfunction "~_2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "17")
+			(name "Net-(D2-A)")
+			(class "Default")
+			(node
+				(ref "D2")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R2")
+				(pin "2")
+				(pinfunction "~_2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "18")
+			(name "Net-(D3-A)")
+			(class "Default")
+			(node
+				(ref "D3")
+				(pin "1")
+				(pinfunction "A_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "R3")
+				(pin "2")
+				(pinfunction "~_2")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "19")
+			(name "Net-(U1-PA4_A2_RGB_R)")
+			(class "Default")
+			(node
+				(ref "R1")
+				(pin "1")
+				(pinfunction "~_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "19")
+				(pinfunction "PA4_A2_RGB_R_19")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "20")
+			(name "Net-(U1-PA8_D7_BTN3)")
+			(class "Default")
+			(node
+				(ref "SW3")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "17")
+				(pinfunction "PA8_D7_BTN3_17")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "21")
+			(name "Net-(U1-PB0_A3_RGB_G)")
+			(class "Default")
+			(node
+				(ref "R2")
+				(pin "1")
+				(pinfunction "~_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "20")
+				(pinfunction "PB0_A3_RGB_G_20")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "22")
+			(name "Net-(U1-PB5_D4_BTN1)")
+			(class "Default")
+			(node
+				(ref "SW1")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "15")
+				(pinfunction "PB5_D4_BTN1_15")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "23")
+			(name "Net-(U1-PB10_D6_BTN2)")
+			(class "Default")
+			(node
+				(ref "SW2")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "16")
+				(pinfunction "PB10_D6_BTN2_16")
+				(pintype "passive")
+			)
+		)
+		(net
+			(code "24")
+			(name "Net-(U1-PC1_A4_RGB_B)")
+			(class "Default")
+			(node
+				(ref "R3")
+				(pin "1")
+				(pinfunction "~_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "21")
+				(pinfunction "PC1_A4_RGB_B_21")
+				(pintype "output")
+			)
+		)
+		(net
+			(code "25")
+			(name "Net-(U1-PC7_D9_BTN4)")
+			(class "Default")
+			(node
+				(ref "SW4")
+				(pin "1")
+				(pinfunction "1_1")
+				(pintype "passive")
+			)
+			(node
+				(ref "U1")
+				(pin "18")
+				(pinfunction "PC7_D9_BTN4_18")
+				(pintype "passive")
+			)
+		)
+	)
+)

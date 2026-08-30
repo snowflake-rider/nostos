@@ -47,6 +47,7 @@ typedef struct {
     nostos_incident_record_t incidents[NOSTOS_INCIDENT_CAPACITY];
     nostos_request_slot_t pending_stop;
     nostos_request_slot_t pending_button;
+    uint8_t pending_shared_data_requests[NOSTOS_NODE_COUNT];
     uint8_t local_source;
 } nostos_receiver_t;
 typedef enum { NOSTOS_LED_OFF=0, NOSTOS_LED_RED_BLINK } nostos_led_t;
@@ -69,6 +70,8 @@ nostos_result_t nostos_receiver_take_stop(
 nostos_result_t nostos_receiver_take_button(
     nostos_receiver_t *receiver,
     nostos_message_t *message);
+uint8_t nostos_receiver_take_shared_data_request(
+    nostos_receiver_t *receiver);
 void nostos_receiver_clear_requests(nostos_receiver_t *receiver);
 nostos_result_t nostos_receiver_mute(nostos_receiver_t *receiver, uint8_t source,
     uint8_t kind, nostos_incident_ref_t incident);

@@ -24,6 +24,32 @@ static size_t encode_message(uint8_t type, uint8_t source, uint32_t session,
     return length;
 }
 
+static size_t encode_sensor_message(uint8_t type, uint8_t source,
+                                    uint8_t wire[NOSTOS_WIRE_MAX])
+{
+    nostos_message_t message = {
+        .type = type,
+        .source_id = source,
+        .session_id = 1U,
+        .sequence = 1U,
+    };
+    if (type == NOSTOS_RIDE) {
+        message.payload.ride = (nostos_ride_t){true, 120U, 1000U};
+    } else {
+        CHECK(type == NOSTOS_ENVIRONMENT);
+        message.payload.environment = (nostos_environment_t){
+            .temperature_c_x10 = 250,
+            .humidity_pct_x10 = 600U,
+            .temperature_quality = NOSTOS_VALID,
+            .humidity_quality = NOSTOS_VALID,
+        };
+    }
+    size_t length = 0U;
+    CHECK(nostos_message_encode(&message, wire, NOSTOS_WIRE_MAX, &length) ==
+        NOSTOS_OK);
+    return length;
+}
+
 static nostos_result_t feed_frame(const uint8_t *frame, size_t length,
                                   uint8_t wire[NOSTOS_WIRE_MAX], size_t *wire_length)
 {
@@ -449,7 +475,7 @@ static void ride_codec_and_shared_state(void)
     };
     uint8_t wire[NOSTOS_WIRE_MAX] = {0};
     size_t length = 0U;
-    CHECK(NOSTOS_TYPE_COUNT == 9U);
+    CHECK(NOSTOS_TYPE_COUNT == 10U);
     CHECK(nostos_type_info(NOSTOS_RIDE) != NULL);
     CHECK(nostos_type_info(NOSTOS_RIDE)->payload_size == 7U);
     CHECK(strcmp(nostos_type_info(NOSTOS_RIDE)->name, "RIDE") == 0);
@@ -532,6 +558,91 @@ static void ride_codec_and_shared_state(void)
     CHECK(!nostos_report_fresh(&state->report, 3201U, NOSTOS_FRESH_MS));
 }
 
+static void shared_data_request_codec_and_mailbox(void)
+{
+    const uint8_t expected[] = {
+        0x02U, 0x46U, 0x02U, 0x44U, 0x33U, 0x22U, 0x11U, 0x66U, 0x55U,
+        NOSTOS_SHARED_DATA_MASK,
+    };
+    nostos_message_t message = {
+        .type = NOSTOS_SHARED_DATA_REQUEST,
+        .source_id = 2U,
+        .session_id = UINT32_C(0x11223344),
+        .sequence = 0x5566U,
+        .payload.shared_data_request = {NOSTOS_SHARED_DATA_MASK},
+    };
+    uint8_t wire[NOSTOS_WIRE_MAX] = {0};
+    size_t length = 0U;
+    const nostos_type_info_t *info =
+        nostos_type_info(NOSTOS_SHARED_DATA_REQUEST);
+    CHECK(info != NULL);
+    CHECK(info->payload_size == 1U);
+    CHECK(strcmp(info->name, "SHARED_DATA_REQUEST") == 0);
+    CHECK(nostos_message_encode(&message, wire, sizeof(wire), &length) ==
+        NOSTOS_OK);
+    CHECK(length == sizeof(expected));
+    CHECK(memcmp(wire, expected, sizeof(expected)) == 0);
+
+    nostos_message_t decoded = {0};
+    CHECK(nostos_message_decode(wire, length, &decoded) == NOSTOS_OK);
+    CHECK(decoded.payload.shared_data_request.mask == NOSTOS_SHARED_DATA_MASK);
+
+    message.payload.shared_data_request.mask = 0U;
+    CHECK(nostos_message_encode(&message, wire, sizeof(wire), &length) ==
+        NOSTOS_BAD_VALUE);
+    message.payload.shared_data_request.mask = 1U << 2;
+    CHECK(nostos_message_encode(&message, wire, sizeof(wire), &length) ==
+        NOSTOS_BAD_VALUE);
+    memcpy(wire, expected, sizeof(expected));
+    wire[NOSTOS_HEADER_SIZE] = 0U;
+    CHECK(nostos_message_decode(wire, sizeof(expected), &decoded) ==
+        NOSTOS_BAD_VALUE);
+    wire[NOSTOS_HEADER_SIZE] = 1U << 2;
+    CHECK(nostos_message_decode(wire, sizeof(expected), &decoded) ==
+        NOSTOS_BAD_VALUE);
+
+    nostos_receiver_t receiver;
+    CHECK(nostos_receiver_init(&receiver, 1U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 10U, 0U) ==
+        NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 3U, 20U, 0U) ==
+        NOSTOS_OK);
+    message = (nostos_message_t){
+        .type = NOSTOS_SHARED_DATA_REQUEST,
+        .source_id = 2U,
+        .session_id = 10U,
+        .sequence = 1U,
+        .payload.shared_data_request = {NOSTOS_SHARED_DATA_RIDE},
+    };
+    CHECK(nostos_receiver_apply(&receiver, &message, 10U) == NOSTOS_OK);
+    message.source_id = 3U;
+    message.session_id = 20U;
+    message.payload.shared_data_request.mask = NOSTOS_SHARED_DATA_ENVIRONMENT;
+    CHECK(nostos_receiver_apply(&receiver, &message, 20U) == NOSTOS_OK);
+    CHECK(nostos_receiver_take_shared_data_request(&receiver) ==
+        NOSTOS_SHARED_DATA_MASK);
+    CHECK(nostos_receiver_take_shared_data_request(&receiver) == 0U);
+
+    message.source_id = 2U;
+    message.session_id = 10U;
+    message.sequence = 2U;
+    message.payload.shared_data_request.mask = NOSTOS_SHARED_DATA_RIDE;
+    CHECK(nostos_receiver_apply(&receiver, &message, 30U) == NOSTOS_OK);
+    message.source_id = 3U;
+    message.session_id = 20U;
+    message.sequence = 2U;
+    message.payload.shared_data_request.mask = NOSTOS_SHARED_DATA_ENVIRONMENT;
+    CHECK(nostos_receiver_apply(&receiver, &message, 40U) == NOSTOS_OK);
+    CHECK(nostos_receiver_approve_session(&receiver, 2U, 11U, 0U) ==
+        NOSTOS_OK);
+    CHECK(receiver.pending_shared_data_requests[1] == 0U);
+    CHECK(receiver.pending_shared_data_requests[2] ==
+        NOSTOS_SHARED_DATA_ENVIRONMENT);
+    nostos_receiver_clear_requests(&receiver);
+    CHECK(nostos_receiver_take_shared_data_request(&receiver) ==
+        NOSTOS_SHARED_DATA_ENVIRONMENT);
+}
+
 static void retired_application_types_are_rejected(void)
 {
     const uint8_t retired[] = {0x12U, 0x20U, 0x21U, 0x22U,
@@ -557,6 +668,60 @@ static void retired_application_types_are_rejected(void)
         CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire,
             sizeof(wire), 0U, (uint32_t)index, true) == NOSTOS_UNSUPPORTED_TYPE);
     }
+    CHECK(bridge.count == 0U);
+}
+
+static void bridge_accepts_sensor_data_from_authenticated_sources(void)
+{
+    const nostos_peer_t peers[NOSTOS_NODE_COUNT] = {
+        {0x0101U, 1U, 1U},
+        {0x0202U, 2U, 2U},
+        {0x0303U, 3U, 3U},
+    };
+    nostos_bridge_t bridge;
+    nostos_job_t job;
+    uint8_t wire[NOSTOS_WIRE_MAX];
+
+    CHECK(nostos_bridge_init(&bridge, 1U, peers) == NOSTOS_OK);
+    size_t length = encode_sensor_message(NOSTOS_RIDE, 1U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
+        10U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 11U, true, &job) == NOSTOS_OK);
+
+    length = encode_sensor_message(NOSTOS_ENVIRONMENT, 1U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
+        12U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 13U, true, &job) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_ENVIRONMENT, 3U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length, 0x0303U,
+        14U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 15U, true, &job) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_RIDE, 2U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length, 0x0202U,
+        16U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 17U, true, &job) == NOSTOS_OK);
+
+    CHECK(nostos_bridge_init(&bridge, 3U, peers) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_ENVIRONMENT, 3U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
+        18U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 19U, true, &job) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_RIDE, 3U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
+        20U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 21U, true, &job) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_RIDE, 1U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length, 0x0101U,
+        22U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 23U, true, &job) == NOSTOS_OK);
+    length = encode_sensor_message(NOSTOS_ENVIRONMENT, 2U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length, 0x0202U,
+        24U, true) == NOSTOS_OK);
+    CHECK(nostos_bridge_next(&bridge, 25U, true, &job) == NOSTOS_OK);
+
+    length = encode_sensor_message(NOSTOS_ENVIRONMENT, 1U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
+        26U, true) == NOSTOS_UNAUTHORIZED);
     CHECK(bridge.count == 0U);
 }
 
@@ -591,7 +756,7 @@ static void fall_is_the_only_emergency_output(void)
     CHECK(outputs.buzzer == NOSTOS_BUZZER_OFF);
 }
 
-static void urgent_fairness_and_expiry(void)
+static void strict_bridge_priority_and_expiry(void)
 {
     const nostos_peer_t peers[NOSTOS_NODE_COUNT] = {
         {0x0101U, 1U, 1U},
@@ -602,9 +767,11 @@ static void urgent_fairness_and_expiry(void)
     CHECK(nostos_bridge_init(&bridge, 1U, peers) == NOSTOS_OK);
 
     uint8_t wire[NOSTOS_WIRE_MAX];
-    size_t length = encode_message(NOSTOS_STOP, 1U, 90U, 1U, wire);
+    size_t length = encode_message(NOSTOS_SPEED_UP, 1U, 90U, 1U, wire);
     CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U, 10U, true) == NOSTOS_OK);
-    for (uint16_t sequence = 2U; sequence < 7U; ++sequence)
+    length = encode_message(NOSTOS_STOP, 1U, 90U, 2U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U, 11U, true) == NOSTOS_OK);
+    for (uint16_t sequence = 3U; sequence < 8U; ++sequence)
     {
         length = encode_message(NOSTOS_FALL, 1U, 90U, sequence, wire);
         CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U,
@@ -612,19 +779,57 @@ static void urgent_fairness_and_expiry(void)
     }
 
     nostos_job_t job;
-    for (unsigned index = 0U; index < NOSTOS_BRIDGE_URGENT_BURST; ++index)
+    for (unsigned index = 0U; index < 5U; ++index)
     {
         CHECK(nostos_bridge_next(&bridge, 100U, true, &job) == NOSTOS_OK);
         CHECK(job.wire[1] == NOSTOS_FALL);
     }
     CHECK(nostos_bridge_next(&bridge, 100U, true, &job) == NOSTOS_OK);
     CHECK(job.wire[1] == NOSTOS_STOP);
+    CHECK(nostos_bridge_next(&bridge, 100U, true, &job) == NOSTOS_OK);
+    CHECK(job.wire[1] == NOSTOS_SPEED_UP);
 
     CHECK(nostos_bridge_init(&bridge, 1U, peers) == NOSTOS_OK);
     length = encode_message(NOSTOS_STOP, 1U, 91U, 1U, wire);
     CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length, 0U, 0U, true) == NOSTOS_OK);
     CHECK(nostos_bridge_next(&bridge, NOSTOS_BRIDGE_MAX_AGE_MS + 1U,
                              true, &job) == NOSTOS_EXPIRED);
+}
+
+static void bridge_reserves_stop_and_fall_capacity(void)
+{
+    const nostos_peer_t peers[NOSTOS_NODE_COUNT] = {
+        {0x0101U, 1U, 1U},
+        {0x0202U, 2U, 2U},
+        {0x0303U, 3U, 3U},
+    };
+    nostos_bridge_t bridge;
+    CHECK(nostos_bridge_init(&bridge, 1U, peers) == NOSTOS_OK);
+
+    uint8_t wire[NOSTOS_WIRE_MAX];
+    size_t length = 0U;
+    for (uint16_t sequence = 0U;
+         sequence < NOSTOS_BRIDGE_NORMAL_CAPACITY; ++sequence) {
+        length = encode_message(
+            NOSTOS_SPEED_UP, 1U, 92U, sequence, wire);
+        CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length,
+            0U, sequence, true) == NOSTOS_OK);
+    }
+    length = encode_message(
+        NOSTOS_SPEED_UP, 1U, 92U,
+        (uint16_t)NOSTOS_BRIDGE_NORMAL_CAPACITY, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length,
+        0U, 20U, true) == NOSTOS_FULL);
+
+    length = encode_message(NOSTOS_STOP, 1U, 92U, 20U, wire);
+    CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length,
+        0U, 21U, true) == NOSTOS_OK);
+    for (uint16_t sequence = 21U; sequence < 25U; ++sequence) {
+        length = encode_message(NOSTOS_FALL, 1U, 92U, sequence, wire);
+        CHECK(nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length,
+            0U, sequence, true) == NOSTOS_OK);
+    }
+    CHECK(bridge.count == NOSTOS_BRIDGE_CAPACITY);
 }
 
 typedef struct
@@ -806,10 +1011,13 @@ int main(void)
     single_source_fall_ends_at_new_session();
     mixed_source_mailboxes_clear_selectively();
     ride_codec_and_shared_state();
+    shared_data_request_codec_and_mailbox();
     retired_application_types_are_rejected();
+    bridge_accepts_sensor_data_from_authenticated_sources();
     fall_is_the_only_emergency_output();
-    urgent_fairness_and_expiry();
+    strict_bridge_priority_and_expiry();
+    bridge_reserves_stop_and_fall_capacity();
     simplified_request_scheduler();
-    puts("PASS v2 CRC, trusted replay rejection, bridge fairness, simplified request priority");
+    puts("PASS v2 CRC, trusted replay rejection, strict bridge and request priority");
     return 0;
 }

@@ -64,6 +64,8 @@ speed_sensor_result_t speed_sensor_update(
     speed_sensor_sample_t *sample);
 
 void speed_sensor_reset(speed_sensor_state_t *state);
+/* Start a new wheel-event baseline while retaining session distance. */
+void speed_sensor_rebaseline(speed_sensor_state_t *state);
 const char *speed_sensor_result_name(speed_sensor_result_t result);
 
 #endif

@@ -1,29 +1,38 @@
 /* Explicit v2 bridge. One image derives its source from the provisioned Mesh
  * primary address; UART TX and durable identity writes stay in the worker. */
 #include "bridge_runtime.h"
+#include "application_event_heap.h"
+#include "application_message_engine.h"
+#include "mesh_inflight.h"
+#include "mesh_retry.h"
 #include "mesh_node.h"
 #include "nostos_bridge.h"
+#include "official_packet_writer.h"
+#include "output_command_retry.h"
 #include "sensor_link.h"
-#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
-#include "xoss_ble.h"
-#endif
+#include "shared_data_cache.h"
 #include "driver/uart.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
-#include "freertos/semphr.h"
 #include "freertos/task.h"
 #include "nvs.h"
 #include <inttypes.h>
+#include <string.h>
 
 #define TAG "NOSTOS_V2"
 #define DATA_UART UART_NUM_1
 #define IDENTITY_NVS_NAMESPACE "nostos_ident"
 #define IDENTITY_NVS_KEY "session"
 #define CONTROL_QUEUE_LENGTH 4U
+#define EVENT_QUEUE_LENGTH 5U
+#define STOP_EVENT_QUEUE_LENGTH 5U
+#define URGENT_EVENT_QUEUE_LENGTH 4U
+#define SENSOR_OUTPUT_SLOT_COUNT (NOSTOS_NODE_COUNT * 2U)
 #define IDENTITY_POLL_MS 100U
-#define IDENTITY_RETRY_MS 1000U
+#define READY_RETRY_MS 1000U
+#define MESH_RETRY_INTERVAL_MS 100U
 
 typedef enum {
     UART_ROUTE_IDLE = 0,
@@ -36,41 +45,73 @@ typedef struct {
     bool identity_loaded;
     bool identity_confirmed;
     bool identity_waiting_ack;
-    bool identity_session_from_hello;
     uint8_t local_source;
     uint16_t primary_address;
     uint32_t session_id;
 } identity_state_t;
+
+typedef struct {
+    nostos_job_t job;
+    bool pending;
+} cache_snapshot_slot_t;
 
 static nostos_bridge_t bridge;
 static nostos_uart_parser_t nostos_parser;
 static sensor_link_parser_t sensor_parser;
 static uart_route_t uart_route;
 static identity_state_t identity;
+static official_packet_writer_t official_writer;
+static application_message_engine_t app_engine;
+static bool boot_session_committed;
+static uint32_t boot_session;
 static portMUX_TYPE lock = portMUX_INITIALIZER_UNLOCKED;
 static TaskHandle_t worker;
 static QueueHandle_t events;
-static StaticSemaphore_t reset_mutex_control;
-static SemaphoreHandle_t reset_mutex;
-static bool stm_boot_reset_in_progress;
-static uint32_t stm_boot_epoch;
+static cache_snapshot_slot_t cache_snapshots[SENSOR_OUTPUT_SLOT_COUNT];
+static mesh_retry_slot_t mesh_retry;
+static uint32_t mesh_retry_next_ms;
+static mesh_inflight_t mesh_inflight;
+static application_event_heap_t event_outputs;
+static output_command_retry_t output_retry;
 
 static StaticQueue_t ride_queue_control;
 static uint8_t ride_queue_storage[sizeof(sensor_link_ride_t)];
 static QueueHandle_t ride_queue;
+
+static StaticQueue_t environment_queue_control;
+static uint8_t environment_queue_storage[sizeof(sensor_link_environment_t)];
+static QueueHandle_t environment_queue;
+
+static StaticQueue_t event_queue_control;
+static uint8_t event_queue_storage[EVENT_QUEUE_LENGTH * sizeof(sensor_link_event_t)];
+static QueueHandle_t event_queue;
+
+static StaticQueue_t stop_event_queue_control;
+static uint8_t stop_event_queue_storage[
+    STOP_EVENT_QUEUE_LENGTH * sizeof(sensor_link_event_t)];
+static QueueHandle_t stop_event_queue;
+
+static StaticQueue_t urgent_event_queue_control;
+static uint8_t urgent_event_queue_storage[
+    URGENT_EVENT_QUEUE_LENGTH * sizeof(sensor_link_event_t)];
+static QueueHandle_t urgent_event_queue;
 
 static StaticQueue_t control_queue_control;
 static uint8_t control_queue_storage[CONTROL_QUEUE_LENGTH * sizeof(sensor_link_message_t)];
 static QueueHandle_t control_queue;
 
 static uint32_t accepted, rejected, async_ok, async_failed;
-static uint32_t ride_uart_ok, ride_uart_failed, ride_uart_deferred;
-static uint32_t identity_uart_ok, identity_uart_failed;
-static uint32_t approve_uart_ok, approve_uart_failed;
+static uint32_t local_publish_ok, local_publish_failed;
+static uint32_t local_mirror_failed;
+static uint32_t ready_uart_ok, ready_uart_failed;
 static uint32_t control_received, control_rejected, control_overflow;
-/* Worker-owned retry schedule; identity fields themselves remain locked. */
-static bool identity_advertised_once;
-static uint32_t identity_last_tx_ms;
+static uint32_t event_received, event_overflow, stop_event_overflow;
+static uint32_t urgent_event_overflow;
+static uint32_t ride_overwrites, environment_overwrites;
+static uint32_t cache_hits, cache_misses;
+static uint32_t cache_uart_ok, cache_uart_failed;
+static bool ready_advertised_once;
+static uint32_t ready_last_tx_ms;
 
 /* Verified provisioned primary-unicast map. It is deliberately identical in
  * every image; source is never selected by a per-board build option. */
@@ -96,100 +137,28 @@ static void reset_epoch_counters_locked(void)
 {
     accepted = 0U;
     rejected = 0U;
-    /* Mesh completion callbacks have no transaction/epoch token and can arrive
-     * after an STM boot boundary. Keep these two ESP-uptime totals monotonic so
-     * a delayed old completion is never attributed to a freshly zeroed epoch. */
-    ride_uart_ok = 0U;
-    ride_uart_failed = 0U;
-    ride_uart_deferred = 0U;
-    identity_uart_ok = 0U;
-    identity_uart_failed = 0U;
-    approve_uart_ok = 0U;
-    approve_uart_failed = 0U;
+    /* Mesh completion totals are ESP-uptime counters. An STM boot boundary
+     * resets only its mirror and must not reset ESP-owned send accounting. */
+    local_publish_ok = 0U;
+    local_publish_failed = 0U;
+    local_mirror_failed = 0U;
+    ready_uart_ok = 0U;
+    ready_uart_failed = 0U;
     control_received = 0U;
     control_rejected = 0U;
     control_overflow = 0U;
-    identity_advertised_once = false;
-    identity_last_tx_ms = 0U;
-}
-
-static esp_err_t reset_xoss_runtime_session(void)
-{
-#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
-    return xoss_ble_reset_runtime_session();
-#else
-    return ESP_OK;
-#endif
-}
-
-/* Worker-only. The gate makes Mesh RX and UART/XOSS producers reject work
- * while both FreeRTOS queues and the locked bridge are moved to one epoch. */
-static bool begin_stm_boot_boundary(void)
-{
-    portENTER_CRITICAL(&lock);
-    stm_boot_reset_in_progress = true;
-    portEXIT_CRITICAL(&lock);
-
-    if (reset_mutex == NULL || control_queue == NULL || ride_queue == NULL) {
-        ESP_LOGE(TAG, "STM_BOOT_RESET_NOT_READY gate=closed");
-        return false;
-    }
-
-    if (xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(1000U)) != pdTRUE) {
-        ESP_LOGE(TAG, "STM_BOOT_QUEUE_RESET_TIMEOUT");
-        return false;
-    }
-
-    (void)xQueueReset(control_queue);
-    (void)xQueueReset(ride_queue);
-
-    portENTER_CRITICAL(&lock);
-    uint8_t source = identity.local_source;
-    nostos_result_t reset_result = identity.bridge_initialized
-        ? nostos_bridge_init(&bridge, source, peers)
-        : NOSTOS_NOT_READY;
-    if (reset_result == NOSTOS_OK) {
-        ++stm_boot_epoch;
-        if (stm_boot_epoch == 0U) stm_boot_epoch = 1U;
-        reset_epoch_counters_locked();
-    }
-    portEXIT_CRITICAL(&lock);
-    xSemaphoreGive(reset_mutex);
-
-    if (reset_result != NOSTOS_OK) {
-        ESP_LOGE(TAG, "STM_BOOT_RESET_FAILED result=%s",
-                 nostos_result_name(reset_result));
-        return false;
-    }
-
-    esp_err_t xoss_result = reset_xoss_runtime_session();
-    if (xoss_result != ESP_OK) {
-        ESP_LOGE(TAG, "STM_BOOT_XOSS_RESET_FAILED err=%s",
-                 esp_err_to_name(xoss_result));
-        return false;
-    }
-
-    return true;
-}
-
-static void end_stm_boot_boundary(void)
-{
-    portENTER_CRITICAL(&lock);
-    stm_boot_reset_in_progress = false;
-    uint32_t epoch = stm_boot_epoch;
-    portEXIT_CRITICAL(&lock);
-    ESP_LOGI(TAG, "STM_BOOT_RUNTIME_RESET epoch=%" PRIu32, epoch);
-}
-
-static uint16_t get16le(const uint8_t *bytes)
-{
-    return (uint16_t)((uint16_t)bytes[0] | (uint16_t)((uint16_t)bytes[1] << 8));
-}
-
-static uint32_t get32le(const uint8_t *bytes)
-{
-    return (uint32_t)bytes[0] | ((uint32_t)bytes[1] << 8) |
-           ((uint32_t)bytes[2] << 16) | ((uint32_t)bytes[3] << 24);
+    event_received = 0U;
+    event_overflow = 0U;
+    stop_event_overflow = 0U;
+    urgent_event_overflow = 0U;
+    ride_overwrites = 0U;
+    environment_overwrites = 0U;
+    cache_hits = 0U;
+    cache_misses = 0U;
+    cache_uart_ok = 0U;
+    cache_uart_failed = 0U;
+    ready_advertised_once = false;
+    ready_last_tx_ms = 0U;
 }
 
 static uint8_t source_for_address(uint16_t address)
@@ -201,21 +170,115 @@ static uint8_t source_for_address(uint16_t address)
     return 0U;
 }
 
+static bool display_event_type(uint8_t type)
+{
+    return type == NOSTOS_FALL || type == NOSTOS_FALL_CLEAR ||
+        type == NOSTOS_STOP || type == NOSTOS_SPEED_UP ||
+        type == NOSTOS_SPEED_DOWN;
+}
+
+/* Caller holds lock. Accepted official packets are kept only inside ESP and
+ * become local OUTPUT_* work; official 0x7E frames never cross to STM. */
+static nostos_result_t schedule_output_message_locked(
+    const nostos_message_t *message,
+    uint32_t received_ms)
+{
+    if (message == NULL) return NOSTOS_BAD_ARGUMENT;
+    nostos_message_t captured;
+    nostos_result_t captured_result =
+        application_message_engine_capture_output(
+            &app_engine, message, &captured);
+    if (captured_result != NOSTOS_OK) return captured_result;
+    uint8_t wire[NOSTOS_WIRE_MAX];
+    size_t length = 0U;
+    nostos_result_t encoded = nostos_message_encode(
+        &captured, wire, sizeof(wire), &length);
+    if (encoded != NOSTOS_OK) return encoded;
+    if (display_event_type(captured.type)) {
+        return application_event_heap_push(
+            &event_outputs, wire, length, received_ms);
+    }
+    size_t type_slot;
+    if (captured.type == NOSTOS_RIDE) {
+        type_slot = 0U;
+    } else if (captured.type == NOSTOS_ENVIRONMENT) {
+        type_slot = 1U;
+    } else {
+        return NOSTOS_UNSUPPORTED_TYPE;
+    }
+    size_t slot = ((size_t)captured.source_id - 1U) * 2U + type_slot;
+    cache_snapshots[slot] = (cache_snapshot_slot_t){
+        .job = {
+            .length = length,
+            .received_ms = received_ms,
+            .direction = NOSTOS_TO_UART,
+        },
+        .pending = true,
+    };
+    memcpy(cache_snapshots[slot].job.wire, wire, length);
+    return NOSTOS_OK;
+}
+
 static bool bridge_ready(void)
 {
     uint8_t source;
     uint16_t primary;
     bool initialized;
-    bool resetting;
     portENTER_CRITICAL(&lock);
     source = identity.local_source;
     primary = identity.primary_address;
     initialized = identity.bridge_initialized;
-    resetting = stm_boot_reset_in_progress;
     portEXIT_CRITICAL(&lock);
-    return !resetting && initialized && source != 0U &&
+    return initialized && source != 0U &&
            source_for_address(primary) == source &&
            mesh_node_ready() && mesh_node_primary() == primary;
+}
+
+static bool uart_write(const uint8_t *bytes, size_t length);
+
+static bool local_writer_ready(void)
+{
+    portENTER_CRITICAL(&lock);
+    bool ready = identity.bridge_initialized && identity.identity_loaded &&
+        identity.session_id != 0U && official_writer.initialized &&
+        official_writer.sender.source_id == identity.local_source &&
+        official_writer.sender.session_id == identity.session_id;
+    portEXIT_CRITICAL(&lock);
+    return ready;
+}
+
+/* Worker-only. A new ESP boot epoch is announced without waiting for STM
+ * HELLO, and no OUTPUT command is dispatched until this write succeeds. */
+static bool advertise_ready(bool force)
+{
+    uint32_t now = now_ms();
+    portENTER_CRITICAL(&lock);
+    bool bound = identity.bridge_initialized && identity.identity_loaded &&
+        identity.session_id != 0U;
+    bool confirmed = identity.identity_confirmed;
+    uint32_t epoch = identity.session_id;
+    portEXIT_CRITICAL(&lock);
+    if (!bound || (!force && confirmed)) return false;
+    if (!force && ready_advertised_once &&
+        (uint32_t)(now - ready_last_tx_ms) < READY_RETRY_MS) {
+        return false;
+    }
+
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t frame_length = 0U;
+    sensor_link_result_t encoded = sensor_link_encode_ready(
+        epoch, frame, &frame_length);
+    bool sent = encoded == SENSOR_LINK_OK && uart_write(frame, frame_length);
+    portENTER_CRITICAL(&lock);
+    identity.identity_confirmed = sent;
+    identity.identity_waiting_ack = false;
+    ready_advertised_once = true;
+    ready_last_tx_ms = now;
+    portEXIT_CRITICAL(&lock);
+    counter_increment(sent ? &ready_uart_ok : &ready_uart_failed);
+    ESP_LOGI(TAG, "READY_TX epoch=%" PRIu32 " api=%s",
+             epoch, sent ? "accepted" : "failed");
+    return true;
 }
 
 static bool uart_write(const uint8_t *bytes, size_t length)
@@ -231,17 +294,6 @@ static bool uart_write(const uint8_t *bytes, size_t length)
         if (sent < length) vTaskDelay(1);
     }
     return uart_wait_tx_done(DATA_UART, pdMS_TO_TICKS(20)) == ESP_OK;
-}
-
-static bool uart_send_nostos(const uint8_t *wire, size_t length)
-{
-    uint8_t frame[NOSTOS_UART_FRAME_MAX];
-    size_t frame_length = 0U;
-    if (nostos_uart_encode(wire, length, frame, sizeof(frame), &frame_length) != NOSTOS_OK) {
-        return false;
-    }
-    return uart_write(frame, frame_length);
-    /* Failed/partial writes are not retried: the next frame flag resynchronizes. */
 }
 
 static esp_err_t nvs_load_session(uint32_t *session)
@@ -285,17 +337,51 @@ static bool refresh_identity_binding(void)
                          identity.local_source == source && source != 0U;
     if (source == 0U && identity.bridge_initialized) {
         identity = (identity_state_t){0};
-        identity_advertised_once = false;
+        ready_advertised_once = false;
+        ready_last_tx_ms = 0U;
     }
     portEXIT_CRITICAL(&lock);
     if (already_bound) return true;
     if (source == 0U) return false;
 
-    uint32_t stored_session = 0U;
-    esp_err_t err = nvs_load_session(&stored_session);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "IDENTITY_LOAD_FAILED primary=0x%04x err=%s",
-                 primary, esp_err_to_name(err));
+    uint32_t stored_session = boot_session;
+    if (!boot_session_committed) {
+        esp_err_t err = nvs_load_session(&stored_session);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG, "IDENTITY_LOAD_FAILED primary=0x%04x err=%s",
+                     primary, esp_err_to_name(err));
+            return false;
+        }
+        uint32_t next_session = 0U;
+        err = nvs_commit_next_session(stored_session, &next_session);
+        if (err != ESP_OK) {
+            ESP_LOGE(TAG,
+                     "IDENTITY_BOOT_ADVANCE_FAILED source=%u current=%" PRIu32
+                     " err=%s",
+                     source, stored_session, esp_err_to_name(err));
+            return false;
+        }
+        nostos_result_t writer_result = official_packet_writer_init(
+            &official_writer, source, next_session);
+        if (writer_result != NOSTOS_OK) {
+            ESP_LOGE(TAG, "WRITER_INIT_FAILED result=%s",
+                     nostos_result_name(writer_result));
+            return false;
+        }
+        boot_session = next_session;
+        boot_session_committed = true;
+    } else if (official_packet_writer_set_source(
+                   &official_writer, source) != NOSTOS_OK) {
+        ESP_LOGE(TAG, "WRITER_REBIND_FAILED source=%u", source);
+        return false;
+    }
+
+    application_message_engine_t initialized_engine;
+    nostos_result_t engine_result = application_message_engine_init(
+        &initialized_engine, source, boot_session);
+    if (engine_result != NOSTOS_OK) {
+        ESP_LOGE(TAG, "APP_ENGINE_INIT_FAILED result=%s",
+                 nostos_result_name(engine_result));
         return false;
     }
 
@@ -304,94 +390,32 @@ static bool refresh_identity_binding(void)
     portENTER_CRITICAL(&lock);
     nostos_result_t result = nostos_bridge_init(&bridge, source, peers);
     if (result == NOSTOS_OK) {
+        app_engine = initialized_engine;
+        application_event_heap_init(&event_outputs);
+        output_command_retry_init(&output_retry);
+        for (size_t i = 0U; i < SENSOR_OUTPUT_SLOT_COUNT; ++i) {
+            cache_snapshots[i] = (cache_snapshot_slot_t){0};
+        }
         identity = (identity_state_t){
             .bridge_initialized = true,
             .identity_loaded = true,
             .identity_confirmed = false,
-            /* After an ESP-only reboot, first offer the durable identity so a
-             * still-running STM can continue without resetting its sequence. */
-            .identity_waiting_ack = stored_session != 0U,
-            .identity_session_from_hello = false,
+            .identity_waiting_ack = false,
             .local_source = source,
             .primary_address = primary,
-            .session_id = stored_session,
+            .session_id = boot_session,
         };
+        ready_advertised_once = false;
+        ready_last_tx_ms = 0U;
     }
     portEXIT_CRITICAL(&lock);
     if (result != NOSTOS_OK) {
         ESP_LOGE(TAG, "IDENTITY_BIND_FAILED result=%s", nostos_result_name(result));
         return false;
     }
-    identity_advertised_once = false;
-    ESP_LOGI(TAG, "IDENTITY_BOUND primary=0x%04x source=%u durable_session=%" PRIu32,
-             primary, source, stored_session);
-    return true;
-}
-
-/* Worker-only: advance once per new handshake, commit before advertising it. */
-static bool advance_identity_session(void)
-{
-    uint32_t current;
-    uint8_t source;
-    uint16_t primary;
-    portENTER_CRITICAL(&lock);
-    current = identity.session_id;
-    source = identity.local_source;
-    primary = identity.primary_address;
-    bool bound = identity.bridge_initialized && identity.identity_loaded;
-    portEXIT_CRITICAL(&lock);
-    if (!bound || source == 0U || mesh_node_primary() != primary) return false;
-
-    uint32_t next = 0U;
-    esp_err_t err = nvs_commit_next_session(current, &next);
-    if (err != ESP_OK) {
-        ESP_LOGE(TAG, "IDENTITY_ADVANCE_FAILED source=%u current=%" PRIu32 " err=%s",
-                 source, current, esp_err_to_name(err));
-        return false;
-    }
-    if (mesh_node_primary() != primary) return false;
-    portENTER_CRITICAL(&lock);
-    if (identity.bridge_initialized && identity.local_source == source &&
-        identity.primary_address == primary) {
-        identity.session_id = next;
-        identity.identity_confirmed = false;
-        identity.identity_waiting_ack = true;
-        identity.identity_session_from_hello = true;
-    } else {
-        next = 0U;
-    }
-    portEXIT_CRITICAL(&lock);
-    if (next == 0U) return false;
-    identity_advertised_once = false;
-    ESP_LOGI(TAG, "IDENTITY_SESSION_COMMITTED source=%u session=%" PRIu32, source, next);
-    return true;
-}
-
-/* Worker-only. A rebooted ESP advertises its durable current identity without
- * waiting for STM HELLO, then retries at a bounded interval until confirmed. */
-static bool advertise_current_identity(bool force)
-{
-    uint32_t now = now_ms();
-    portENTER_CRITICAL(&lock);
-    bool waiting = !stm_boot_reset_in_progress &&
-                   identity.bridge_initialized && identity.identity_loaded &&
-                   identity.identity_waiting_ack && identity.session_id != 0U;
-    uint8_t source = identity.local_source;
-    uint32_t session = identity.session_id;
-    portEXIT_CRITICAL(&lock);
-    if (!waiting) return false;
-    if (!force && identity_advertised_once &&
-        (uint32_t)(now - identity_last_tx_ms) < IDENTITY_RETRY_MS) return false;
-
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t result = sensor_link_encode_identity(source, session, frame, &length);
-    bool sent = result == SENSOR_LINK_OK && uart_write(frame, length);
-    identity_advertised_once = true;
-    identity_last_tx_ms = now;
-    counter_increment(sent ? &identity_uart_ok : &identity_uart_failed);
-    ESP_LOGI(TAG, "IDENTITY_TX source=%u session=%" PRIu32 " api=%s",
-             source, session, sent ? "accepted" : "failed");
+    ESP_LOGI(TAG,
+             "IDENTITY_BOUND primary=0x%04x source=%u boot_session=%" PRIu32,
+             primary, source, boot_session);
     return true;
 }
 
@@ -402,57 +426,86 @@ static bool process_local_control(void)
 
     if (message.type == SENSOR_LINK_HELLO) {
         if (!refresh_identity_binding()) {
-            counter_increment(&identity_uart_failed);
-            ESP_LOGW(TAG, "IDENTITY_DEFERRED no verified Mesh primary");
+            counter_increment(&ready_uart_failed);
+            ESP_LOGW(TAG, "READY_DEFERRED no verified Mesh primary");
             return true;
         }
         portENTER_CRITICAL(&lock);
-        /* A HELLO is STM boot evidence. Advance once for this boot, including
-         * the both-sides-reboot case where an old durable session is pending.
-         * Repeated HELLOs before ACK only resend the same committed session. */
-        bool advance = identity.identity_confirmed ||
-                       !identity.identity_session_from_hello;
-        uint32_t session = identity.session_id;
+        identity.identity_confirmed = false;
         portEXIT_CRITICAL(&lock);
-        bool new_stm_boot = advance || session == 0U;
-        if (new_stm_boot) {
-            if (!begin_stm_boot_boundary()) {
-                counter_increment(&identity_uart_failed);
-                return true;
+        (void)advertise_ready(true);
+        nostos_message_t snapshots[APPLICATION_MESSAGE_SNAPSHOT_CAPACITY];
+        size_t snapshot_count = 0U;
+        uint32_t hello_now = now_ms();
+        portENTER_CRITICAL(&lock);
+        bool sent = identity.identity_confirmed;
+        if (sent && application_message_engine_snapshot(
+                &app_engine, hello_now, snapshots,
+                &snapshot_count) == NOSTOS_OK) {
+            for (size_t i = 0U; i < snapshot_count; ++i) {
+                nostos_result_t scheduled = schedule_output_message_locked(
+                    &snapshots[i], hello_now);
+                if (scheduled == NOSTOS_OK) {
+                    ++cache_hits;
+                } else {
+                    ++cache_misses;
+                }
             }
-            if (!advance_identity_session()) {
-                counter_increment(&identity_uart_failed);
-                ESP_LOGE(TAG, "STM_BOOT_IDENTITY_ADVANCE_FAILED gate=closed");
-                return true;
-            }
-            end_stm_boot_boundary();
         }
-        (void)advertise_current_identity(true);
+        portEXIT_CRITICAL(&lock);
+        if (sent && snapshot_count != 0U) xTaskNotifyGive(worker);
+        ESP_LOGI(TAG, "HELLO_RESYNC api=%s snapshots=%u",
+                 sent ? "accepted" : "failed", (unsigned)snapshot_count);
         return true;
     }
 
-    if (message.type == SENSOR_LINK_IDENTITY_ACK) {
-        bool matched;
-        uint16_t primary = mesh_node_primary();
+    if (message.type == SENSOR_LINK_OUTPUT_RESULT) {
         portENTER_CRITICAL(&lock);
-        matched = !stm_boot_reset_in_progress &&
-                  identity.bridge_initialized && identity.session_id != 0U &&
-                  identity.primary_address == primary &&
-                  message.identity.source_id == identity.local_source &&
-                  message.identity.session_id == identity.session_id;
-        if (matched) {
-            identity.identity_waiting_ack = false;
-            identity.identity_confirmed = true;
+        nostos_result_t result = application_message_engine_note_output_result(
+            &app_engine, &message.output_result);
+        portEXIT_CRITICAL(&lock);
+        ESP_LOGI(TAG, "OUTPUT_RESULT command_id=%" PRIu32
+                 " status=%u result=%s",
+                 message.output_result.command_id,
+                 (unsigned)message.output_result.status,
+                 nostos_result_name(result));
+        return true;
+    }
+
+    if (message.type == SENSOR_LINK_SHARED_DATA_REQUEST) {
+        nostos_message_t snapshots[APPLICATION_MESSAGE_SNAPSHOT_CAPACITY];
+        size_t snapshot_count = 0U;
+        uint8_t requested = message.shared_data_request.mask;
+        bool scheduled = false;
+        uint32_t request_now = now_ms();
+        portENTER_CRITICAL(&lock);
+        if (identity.bridge_initialized && identity.identity_confirmed) {
+            nostos_result_t snapshot_result =
+                application_message_engine_snapshot(
+                    &app_engine, request_now, snapshots, &snapshot_count);
+            if (snapshot_result == NOSTOS_OK) {
+                for (size_t i = 0U; i < snapshot_count; ++i) {
+                    uint8_t bit = snapshots[i].type == NOSTOS_RIDE
+                        ? NOSTOS_SHARED_DATA_RIDE
+                        : snapshots[i].type == NOSTOS_ENVIRONMENT
+                            ? NOSTOS_SHARED_DATA_ENVIRONMENT : 0U;
+                    if ((requested & bit) == 0U) continue;
+                    nostos_result_t output_result =
+                        schedule_output_message_locked(
+                            &snapshots[i], request_now);
+                    if (output_result == NOSTOS_OK) {
+                        ++cache_hits;
+                        scheduled = true;
+                    } else {
+                        ++cache_misses;
+                    }
+                }
+            }
+        } else {
+            ++control_rejected;
         }
         portEXIT_CRITICAL(&lock);
-        if (matched) {
-            ESP_LOGI(TAG, "IDENTITY_ACK source=%u session=%" PRIu32,
-                     message.identity.source_id, message.identity.session_id);
-        } else {
-            counter_increment(&control_rejected);
-            ESP_LOGW(TAG, "IDENTITY_ACK_REJECT source=%u session=%" PRIu32,
-                     message.identity.source_id, message.identity.session_id);
-        }
+        if (scheduled) xTaskNotifyGive(worker);
         return true;
     }
 
@@ -464,127 +517,551 @@ static bool process_local_control(void)
 static nostos_result_t enqueue_remote(const uint8_t *wire, size_t length,
                                       uint16_t mesh_source)
 {
-    bool ready = bridge_ready();
-    uint32_t now = now_ms();
-    portENTER_CRITICAL(&lock);
-    nostos_result_t result = stm_boot_reset_in_progress
-        ? NOSTOS_NOT_READY
-        : identity.bridge_initialized
-        ? nostos_bridge_accept(&bridge, NOSTOS_TO_UART, wire, length,
-                               mesh_source, now, ready)
-        : NOSTOS_NOT_READY;
-    if (!stm_boot_reset_in_progress) {
-        if (result == NOSTOS_OK) ++accepted; else ++rejected;
+    nostos_message_t decoded;
+    nostos_result_t validation = nostos_message_decode(wire, length, &decoded);
+    /* Snapshot requests are paired-UART commands. Never forward a request
+     * received from Mesh back into STM, which could create reply fan-out. */
+    if (validation == NOSTOS_OK &&
+        decoded.type == NOSTOS_SHARED_DATA_REQUEST) {
+        return NOSTOS_UNSUPPORTED_TYPE;
     }
+    bool authenticated = validation == NOSTOS_OK &&
+        source_for_address(mesh_source) == decoded.source_id;
+    if (validation != NOSTOS_OK) return validation;
+    if (!authenticated) return NOSTOS_UNAUTHORIZED;
+    uint32_t now = now_ms();
+    bool queued = false;
+    portENTER_CRITICAL(&lock);
+    nostos_result_t result = NOSTOS_NOT_READY;
+    if (identity.bridge_initialized) {
+        const nostos_rx_window_t *window =
+            &app_engine.receiver.windows[decoded.source_id - 1U];
+        bool new_session = !window->approved ||
+            decoded.session_id > window->session_id;
+        result = application_message_engine_approve_authenticated_session(
+            &app_engine, decoded.source_id, decoded.session_id,
+            decoded.sequence);
+        if (result == NOSTOS_OK) {
+            if (new_session) {
+                (void)application_event_heap_discard_source_before_session(
+                    &event_outputs, decoded.source_id, decoded.session_id);
+                (void)output_command_retry_discard_source_before_session(
+                    &output_retry, decoded.source_id, decoded.session_id);
+                size_t first_sensor_slot =
+                    ((size_t)decoded.source_id - 1U) * 2U;
+                cache_snapshots[first_sensor_slot] =
+                    (cache_snapshot_slot_t){0};
+                cache_snapshots[first_sensor_slot + 1U] =
+                    (cache_snapshot_slot_t){0};
+            }
+            nostos_message_t accepted_message;
+            result = application_message_engine_accept_wire(
+                &app_engine, wire, length, now, &accepted_message);
+            if (result == NOSTOS_OK) {
+                result = schedule_output_message_locked(
+                    &accepted_message, now);
+                queued = result == NOSTOS_OK;
+            }
+        }
+    }
+    if (result == NOSTOS_OK) ++accepted; else ++rejected;
     portEXIT_CRITICAL(&lock);
-    if (result == NOSTOS_OK) xTaskNotifyGive(worker);
+    if (queued) xTaskNotifyGive(worker);
     return result;
 }
 
-/* UART RX task: validate against the exact identity atomically with enqueue. */
-static nostos_result_t enqueue_local(const uint8_t *wire, size_t length)
+/* Worker-only: apply one ESP-stamped packet to the same receiver used by Mesh,
+ * then queue its OUTPUT_* mirror and Mesh transport independently. */
+static nostos_result_t route_local_official(
+    const uint8_t *wire,
+    size_t length)
 {
     nostos_message_t decoded;
     nostos_result_t validation = nostos_message_decode(wire, length, &decoded);
-    /* Preserve v2 forward compatibility while requiring complete validation
-     * for every type this firmware understands. */
-    if (validation != NOSTOS_OK && validation != NOSTOS_UNSUPPORTED_TYPE) return validation;
+    if (validation != NOSTOS_OK) return validation;
     bool ready = bridge_ready();
     uint32_t now = now_ms();
-    uint8_t claimed_source = wire[2];
-    uint32_t claimed_session = get32le(wire + 3U);
-    bool confirmed_now = false;
+    bool worker_wakeup = false;
     portENTER_CRITICAL(&lock);
     nostos_result_t result = NOSTOS_SESSION_REQUIRED;
-    if (stm_boot_reset_in_progress) {
-        result = NOSTOS_NOT_READY;
-    } else if (identity.bridge_initialized && identity.identity_loaded &&
-        identity.session_id != 0U && claimed_source == identity.local_source &&
-        claimed_session == identity.session_id) {
-        /* A valid official packet proves that the STM accepted this identity,
-         * even when Mesh configuration currently prevents forwarding. */
-        identity.identity_waiting_ack = false;
-        confirmed_now = !identity.identity_confirmed;
-        identity.identity_confirmed = true;
-        result = nostos_bridge_accept(&bridge, NOSTOS_TO_MESH, wire, length,
-                                      0U, now, ready);
-    } else if (identity.bridge_initialized && claimed_source != identity.local_source) {
-        result = NOSTOS_UNAUTHORIZED;
+    if (identity.bridge_initialized && identity.identity_loaded &&
+        decoded.source_id == identity.local_source &&
+        decoded.session_id == identity.session_id) {
+        nostos_message_t accepted_message;
+        result = application_message_engine_accept_wire(
+            &app_engine, wire, length, now, &accepted_message);
+        if (result == NOSTOS_OK) {
+            nostos_result_t output_result = schedule_output_message_locked(
+                &accepted_message, now);
+            if (output_result == NOSTOS_OK) {
+                worker_wakeup = true;
+            } else {
+                ++local_mirror_failed;
+                ESP_LOGW(TAG, "OUTPUT_QUEUE_FAILED type=0x%02x result=%s",
+                         decoded.type, nostos_result_name(output_result));
+            }
+
+            nostos_result_t mesh_result = nostos_bridge_accept(
+                &bridge, NOSTOS_TO_MESH, wire, length, 0U, now, ready);
+            if (mesh_result == NOSTOS_OK) {
+                worker_wakeup = true;
+            } else {
+                nostos_job_t retry_job = {
+                    .length = length,
+                    .received_ms = now,
+                    .direction = NOSTOS_TO_MESH,
+                };
+                memcpy(retry_job.wire, wire, length);
+                if (mesh_retry_store(&mesh_retry, &retry_job) == NOSTOS_OK) {
+                    mesh_retry_next_ms = now + MESH_RETRY_INTERVAL_MS;
+                    worker_wakeup = true;
+                } else {
+                    ++local_publish_failed;
+                }
+                ESP_LOGW(TAG, "MESH_ENQUEUE_FAILED type=0x%02x result=%s",
+                         decoded.type, nostos_result_name(mesh_result));
+            }
+        }
     }
-    if (!stm_boot_reset_in_progress) {
-        if (result == NOSTOS_OK) ++accepted; else ++rejected;
-    }
+    if (result == NOSTOS_OK) ++accepted; else ++rejected;
     portEXIT_CRITICAL(&lock);
-    if (result == NOSTOS_OK || confirmed_now) xTaskNotifyGive(worker);
+    if (worker_wakeup) xTaskNotifyGive(worker);
     return result;
 }
 
 static bool process_sensor_ride(void)
 {
     sensor_link_ride_t ride;
-    if (ride_queue == NULL || xQueuePeek(ride_queue, &ride, 0) != pdTRUE) return false;
-    portENTER_CRITICAL(&lock);
-    bool confirmed = identity.identity_confirmed;
-    bool resetting = stm_boot_reset_in_progress;
-    portEXIT_CRITICAL(&lock);
-    if (!confirmed || resetting) {
-        /* Keep only the latest atomic ride queued until v2 identity is confirmed. */
-        return false;
-    }
-    (void)xQueueReceive(ride_queue, &ride, 0);
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    if (!local_writer_ready()) return false;
+    if (ride_queue == NULL ||
+        xQueueReceive(ride_queue, &ride, 0) != pdTRUE) return false;
+    uint8_t wire[NOSTOS_WIRE_MAX];
     size_t length = 0U;
-    sensor_link_result_t result = sensor_link_encode_ride(
-        ride.valid, ride.kmh_x10, ride.distance_mm, frame, &length);
-    bool sent = result == SENSOR_LINK_OK && uart_write(frame, length);
-    counter_increment(sent ? &ride_uart_ok : &ride_uart_failed);
-    ESP_LOGI(TAG, "RIDE_UART_TX valid=%u kmh_x10=%u distance_mm=%" PRIu32 " api=%s",
+    nostos_result_t encoded = official_packet_writer_ride(
+        &official_writer, ride.valid, ride.kmh_x10, ride.distance_mm,
+        wire, &length);
+    nostos_result_t result = encoded == NOSTOS_OK
+        ? route_local_official(wire, length) : encoded;
+    counter_increment(result == NOSTOS_OK ?
+        &local_publish_ok : &local_publish_failed);
+    ESP_LOGI(TAG, "RIDE_PUBLISH valid=%u kmh_x10=%u distance_mm=%" PRIu32
+             " result=%s",
              ride.valid, (unsigned)ride.kmh_x10, ride.distance_mm,
-             sent ? "accepted" : "failed");
+             nostos_result_name(result));
     return true;
 }
 
-static bool send_remote_approval(const nostos_job_t *job)
+static bool process_environment(void)
 {
-    if (job == NULL || job->length < NOSTOS_HEADER_SIZE) return false;
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    sensor_link_environment_t environment;
+    if (!local_writer_ready()) return false;
+    if (environment_queue == NULL ||
+        xQueueReceive(environment_queue, &environment, 0) != pdTRUE) {
+        return false;
+    }
+    uint8_t wire[NOSTOS_WIRE_MAX];
     size_t length = 0U;
-    sensor_link_result_t result = sensor_link_encode_approve_session(
-        job->wire[2], get32le(job->wire + 3U), get16le(job->wire + 7U),
-        frame, &length);
-    bool sent = result == SENSOR_LINK_OK && uart_write(frame, length);
-    counter_increment(sent ? &approve_uart_ok : &approve_uart_failed);
-    return sent;
+    nostos_result_t encoded = official_packet_writer_environment(
+        &official_writer,
+        environment.temperature_c_x10,
+        environment.humidity_pct_x10,
+        (nostos_quality_t)environment.temperature_quality,
+        (nostos_quality_t)environment.humidity_quality,
+        wire, &length);
+    nostos_result_t result = encoded == NOSTOS_OK
+        ? route_local_official(wire, length) : encoded;
+    counter_increment(result == NOSTOS_OK ?
+        &local_publish_ok : &local_publish_failed);
+    ESP_LOGI(TAG, "ENVIRONMENT_PUBLISH temp_x10=%d humidity_x10=%u result=%s",
+             (int)environment.temperature_c_x10,
+             (unsigned)environment.humidity_pct_x10,
+             nostos_result_name(result));
+    return true;
+}
+
+static void retain_mesh_retry(const nostos_job_t *job, uint32_t now)
+{
+    if (mesh_retry_store(&mesh_retry, job) == NOSTOS_OK) {
+        mesh_retry_next_ms = now + MESH_RETRY_INTERVAL_MS;
+    }
+}
+
+static bool process_event(QueueHandle_t queue, bool *blocked)
+{
+    if (blocked != NULL) *blocked = false;
+    sensor_link_event_t event;
+    if (queue == NULL || xQueuePeek(queue, &event, 0) != pdTRUE) return false;
+    if (!local_writer_ready()) {
+        if (blocked != NULL) *blocked = true;
+        return false;
+    }
+    uint8_t wire[NOSTOS_WIRE_MAX];
+    size_t length = 0U;
+    nostos_result_t encoded = official_packet_writer_event(
+        &official_writer, event.type, wire, &length);
+    nostos_result_t result = encoded == NOSTOS_OK
+        ? route_local_official(wire, length) : encoded;
+    sensor_link_event_t consumed;
+    if (xQueueReceive(queue, &consumed, 0) != pdTRUE) {
+        ESP_LOGE(TAG, "EVENT_DEQUEUE_FAILED type=0x%02x", event.type);
+    }
+    counter_increment(result == NOSTOS_OK ?
+        &local_publish_ok : &local_publish_failed);
+    ESP_LOGI(TAG, "EVENT_PUBLISH type=0x%02x result=%s",
+             event.type, nostos_result_name(result));
+    return true;
+}
+
+static bool process_cache_snapshot(void)
+{
+    bool local_priority_pending =
+        (urgent_event_queue != NULL &&
+         uxQueueMessagesWaiting(urgent_event_queue) != 0U) ||
+        (stop_event_queue != NULL &&
+         uxQueueMessagesWaiting(stop_event_queue) != 0U) ||
+        (event_queue != NULL &&
+         uxQueueMessagesWaiting(event_queue) != 0U);
+    if (local_priority_pending) {
+        return false;
+    }
+    bool mesh_retry_safety = mesh_retry.pending &&
+        (mesh_retry_job_is_fall(&mesh_retry.job) ||
+         (mesh_retry.job.length >= NOSTOS_HEADER_SIZE &&
+          mesh_retry.job.wire[1] == NOSTOS_STOP));
+    if (mesh_retry_safety) return false;
+    cache_snapshot_slot_t selected_slot = {0};
+    bool found = false;
+    size_t selected = 0U;
+    portENTER_CRITICAL(&lock);
+    if (identity.identity_confirmed &&
+        !output_command_retry_pending(&output_retry) &&
+        bridge.urgent_count == 0U &&
+        bridge.stop_count == 0U && event_outputs.count == 0U) {
+        for (size_t i = 0U; i < SENSOR_OUTPUT_SLOT_COUNT; ++i) {
+            if (cache_snapshots[i].pending) {
+                selected_slot = cache_snapshots[i];
+                cache_snapshots[i].pending = false;
+                selected = i;
+                found = true;
+                break;
+            }
+        }
+    }
+    portEXIT_CRITICAL(&lock);
+    if (!found) return false;
+    local_priority_pending =
+        uxQueueMessagesWaiting(urgent_event_queue) != 0U ||
+        uxQueueMessagesWaiting(stop_event_queue) != 0U ||
+        uxQueueMessagesWaiting(event_queue) != 0U;
+    if (local_priority_pending) {
+        portENTER_CRITICAL(&lock);
+        cache_snapshots[selected] = selected_slot;
+        portEXIT_CRITICAL(&lock);
+        return false;
+    }
+
+    nostos_message_t captured;
+    nostos_result_t decoded = nostos_message_decode(
+        selected_slot.job.wire, selected_slot.job.length, &captured);
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t frame_length = 0U;
+    uint32_t command_id = 0U;
+    portENTER_CRITICAL(&lock);
+    nostos_result_t output_result = decoded == NOSTOS_OK
+        ? application_message_engine_encode_captured_output(
+            &app_engine, &captured, frame, &frame_length, &command_id)
+        : decoded;
+    portEXIT_CRITICAL(&lock);
+    bool sent = output_result == NOSTOS_OK && uart_write(frame, frame_length);
+    uint32_t retry_now = now_ms();
+    portENTER_CRITICAL(&lock);
+    application_message_engine_note_uart_tx(&app_engine, sent);
+    nostos_result_t retained = !sent && output_result == NOSTOS_OK
+        ? output_command_retry_store(
+            &output_retry, frame, frame_length, command_id,
+            captured.session_id, captured.type, captured.source_id, retry_now)
+        : NOSTOS_EMPTY;
+    portEXIT_CRITICAL(&lock);
+    counter_increment(sent ? &cache_uart_ok : &cache_uart_failed);
+    if (!sent && output_result == NOSTOS_OK && retained != NOSTOS_OK) {
+        ESP_LOGE(TAG, "CACHE_OUTPUT_RETAIN_FAILED command_id=%" PRIu32
+                 " result=%s", command_id, nostos_result_name(retained));
+    }
+    ESP_LOGI(TAG, "CACHE_OUTPUT_TX command_id=%" PRIu32
+             " type=0x%02x source=%u api=%s result=%s",
+             command_id, selected_slot.job.wire[1],
+             selected_slot.job.wire[2], sent ? "accepted" : "failed",
+             nostos_result_name(output_result));
+    return true;
+}
+
+static bool mesh_send_active(void)
+{
+    portENTER_CRITICAL(&lock);
+    bool active = mesh_inflight_active(&mesh_inflight);
+    portEXIT_CRITICAL(&lock);
+    return active;
+}
+
+static uint8_t bridge_priority_locked(void)
+{
+    if (bridge.urgent_count != 0U) return 4U;
+    if (bridge.stop_count != 0U) return 3U;
+    return bridge.normal_count != 0U ? 1U : 0U;
+}
+
+static uint8_t event_output_rank_locked(void)
+{
+    uint8_t priority = application_event_heap_priority(&event_outputs);
+    return priority == 0U ? 0U : (uint8_t)(5U - priority);
+}
+
+static uint8_t mesh_retry_priority(void)
+{
+    if (!mesh_retry.pending) return 0U;
+    if (mesh_retry_job_is_fall(&mesh_retry.job)) return 4U;
+    return mesh_retry.job.length >= NOSTOS_HEADER_SIZE &&
+        mesh_retry.job.wire[1] == NOSTOS_STOP ? 3U : 1U;
+}
+
+/* Worker-only. A failed UART write may already have reached STM, so retry the
+ * exact frame and command_id before allocating or dispatching a later id. */
+static bool process_output_retry(uint32_t now, nostos_result_t *result)
+{
+    if (result == NULL) return false;
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t frame_length = 0U;
+    uint32_t command_id = 0U;
+    uint8_t message_type = 0U;
+    uint8_t source_id = 0U;
+    portENTER_CRITICAL(&lock);
+    *result = output_command_retry_peek(
+        &output_retry, identity.identity_confirmed, now,
+        frame, &frame_length, &command_id, &message_type, &source_id);
+    portEXIT_CRITICAL(&lock);
+    if (*result == NOSTOS_EMPTY) return false;
+    if (*result != NOSTOS_OK) return true;
+
+    bool sent = uart_write(frame, frame_length);
+    uint32_t completed_ms = now_ms();
+    portENTER_CRITICAL(&lock);
+    application_message_engine_note_uart_tx(&app_engine, sent);
+    nostos_result_t finished = output_command_retry_finish(
+        &output_retry, command_id, sent, completed_ms);
+    portEXIT_CRITICAL(&lock);
+    if (!display_event_type(message_type)) {
+        counter_increment(sent ? &cache_uart_ok : &cache_uart_failed);
+    }
+    *result = sent && finished == NOSTOS_OK ? NOSTOS_OK :
+        finished != NOSTOS_OK ? finished : NOSTOS_IO_ERROR;
+    ESP_LOGI(TAG, "OUTPUT_RETRY_TX command_id=%" PRIu32
+             " type=0x%02x source=%u api=%s result=%s",
+             command_id, message_type, source_id,
+             sent ? "accepted" : "failed", nostos_result_name(*result));
+    return true;
+}
+
+/* Worker-only. Local and remote accepted events share this one priority queue;
+ * STM READY gates dispatch but never owns official sessions or dedup state. */
+static bool process_remote_event(uint32_t now, nostos_result_t *result)
+{
+    if (result == NULL) return false;
+    uint8_t retry_priority = mesh_retry_priority();
+    nostos_job_t job = {0};
+    portENTER_CRITICAL(&lock);
+    uint8_t event_rank = identity.identity_confirmed
+        ? event_output_rank_locked() : 0U;
+    uint8_t queued_priority = bridge_priority_locked();
+    bool selected = event_rank != 0U &&
+        event_rank >= retry_priority &&
+        event_rank >= queued_priority;
+    *result = selected
+        ? application_event_heap_pop(&event_outputs, now, &job)
+        : NOSTOS_EMPTY;
+    portEXIT_CRITICAL(&lock);
+    if (!selected) return false;
+    if (*result == NOSTOS_EXPIRED) {
+        ESP_LOGW(TAG, "REMOTE_EVENT_EXPIRED type=0x%02x source=%u",
+                 job.wire[1], job.wire[2]);
+        return true;
+    }
+    if (*result != NOSTOS_OK) return true;
+    uint8_t selected_rank = job.wire[1] == NOSTOS_FALL ||
+        job.wire[1] == NOSTOS_FALL_CLEAR ? 4U :
+        job.wire[1] == NOSTOS_STOP ? 3U :
+        job.wire[1] == NOSTOS_SPEED_DOWN ? 2U : 1U;
+    portENTER_CRITICAL(&lock);
+    uint8_t newer_rank = event_output_rank_locked();
+    if (newer_rank > selected_rank) {
+        nostos_result_t restored = application_event_heap_push(
+            &event_outputs, job.wire, job.length, job.received_ms);
+        portEXIT_CRITICAL(&lock);
+        *result = restored == NOSTOS_OK ? NOSTOS_NOT_READY : restored;
+        return true;
+    }
+    portEXIT_CRITICAL(&lock);
+    nostos_message_t captured;
+    nostos_result_t decoded = nostos_message_decode(
+        job.wire, job.length, &captured);
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
+    size_t frame_length = 0U;
+    uint32_t command_id = 0U;
+    portENTER_CRITICAL(&lock);
+    nostos_result_t output_result = decoded == NOSTOS_OK
+        ? application_message_engine_encode_captured_output(
+            &app_engine, &captured, frame, &frame_length, &command_id)
+        : decoded;
+    portEXIT_CRITICAL(&lock);
+    bool sent = output_result == NOSTOS_OK && uart_write(frame, frame_length);
+    uint32_t retry_now = now_ms();
+    portENTER_CRITICAL(&lock);
+    application_message_engine_note_uart_tx(&app_engine, sent);
+    nostos_result_t retained = !sent && output_result == NOSTOS_OK
+        ? output_command_retry_store(
+            &output_retry, frame, frame_length, command_id,
+            captured.session_id, captured.type, captured.source_id, retry_now)
+        : NOSTOS_EMPTY;
+    portEXIT_CRITICAL(&lock);
+    if (!sent && output_result == NOSTOS_OK && retained != NOSTOS_OK) {
+        ESP_LOGE(TAG, "EVENT_OUTPUT_RETAIN_FAILED command_id=%" PRIu32
+                 " result=%s", command_id, nostos_result_name(retained));
+    }
+    *result = sent ? NOSTOS_OK :
+        output_result == NOSTOS_OK ? NOSTOS_IO_ERROR : output_result;
+    ESP_LOGI(TAG,
+             "EVENT_OUTPUT_TX command_id=%" PRIu32
+             " type=0x%02x source=%u api=%s result=%s",
+             command_id, job.wire[1], job.wire[2],
+             sent ? "accepted" : "failed",
+             nostos_result_name(output_result));
+    return true;
+}
+
+/* Worker-only. The exact job becomes identifiable before the Mesh API can
+ * invoke a fast completion callback. */
+static nostos_result_t start_mesh_send(
+    const nostos_job_t *job,
+    uint32_t now,
+    bool from_retry)
+{
+    portENTER_CRITICAL(&lock);
+    nostos_result_t begun = mesh_inflight_begin(&mesh_inflight, job);
+    portEXIT_CRITICAL(&lock);
+    if (begun != NOSTOS_OK) return begun;
+
+    if (from_retry) {
+        mesh_retry_complete(&mesh_retry);
+        mesh_retry_next_ms = 0U;
+    }
+    esp_err_t admitted = mesh_node_send_event(job->wire, job->length);
+    if (admitted == ESP_OK) return NOSTOS_OK;
+
+    nostos_job_t cancelled = {0};
+    portENTER_CRITICAL(&lock);
+    nostos_result_t cancelled_result = mesh_inflight_cancel(
+        &mesh_inflight, &cancelled);
+    portEXIT_CRITICAL(&lock);
+    if (cancelled_result == NOSTOS_OK) {
+        retain_mesh_retry(&cancelled, now);
+        return NOSTOS_IO_ERROR;
+    }
+    /* A completion raced the admission return. Let the worker consume that
+     * authoritative callback instead of retrying a possibly delivered wire. */
+    return cancelled_result == NOSTOS_CONFLICT ? NOSTOS_OK : NOSTOS_IO_ERROR;
 }
 
 static nostos_result_t process_one(void)
 {
-    nostos_job_t job;
     bool ready = bridge_ready();
     uint32_t now = now_ms();
+
+    nostos_job_t job = {0};
+    int completion_error = 0;
     portENTER_CRITICAL(&lock);
-    nostos_result_t result = stm_boot_reset_in_progress
-        ? NOSTOS_EMPTY
-        : identity.bridge_initialized
+    nostos_result_t completion = mesh_inflight_take_completion(
+        &mesh_inflight, &job, &completion_error);
+    portEXIT_CRITICAL(&lock);
+    if (completion == NOSTOS_OK) {
+        if (completion_error != 0) {
+            retain_mesh_retry(&job, now);
+            ESP_LOGW(TAG, "MESH_COMPLETE_RETRY type=0x%02x error=%d",
+                     job.wire[1], completion_error);
+            return NOSTOS_IO_ERROR;
+        }
+        ESP_LOGI(TAG, "MESH_COMPLETE type=0x%02x source=%u",
+                 job.wire[1], job.wire[2]);
+        return NOSTOS_OK;
+    }
+    if (completion != NOSTOS_EMPTY) return completion;
+    nostos_result_t output_retry_result = NOSTOS_EMPTY;
+    if (process_output_retry(now, &output_retry_result)) {
+        return output_retry_result;
+    }
+    nostos_result_t remote_result = NOSTOS_EMPTY;
+    if (process_remote_event(now, &remote_result)) return remote_result;
+    if (mesh_send_active()) return NOSTOS_NOT_READY;
+
+    nostos_result_t retry_result = mesh_retry_peek(&mesh_retry, now, &job);
+    if (retry_result == NOSTOS_OK) {
+        portENTER_CRITICAL(&lock);
+        bool bridge_has_fall = bridge.urgent_count != 0U;
+        bool bridge_has_stop = bridge.stop_count != 0U;
+        portEXIT_CRITICAL(&lock);
+        bool retry_is_stop = job.wire[1] == NOSTOS_STOP;
+        bool bridge_has_higher_priority = !mesh_retry_job_is_fall(&job) &&
+            (bridge_has_fall || (!retry_is_stop && bridge_has_stop));
+        /* A retained job cannot delay a newly queued higher class. The higher
+         * job replaces it if that immediate send also fails. */
+        if (!bridge_has_higher_priority) {
+            if (!ready) return NOSTOS_NOT_READY;
+            if ((int32_t)(now - mesh_retry_next_ms) < 0) {
+                return NOSTOS_NOT_READY;
+            }
+            nostos_result_t sent = start_mesh_send(&job, now, true);
+            ESP_LOGI(TAG, "MESH_RETRY type=0x%02x source=%u len=%u result=%s",
+                     job.wire[1], job.wire[2], (unsigned)job.length,
+                     nostos_result_name(sent));
+            return sent;
+        }
+    } else if (retry_result != NOSTOS_EMPTY &&
+               retry_result != NOSTOS_EXPIRED) {
+        return retry_result;
+    }
+
+    portENTER_CRITICAL(&lock);
+    nostos_result_t result = identity.bridge_initialized
         ? nostos_bridge_next(&bridge, now, ready, &job)
         : NOSTOS_EMPTY;
     portEXIT_CRITICAL(&lock);
     if (result == NOSTOS_EMPTY) return result;
+    if (result == NOSTOS_NOT_READY && job.direction == NOSTOS_TO_MESH) {
+        retain_mesh_retry(&job, now);
+        ESP_LOGW(TAG, "MESH_RETRY_RETAIN type=0x%02x result=%s",
+                 job.wire[1], nostos_result_name(result));
+        return result;
+    }
+    if (result == NOSTOS_EXPIRED && job.direction == NOSTOS_TO_MESH &&
+        mesh_retry_job_is_fall(&job)) {
+        /* The common bridge TTL applies to normal work only at this layer;
+         * safety incidents are retained until an immediate send succeeds. */
+        result = ready ? NOSTOS_OK : NOSTOS_NOT_READY;
+        if (result == NOSTOS_NOT_READY) {
+            retain_mesh_retry(&job, now);
+            return result;
+        }
+    }
     if (result != NOSTOS_OK) {
         ESP_LOGW(TAG, "TX_JOB_DROP result=%s", nostos_result_name(result));
         return result;
     }
 
-    bool sent;
-    if (job.direction == NOSTOS_TO_MESH) {
-        sent = mesh_node_send_event(job.wire, job.length) == ESP_OK;
-    } else {
-        /* The local trust grant and official packet are adjacent writes by the
-         * sole UART owner. Never expose an unapproved remote session to STM. */
-        sent = send_remote_approval(&job) && uart_send_nostos(job.wire, job.length);
+    if (job.direction != NOSTOS_TO_MESH) {
+        ESP_LOGE(TAG, "OFFICIAL_UART_JOB_REJECTED type=0x%02x", job.wire[1]);
+        return NOSTOS_UNAUTHORIZED;
     }
-    ESP_LOGI(TAG, "%s type=0x%02x source=%u len=%u api=%s",
-             job.direction == NOSTOS_TO_MESH ? "MESH_TX" : "UART_TX",
+    nostos_result_t mesh_result = start_mesh_send(&job, now, false);
+    bool sent = mesh_result == NOSTOS_OK;
+    ESP_LOGI(TAG, "MESH_TX type=0x%02x source=%u len=%u api=%s",
              job.wire[1], job.wire[2], (unsigned)job.length,
              sent ? "accepted" : "failed");
     return sent ? NOSTOS_OK : NOSTOS_IO_ERROR;
@@ -597,12 +1074,57 @@ static void worker_task(void *arg)
         (void)ulTaskNotifyTake(pdTRUE, pdMS_TO_TICKS(IDENTITY_POLL_MS));
         (void)refresh_identity_binding();
         for (;;) {
+            bool ready_processed = advertise_ready(false);
             bool control_processed = process_local_control();
-            bool identity_processed = advertise_current_identity(false);
+            bool urgent_event_blocked = false;
+            bool stop_event_blocked = false;
+            bool event_blocked = false;
+            bool urgent_event_processed = false;
+            bool stop_event_processed = false;
+            bool event_processed = false;
+            while (process_event(urgent_event_queue, &urgent_event_blocked)) {
+                urgent_event_processed = true;
+            }
+            if (!urgent_event_blocked) {
+                while (process_event(stop_event_queue, &stop_event_blocked)) {
+                    stop_event_processed = true;
+                }
+            }
+            if (!urgent_event_blocked && !stop_event_blocked) {
+                while (process_event(event_queue, &event_blocked)) {
+                    event_processed = true;
+                }
+            }
+            /* Every accepted local/remote event is now in one min-heap before
+             * any output dispatch, so BTN2 can outrank an earlier BTN1. */
+            bool ride_processed = !urgent_event_blocked &&
+                !stop_event_blocked && !event_blocked && process_sensor_ride();
+            bool environment_processed = !urgent_event_blocked &&
+                !stop_event_blocked && !event_blocked && process_environment();
             nostos_result_t result = process_one();
-            bool ride_processed = process_sensor_ride();
-            if (!control_processed && !identity_processed && result == NOSTOS_EMPTY &&
-                !ride_processed) break;
+            /* Drain every queued FALL/FALL_CLEAR before cache recovery. Once
+             * urgent traffic is empty, one snapshot per loop prevents normal
+             * bridge traffic from starving recovery. */
+            bool snapshot_processed = process_cache_snapshot();
+            bool event_retry_blocked = urgent_event_blocked ||
+                stop_event_blocked || event_blocked;
+            if (event_retry_blocked && result != NOSTOS_OK) break;
+            if (mesh_retry.pending &&
+                (result == NOSTOS_NOT_READY || result == NOSTOS_IO_ERROR)) {
+                break;
+            }
+            /* Exactly one Mesh job may await an asynchronous completion. The
+             * callback wakes this worker to retire or retain that exact wire. */
+            if (result == NOSTOS_NOT_READY && mesh_send_active()) break;
+            portENTER_CRITICAL(&lock);
+            bool output_retry_blocked =
+                output_command_retry_pending(&output_retry);
+            portEXIT_CRITICAL(&lock);
+            if (output_retry_blocked && result != NOSTOS_OK) break;
+            if (!ready_processed && !control_processed && result == NOSTOS_EMPTY &&
+                !snapshot_processed && !urgent_event_processed &&
+                !stop_event_processed && !event_processed && !ride_processed &&
+                !environment_processed) break;
             vTaskDelay(1);
         }
     }
@@ -610,35 +1132,49 @@ static void worker_task(void *arg)
 
 static void queue_local_control(const sensor_link_message_t *message)
 {
-    if (message == NULL || (message->type != SENSOR_LINK_HELLO &&
-                            message->type != SENSOR_LINK_IDENTITY_ACK)) {
+    if (message == NULL) {
         counter_increment(&control_rejected);
         return;
     }
-    if (reset_mutex == NULL ||
-        xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(100U)) != pdTRUE) {
-        ESP_LOGW(TAG, "LOCAL_CONTROL_QUEUE_BUSY type=0x%02x", message->type);
-        return;
+
+    BaseType_t queued = pdFALSE;
+    if (message->type == SENSOR_LINK_HELLO ||
+        message->type == SENSOR_LINK_SHARED_DATA_REQUEST ||
+        message->type == SENSOR_LINK_OUTPUT_RESULT) {
+        queued = xQueueSend(control_queue, message, 0);
+        if (queued == pdTRUE) {
+            counter_increment(&control_received);
+        } else {
+            counter_increment(&control_overflow);
+        }
+    } else if (message->type == SENSOR_LINK_EVENT) {
+        bool urgent = message->event.type == NOSTOS_FALL ||
+            message->event.type == NOSTOS_FALL_CLEAR;
+        bool stop = message->event.type == NOSTOS_STOP;
+        QueueHandle_t queue = urgent ? urgent_event_queue :
+            stop ? stop_event_queue : event_queue;
+        queued = xQueueSend(queue, &message->event, 0);
+        if (queued == pdTRUE) {
+            counter_increment(&event_received);
+        } else {
+            counter_increment(urgent ? &urgent_event_overflow :
+                stop ? &stop_event_overflow : &event_overflow);
+        }
+    } else if (message->type == SENSOR_LINK_RIDE) {
+        queued = xQueueOverwrite(ride_queue, &message->ride);
+        if (queued == pdTRUE) counter_increment(&ride_overwrites);
+    } else if (message->type == SENSOR_LINK_ENVIRONMENT) {
+        queued = xQueueOverwrite(environment_queue, &message->environment);
+        if (queued == pdTRUE) counter_increment(&environment_overwrites);
+    } else {
+        counter_increment(&control_rejected);
     }
-    portENTER_CRITICAL(&lock);
-    bool resetting = stm_boot_reset_in_progress;
-    portEXIT_CRITICAL(&lock);
-    bool allow_retry_hello = resetting && message->type == SENSOR_LINK_HELLO;
-    BaseType_t queued = (resetting && !allow_retry_hello) ? pdFALSE
-        : xQueueSend(control_queue, message, 0);
-    if (resetting && !allow_retry_hello) {
-        xSemaphoreGive(reset_mutex);
-        return;
+
+    if (queued == pdTRUE) {
+        xTaskNotifyGive(worker);
+    } else {
+        ESP_LOGW(TAG, "LOCAL_ENVELOPE_QUEUE_FULL type=0x%02x", message->type);
     }
-    if (queued != pdTRUE) {
-        counter_increment(&control_overflow);
-        xSemaphoreGive(reset_mutex);
-        ESP_LOGW(TAG, "LOCAL_CONTROL_QUEUE_FULL type=0x%02x", message->type);
-        return;
-    }
-    counter_increment(&control_received);
-    xSemaphoreGive(reset_mutex);
-    xTaskNotifyGive(worker);
 }
 
 static nostos_result_t consume_uart_byte(uint8_t byte)
@@ -665,7 +1201,9 @@ static nostos_result_t consume_uart_byte(uint8_t byte)
         size_t length = 0U;
         nostos_result_t result = nostos_uart_feed(&nostos_parser, byte, now, wire, &length);
         if (byte == NOSTOS_UART_FLAG || result == NOSTOS_TIMEOUT) uart_route = UART_ROUTE_IDLE;
-        return result == NOSTOS_OK ? enqueue_local(wire, length) : result;
+        /* STM is a local-envelope producer only. Reject legacy official UART
+         * frames so sequence/session ownership cannot split again. */
+        return result == NOSTOS_OK ? NOSTOS_UNAUTHORIZED : result;
     }
 
     sensor_link_message_t message = {0};
@@ -717,9 +1255,8 @@ void bridge_runtime_mesh_rx(const uint8_t *wire, size_t length, uint16_t source,
     portENTER_CRITICAL(&lock);
     bool bound = identity.bridge_initialized && identity.local_source == own_source &&
                  identity.primary_address == own;
-    bool confirmed = identity.identity_confirmed;
     portEXIT_CRITICAL(&lock);
-    if (source == own || !worker || own_source == 0U || !bound || !confirmed) return;
+    if (source == own || !worker || own_source == 0U || !bound) return;
     nostos_result_t result = enqueue_remote(wire, length, source);
     ESP_LOGI(TAG, "MESH_RX address=0x%04x len=%u result=%s", source,
              (unsigned)length, nostos_result_name(result));
@@ -727,35 +1264,34 @@ void bridge_runtime_mesh_rx(const uint8_t *wire, size_t length, uint16_t source,
 
 void bridge_runtime_mesh_complete(int error)
 {
+    nostos_result_t result;
     portENTER_CRITICAL(&lock);
-    if (!stm_boot_reset_in_progress && identity.identity_confirmed) {
+    result = mesh_inflight_complete(&mesh_inflight, error);
+    if (result == NOSTOS_OK) {
         if (error) ++async_failed; else ++async_ok;
     }
     portEXIT_CRITICAL(&lock);
+    if (result == NOSTOS_OK) {
+        if (worker != NULL) xTaskNotifyGive(worker);
+    } else {
+        ESP_LOGW(TAG, "MESH_COMPLETE_UNEXPECTED error=%d result=%s",
+                 error, nostos_result_name(result));
+    }
 }
 
 esp_err_t bridge_runtime_send_sensor_ride(bool valid, uint16_t kmh_x10,
                                           uint32_t distance_mm)
 {
-    if (!worker || !ride_queue || !reset_mutex) return ESP_ERR_INVALID_STATE;
+    if (!worker || !ride_queue) return ESP_ERR_INVALID_STATE;
     if (!valid && (kmh_x10 != 0U || distance_mm != 0U)) return ESP_ERR_INVALID_ARG;
     sensor_link_ride_t ride = {
         .valid = valid,
         .kmh_x10 = valid ? kmh_x10 : 0U,
         .distance_mm = valid ? distance_mm : 0U,
     };
-    if (xSemaphoreTake(reset_mutex, pdMS_TO_TICKS(100U)) != pdTRUE) {
-        return ESP_ERR_TIMEOUT;
-    }
-    portENTER_CRITICAL(&lock);
-    bool resetting = stm_boot_reset_in_progress;
-    bool confirmed = identity.identity_confirmed;
-    if (!resetting && !confirmed) ++ride_uart_deferred;
-    portEXIT_CRITICAL(&lock);
-    BaseType_t queued = resetting ? pdFAIL : xQueueOverwrite(ride_queue, &ride);
-    xSemaphoreGive(reset_mutex);
-    if (resetting) return ESP_ERR_INVALID_STATE;
+    BaseType_t queued = xQueueOverwrite(ride_queue, &ride);
     if (queued != pdPASS) return ESP_FAIL;
+    counter_increment(&ride_overwrites);
     xTaskNotifyGive(worker);
     return ESP_OK;
 }
@@ -764,31 +1300,63 @@ void bridge_runtime_log_status(void)
 {
     portENTER_CRITICAL(&lock);
     identity_state_t id = identity;
+    application_message_engine_stats_t engine_stats = app_engine.stats;
     uint32_t a = accepted, r = rejected, ok = async_ok, bad = async_failed;
-    uint32_t ride_ok = ride_uart_ok, ride_bad = ride_uart_failed;
-    uint32_t ride_deferred = ride_uart_deferred;
-    uint32_t id_ok = identity_uart_ok, id_bad = identity_uart_failed;
-    uint32_t approval_ok = approve_uart_ok, approval_bad = approve_uart_failed;
+    uint32_t publish_ok = local_publish_ok, publish_bad = local_publish_failed;
+    uint32_t mirror_bad = local_mirror_failed;
+    uint32_t ready_ok = ready_uart_ok, ready_bad = ready_uart_failed;
     uint32_t controls = control_received, controls_bad = control_rejected;
     uint32_t controls_full = control_overflow;
-    uint32_t epoch = stm_boot_epoch;
-    bool resetting = stm_boot_reset_in_progress;
+    uint32_t event_ok = event_received, event_full = event_overflow;
+    uint32_t stop_full = stop_event_overflow;
+    uint32_t urgent_full = urgent_event_overflow;
+    uint32_t ride_latest = ride_overwrites;
+    uint32_t environment_latest = environment_overwrites;
+    uint32_t hits = cache_hits, misses = cache_misses;
+    uint32_t cache_ok = cache_uart_ok, cache_bad = cache_uart_failed;
     size_t pending = id.bridge_initialized ? bridge.count : 0U;
+    size_t pending_sensor_outputs = 0U;
+    for (size_t i = 0U; i < SENSOR_OUTPUT_SLOT_COUNT; ++i) {
+        if (cache_snapshots[i].pending) ++pending_sensor_outputs;
+    }
     portEXIT_CRITICAL(&lock);
     ESP_LOGI(TAG,
              "STATUS version=2 primary=0x%04x source=%u session=%" PRIu32
-             " confirmed=%u waiting_ack=%u epoch=%" PRIu32 " resetting=%u"
+             " confirmed=%u waiting_ack=%u"
              " pending=%u accepted=%" PRIu32 " rejected=%" PRIu32
              " async_ok_total=%" PRIu32 " async_failed_total=%" PRIu32
-             " ride_uart_ok=%" PRIu32 " ride_uart_failed=%" PRIu32
-             " ride_uart_deferred=%" PRIu32 " identity_uart_ok=%" PRIu32
-             " identity_uart_failed=%" PRIu32 " approve_uart_ok=%" PRIu32
-             " approve_uart_failed=%" PRIu32 " control_received=%" PRIu32
-             " control_rejected=%" PRIu32 " control_overflow=%" PRIu32,
+             " local_publish_ok=%" PRIu32 " local_publish_failed=%" PRIu32
+             " output_queue_failed=%" PRIu32 " ready_uart_ok=%" PRIu32
+             " ready_uart_failed=%" PRIu32 " control_received=%" PRIu32
+             " control_rejected=%" PRIu32 " control_overflow=%" PRIu32
+             " event_received=%" PRIu32 " event_overflow=%" PRIu32
+             " stop_event_overflow=%" PRIu32
+             " urgent_event_overflow=%" PRIu32
+             " ride_latest=%" PRIu32 " environment_latest=%" PRIu32
+             " pending_sensor_outputs=%u cache_hits=%" PRIu32
+             " cache_misses=%" PRIu32 " cache_uart_ok=%" PRIu32
+             " cache_uart_failed=%" PRIu32
+             " engine_accepted=%" PRIu32 " engine_duplicate=%" PRIu32
+             " engine_rejected=%" PRIu32 " output_uart_ok=%" PRIu32
+             " output_uart_failed=%" PRIu32
+             " output_result_accepted=%" PRIu32
+             " output_result_duplicate=%" PRIu32
+             " output_result_rejected=%" PRIu32
+             " output_result_hardware_error=%" PRIu32,
              id.primary_address, id.local_source, id.session_id, id.identity_confirmed,
-             id.identity_waiting_ack, epoch, resetting, (unsigned)pending, a, r, ok, bad,
-             ride_ok, ride_bad, ride_deferred, id_ok, id_bad, approval_ok,
-             approval_bad, controls, controls_bad, controls_full);
+             id.identity_waiting_ack, (unsigned)pending, a, r, ok, bad,
+             publish_ok, publish_bad, mirror_bad, ready_ok, ready_bad,
+             controls, controls_bad,
+             controls_full, event_ok, event_full, stop_full, urgent_full, ride_latest,
+             environment_latest, (unsigned)pending_sensor_outputs,
+             hits, misses, cache_ok, cache_bad,
+             engine_stats.accepted, engine_stats.duplicate,
+             engine_stats.rejected, engine_stats.uart_tx_ok,
+             engine_stats.uart_tx_failed,
+             engine_stats.output_result_accepted,
+             engine_stats.output_result_duplicate,
+             engine_stats.output_result_rejected,
+             engine_stats.output_result_hardware_error);
 }
 
 esp_err_t bridge_runtime_init(void)
@@ -803,21 +1371,46 @@ esp_err_t bridge_runtime_init(void)
     };
     esp_err_t err = uart_param_config(DATA_UART, &cfg);
     if (err != ESP_OK) return err;
+
+    mesh_retry_init(&mesh_retry);
+    mesh_inflight_init(&mesh_inflight);
+    application_event_heap_init(&event_outputs);
+    output_command_retry_init(&output_retry);
+    mesh_retry_next_ms = 0U;
+    identity = (identity_state_t){0};
+    official_writer = (official_packet_writer_t){0};
+    app_engine = (application_message_engine_t){0};
+    boot_session_committed = false;
+    boot_session = 0U;
+    reset_epoch_counters_locked();
+    for (size_t i = 0U; i < SENSOR_OUTPUT_SLOT_COUNT; ++i) {
+        cache_snapshots[i] = (cache_snapshot_slot_t){0};
+    }
     err = uart_set_pin(DATA_UART, 17, 18, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     if (err != ESP_OK) return err;
     err = uart_driver_install(DATA_UART, 512, 0, 16, &events, 0);
     if (err != ESP_OK) return err;
 
-    reset_mutex = xSemaphoreCreateMutexStatic(&reset_mutex_control);
-    if (reset_mutex == NULL) {
-        uart_driver_delete(DATA_UART);
-        return ESP_ERR_NO_MEM;
-    }
     ride_queue = xQueueCreateStatic(1U, sizeof(sensor_link_ride_t),
                                     ride_queue_storage, &ride_queue_control);
+    environment_queue = xQueueCreateStatic(
+        1U, sizeof(sensor_link_environment_t), environment_queue_storage,
+        &environment_queue_control);
+    event_queue = xQueueCreateStatic(
+        EVENT_QUEUE_LENGTH, sizeof(sensor_link_event_t), event_queue_storage,
+        &event_queue_control);
+    stop_event_queue = xQueueCreateStatic(
+        STOP_EVENT_QUEUE_LENGTH, sizeof(sensor_link_event_t),
+        stop_event_queue_storage, &stop_event_queue_control);
+    urgent_event_queue = xQueueCreateStatic(
+        URGENT_EVENT_QUEUE_LENGTH, sizeof(sensor_link_event_t),
+        urgent_event_queue_storage, &urgent_event_queue_control);
     control_queue = xQueueCreateStatic(CONTROL_QUEUE_LENGTH, sizeof(sensor_link_message_t),
                                        control_queue_storage, &control_queue_control);
-    if (ride_queue == NULL || control_queue == NULL) {
+    if (ride_queue == NULL || environment_queue == NULL ||
+        event_queue == NULL || stop_event_queue == NULL ||
+        urgent_event_queue == NULL ||
+        control_queue == NULL) {
         uart_driver_delete(DATA_UART);
         return ESP_ERR_NO_MEM;
     }

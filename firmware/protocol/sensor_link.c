@@ -4,7 +4,14 @@
 
 #define SENSOR_LINK_HEADER_SIZE 5U
 #define SENSOR_LINK_CRC_SIZE 2U
-#define SENSOR_LINK_MAX_PAYLOAD_SIZE SENSOR_LINK_APPROVE_SESSION_PAYLOAD_SIZE
+#define SENSOR_LINK_MAX_PAYLOAD_SIZE SENSOR_LINK_OUTPUT_RIDE_PAYLOAD_SIZE
+
+enum {
+    LOCAL_SHARED_DATA_RIDE = 1U << 0,
+    LOCAL_SHARED_DATA_ENVIRONMENT = 1U << 1,
+    LOCAL_SHARED_DATA_MASK =
+        LOCAL_SHARED_DATA_RIDE | LOCAL_SHARED_DATA_ENVIRONMENT,
+};
 
 static uint16_t crc16(const uint8_t *bytes, size_t length)
 {
@@ -21,7 +28,42 @@ static uint16_t crc16(const uint8_t *bytes, size_t length)
 
 static bool valid_identity(uint8_t source_id, uint32_t session_id)
 {
-    return source_id >= 1U && source_id <= 3U && session_id != 0U;
+    return source_id >= SENSOR_LINK_SOURCE_ID_MIN &&
+        source_id <= SENSOR_LINK_SOURCE_ID_MAX && session_id != 0U;
+}
+
+static bool valid_event(uint8_t type)
+{
+    return type == SENSOR_LINK_EVENT_SPEED_DOWN ||
+        type == SENSOR_LINK_EVENT_SPEED_UP ||
+        type == SENSOR_LINK_EVENT_STOP || type == SENSOR_LINK_EVENT_FALL ||
+        type == SENSOR_LINK_EVENT_FALL_CLEAR;
+}
+
+static bool valid_quality(uint8_t quality)
+{
+    return quality <= SENSOR_LINK_QUALITY_MAX;
+}
+
+static bool valid_source_id(uint8_t source_id)
+{
+    return source_id >= SENSOR_LINK_SOURCE_ID_MIN &&
+        source_id <= SENSOR_LINK_SOURCE_ID_MAX;
+}
+
+static bool valid_output_target(uint32_t command_id, uint8_t source_id)
+{
+    return command_id != 0U && valid_source_id(source_id);
+}
+
+static bool valid_output_status(uint8_t status)
+{
+    return status <= SENSOR_LINK_OUTPUT_HARDWARE_ERROR;
+}
+
+static bool valid_shared_data_mask(uint8_t mask)
+{
+    return mask != 0U && (mask & (uint8_t)~LOCAL_SHARED_DATA_MASK) == 0U;
 }
 
 static sensor_link_result_t encode_frame(
@@ -84,6 +126,209 @@ sensor_link_result_t sensor_link_encode_ride(
         (uint8_t)(distance_mm >> 24),
     };
     return encode_frame(SENSOR_LINK_RIDE, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_event(
+    uint8_t event_type,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_event(event_type)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+    const uint8_t payload[SENSOR_LINK_EVENT_PAYLOAD_SIZE] = {event_type};
+    return encode_frame(SENSOR_LINK_EVENT, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_environment(
+    int16_t temperature_c_x10,
+    uint16_t humidity_pct_x10,
+    uint8_t temperature_quality,
+    uint8_t humidity_quality,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_quality(temperature_quality) ||
+        !valid_quality(humidity_quality)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+    const uint16_t temperature_bits = (uint16_t)temperature_c_x10;
+    const uint8_t payload[SENSOR_LINK_ENVIRONMENT_PAYLOAD_SIZE] = {
+        (uint8_t)temperature_bits,
+        (uint8_t)(temperature_bits >> 8),
+        (uint8_t)humidity_pct_x10,
+        (uint8_t)(humidity_pct_x10 >> 8),
+        temperature_quality,
+        humidity_quality,
+    };
+    return encode_frame(
+        SENSOR_LINK_ENVIRONMENT, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_shared_data_request(
+    uint8_t mask,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_shared_data_mask(mask)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+    const uint8_t payload[SENSOR_LINK_SHARED_DATA_REQUEST_PAYLOAD_SIZE] = {mask};
+    return encode_frame(
+        SENSOR_LINK_SHARED_DATA_REQUEST, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_ready(
+    uint32_t command_epoch,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (command_epoch == 0U) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+    const uint8_t payload[SENSOR_LINK_READY_PAYLOAD_SIZE] = {
+        (uint8_t)command_epoch,
+        (uint8_t)(command_epoch >> 8),
+        (uint8_t)(command_epoch >> 16),
+        (uint8_t)(command_epoch >> 24),
+    };
+    return encode_frame(
+        SENSOR_LINK_READY, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_output_event(
+    uint32_t command_id,
+    uint8_t source_id,
+    uint8_t event_type,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_output_target(command_id, source_id) ||
+        !valid_event(event_type)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+
+    const uint8_t payload[SENSOR_LINK_OUTPUT_EVENT_PAYLOAD_SIZE] = {
+        (uint8_t)command_id,
+        (uint8_t)(command_id >> 8),
+        (uint8_t)(command_id >> 16),
+        (uint8_t)(command_id >> 24),
+        source_id,
+        event_type,
+    };
+    return encode_frame(
+        SENSOR_LINK_OUTPUT_EVENT, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_output_ride(
+    uint32_t command_id,
+    uint8_t source_id,
+    bool valid,
+    uint16_t kmh_x10,
+    uint32_t distance_mm,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_output_target(command_id, source_id) ||
+        (!valid && (kmh_x10 != 0U || distance_mm != 0U))) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+
+    const uint8_t payload[SENSOR_LINK_OUTPUT_RIDE_PAYLOAD_SIZE] = {
+        (uint8_t)command_id,
+        (uint8_t)(command_id >> 8),
+        (uint8_t)(command_id >> 16),
+        (uint8_t)(command_id >> 24),
+        source_id,
+        valid ? 1U : 0U,
+        (uint8_t)kmh_x10,
+        (uint8_t)(kmh_x10 >> 8),
+        (uint8_t)distance_mm,
+        (uint8_t)(distance_mm >> 8),
+        (uint8_t)(distance_mm >> 16),
+        (uint8_t)(distance_mm >> 24),
+    };
+    return encode_frame(
+        SENSOR_LINK_OUTPUT_RIDE, payload, sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_output_environment(
+    uint32_t command_id,
+    uint8_t source_id,
+    int16_t temperature_c_x10,
+    uint16_t humidity_pct_x10,
+    uint8_t temperature_quality,
+    uint8_t humidity_quality,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (!valid_output_target(command_id, source_id) ||
+        !valid_quality(temperature_quality) ||
+        !valid_quality(humidity_quality)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+
+    const uint16_t temperature_bits = (uint16_t)temperature_c_x10;
+    const uint8_t payload[SENSOR_LINK_OUTPUT_ENVIRONMENT_PAYLOAD_SIZE] = {
+        (uint8_t)command_id,
+        (uint8_t)(command_id >> 8),
+        (uint8_t)(command_id >> 16),
+        (uint8_t)(command_id >> 24),
+        source_id,
+        (uint8_t)temperature_bits,
+        (uint8_t)(temperature_bits >> 8),
+        (uint8_t)humidity_pct_x10,
+        (uint8_t)(humidity_pct_x10 >> 8),
+        temperature_quality,
+        humidity_quality,
+    };
+    return encode_frame(SENSOR_LINK_OUTPUT_ENVIRONMENT, payload,
+        sizeof(payload), frame, frame_length);
+}
+
+sensor_link_result_t sensor_link_encode_output_result(
+    uint32_t command_id,
+    uint8_t status,
+    uint8_t frame[SENSOR_LINK_FRAME_SIZE],
+    size_t *frame_length)
+{
+    if (frame == NULL || frame_length == NULL) {
+        return SENSOR_LINK_BAD_ARGUMENT;
+    }
+    if (command_id == 0U || !valid_output_status(status)) {
+        return SENSOR_LINK_BAD_VALUE;
+    }
+
+    const uint8_t payload[SENSOR_LINK_OUTPUT_RESULT_PAYLOAD_SIZE] = {
+        (uint8_t)command_id,
+        (uint8_t)(command_id >> 8),
+        (uint8_t)(command_id >> 16),
+        (uint8_t)(command_id >> 24),
+        status,
+    };
+    return encode_frame(
+        SENSOR_LINK_OUTPUT_RESULT, payload, sizeof(payload), frame, frame_length);
 }
 
 sensor_link_result_t sensor_link_encode_hello(
@@ -182,6 +427,12 @@ static uint32_t read_u32_le(const uint8_t *bytes)
         ((uint32_t)bytes[3] << 24);
 }
 
+static uint16_t read_u16_le(const uint8_t *bytes)
+{
+    return (uint16_t)((uint16_t)bytes[0] |
+        (uint16_t)((uint16_t)bytes[1] << 8));
+}
+
 static sensor_link_result_t decode_complete(
     const sensor_link_parser_t *parser,
     sensor_link_message_t *message)
@@ -220,6 +471,108 @@ static sensor_link_result_t decode_complete(
         decoded.ride.distance_mm = distance_mm;
         break;
     }
+    case SENSOR_LINK_EVENT:
+        if (payload_length != SENSOR_LINK_EVENT_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        if (!valid_event(payload[0])) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        decoded.event.type = payload[0];
+        break;
+    case SENSOR_LINK_ENVIRONMENT:
+        if (payload_length != SENSOR_LINK_ENVIRONMENT_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.environment.temperature_c_x10 =
+            (int16_t)read_u16_le(&payload[0]);
+        decoded.environment.humidity_pct_x10 = read_u16_le(&payload[2]);
+        decoded.environment.temperature_quality = payload[4];
+        decoded.environment.humidity_quality = payload[5];
+        if (!valid_quality(decoded.environment.temperature_quality) ||
+            !valid_quality(decoded.environment.humidity_quality)) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
+    case SENSOR_LINK_SHARED_DATA_REQUEST:
+        if (payload_length != SENSOR_LINK_SHARED_DATA_REQUEST_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        if (!valid_shared_data_mask(payload[0])) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        decoded.shared_data_request.mask = payload[0];
+        break;
+    case SENSOR_LINK_READY:
+        if (payload_length != SENSOR_LINK_READY_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.ready.command_epoch = read_u32_le(&payload[0]);
+        if (decoded.ready.command_epoch == 0U) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
+    case SENSOR_LINK_OUTPUT_EVENT:
+        if (payload_length != SENSOR_LINK_OUTPUT_EVENT_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.output_event.command_id = read_u32_le(&payload[0]);
+        decoded.output_event.source_id = payload[4];
+        decoded.output_event.event_type = payload[5];
+        if (!valid_output_target(decoded.output_event.command_id,
+                decoded.output_event.source_id) ||
+            !valid_event(decoded.output_event.event_type)) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
+    case SENSOR_LINK_OUTPUT_RIDE:
+        if (payload_length != SENSOR_LINK_OUTPUT_RIDE_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.output_ride.command_id = read_u32_le(&payload[0]);
+        decoded.output_ride.source_id = payload[4];
+        if (!valid_output_target(decoded.output_ride.command_id,
+                decoded.output_ride.source_id) || payload[5] > 1U) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        decoded.output_ride.valid = payload[5] != 0U;
+        decoded.output_ride.kmh_x10 = read_u16_le(&payload[6]);
+        decoded.output_ride.distance_mm = read_u32_le(&payload[8]);
+        if (!decoded.output_ride.valid &&
+            (decoded.output_ride.kmh_x10 != 0U ||
+                decoded.output_ride.distance_mm != 0U)) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
+    case SENSOR_LINK_OUTPUT_ENVIRONMENT:
+        if (payload_length != SENSOR_LINK_OUTPUT_ENVIRONMENT_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.output_environment.command_id = read_u32_le(&payload[0]);
+        decoded.output_environment.source_id = payload[4];
+        decoded.output_environment.temperature_c_x10 =
+            (int16_t)read_u16_le(&payload[5]);
+        decoded.output_environment.humidity_pct_x10 = read_u16_le(&payload[7]);
+        decoded.output_environment.temperature_quality = payload[9];
+        decoded.output_environment.humidity_quality = payload[10];
+        if (!valid_output_target(decoded.output_environment.command_id,
+                decoded.output_environment.source_id) ||
+            !valid_quality(decoded.output_environment.temperature_quality) ||
+            !valid_quality(decoded.output_environment.humidity_quality)) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
+    case SENSOR_LINK_OUTPUT_RESULT:
+        if (payload_length != SENSOR_LINK_OUTPUT_RESULT_PAYLOAD_SIZE) {
+            return SENSOR_LINK_BAD_LENGTH;
+        }
+        decoded.output_result.command_id = read_u32_le(&payload[0]);
+        decoded.output_result.status = payload[4];
+        if (decoded.output_result.command_id == 0U ||
+            !valid_output_status(decoded.output_result.status)) {
+            return SENSOR_LINK_BAD_VALUE;
+        }
+        break;
     case SENSOR_LINK_HELLO:
         if (payload_length != SENSOR_LINK_HELLO_PAYLOAD_SIZE) {
             return SENSOR_LINK_BAD_LENGTH;

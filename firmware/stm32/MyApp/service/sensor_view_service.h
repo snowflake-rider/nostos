@@ -1,7 +1,6 @@
 #ifndef SENSOR_VIEW_SERVICE_H
 #define SENSOR_VIEW_SERVICE_H
 
-#include "nostos_state.h"
 #include "sensor_store.h"
 
 #include <stdbool.h>
@@ -13,16 +12,22 @@ typedef struct {
     uint8_t environment_source_id;
 } sensor_view_snapshot_t;
 
-/* The network pointer is read only and remains owned by the protocol endpoint.
- * Both services run sequentially in the STM32 service task. */
+/* The display mirror is written only by accepted ESP32 OUTPUT_* commands. */
 void sensor_view_service_init(void);
-void sensor_view_service_bind_network(
-    const nostos_network_state_t *network,
-    uint8_t local_source_id);
-
-/* Local valid samples are authoritative. When they are unavailable or stale,
- * choose the freshest valid network report without copying it into sensor_store
- * and therefore without causing a Mesh re-publish loop. */
+void sensor_view_service_clear_outputs(void);
+bool sensor_view_service_apply_output_ride(
+    uint8_t source_id,
+    bool valid,
+    uint16_t kmh_x10,
+    uint32_t distance_mm,
+    uint32_t now_ms);
+bool sensor_view_service_apply_output_environment(
+    uint8_t source_id,
+    int16_t temperature_c_x10,
+    uint16_t humidity_pct_x10,
+    uint8_t temperature_quality,
+    uint8_t humidity_quality,
+    uint32_t now_ms);
 bool sensor_view_service_snapshot(
     uint32_t now_ms,
     sensor_view_snapshot_t *snapshot);

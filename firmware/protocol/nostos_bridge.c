@@ -4,6 +4,10 @@ static bool urgent_type(uint8_t type)
 {
     return type==NOSTOS_FALL || type==NOSTOS_FALL_CLEAR;
 }
+static bool stop_type(uint8_t type)
+{
+    return type==NOSTOS_STOP;
+}
 nostos_result_t nostos_bridge_init(nostos_bridge_t *b, uint8_t local, const nostos_peer_t peers[NOSTOS_NODE_COUNT])
 {
     if (!b || !peers || local<1 || local>NOSTOS_NODE_COUNT) return NOSTOS_BAD_ARGUMENT;
@@ -43,15 +47,23 @@ nostos_result_t nostos_bridge_accept(nostos_bridge_t *b, nostos_direction_t d,
             if (b->peers[i].source_id==claimed && b->peers[i].mesh_address==source) match=true;
         if (!match) return NOSTOS_UNAUTHORIZED;
     }
-    bool urgent=r==NOSTOS_OK && urgent_type(m.type);
+    bool urgent=urgent_type(m.type);
+    bool stop=stop_type(m.type);
+    size_t nonurgent_count=b->stop_count+b->normal_count;
     if (b->count==NOSTOS_BRIDGE_CAPACITY ||
-        (!urgent && b->normal_count==NOSTOS_BRIDGE_NORMAL_CAPACITY)) return NOSTOS_FULL;
+        (!urgent && nonurgent_count==NOSTOS_BRIDGE_NONURGENT_CAPACITY) ||
+        (!urgent && !stop &&
+            b->normal_count==NOSTOS_BRIDGE_NORMAL_CAPACITY)) return NOSTOS_FULL;
     uint8_t slot=b->free_slots[--b->free_count];
     nostos_job_t *job=&b->jobs[slot];
     memcpy(job->wire,w,n); job->length=n; job->received_ms=now; job->direction=d;
     if (urgent) {
         size_t tail=(b->urgent_head+b->urgent_count)%NOSTOS_BRIDGE_CAPACITY;
         b->urgent_order[tail]=slot; ++b->urgent_count;
+    } else if (stop) {
+        size_t tail=(b->stop_head+b->stop_count)%
+            NOSTOS_BRIDGE_NONURGENT_CAPACITY;
+        b->stop_order[tail]=slot; ++b->stop_count;
     } else {
         size_t tail=(b->normal_head+b->normal_count)%NOSTOS_BRIDGE_NORMAL_CAPACITY;
         b->normal_order[tail]=slot; ++b->normal_count;
@@ -64,23 +76,22 @@ nostos_result_t nostos_bridge_next(nostos_bridge_t *b, uint32_t now, bool ready,
     if (!b || !out) return NOSTOS_BAD_ARGUMENT;
     if (!b->count) return NOSTOS_EMPTY;
     uint8_t slot;
-    bool take_urgent=b->urgent_count &&
-        (!b->normal_count || b->urgent_streak<NOSTOS_BRIDGE_URGENT_BURST);
-    if (take_urgent) {
+    if (b->urgent_count) {
         slot=b->urgent_order[b->urgent_head];
         b->urgent_head=(b->urgent_head+1U)%NOSTOS_BRIDGE_CAPACITY;
         --b->urgent_count;
-        ++b->urgent_streak;
+    } else if (b->stop_count) {
+        slot=b->stop_order[b->stop_head];
+        b->stop_head=(b->stop_head+1U)%NOSTOS_BRIDGE_NONURGENT_CAPACITY;
+        --b->stop_count;
     } else {
         slot=b->normal_order[b->normal_head];
         b->normal_head=(b->normal_head+1U)%NOSTOS_BRIDGE_NORMAL_CAPACITY;
         --b->normal_count;
-        b->urgent_streak=0;
     }
     *out=b->jobs[slot];
     b->free_slots[b->free_count++]=slot;
     --b->count;
-    if (!b->count) b->urgent_streak=0;
     if ((uint32_t)(now-out->received_ms)>NOSTOS_BRIDGE_MAX_AGE_MS) return NOSTOS_EXPIRED;
     if (out->direction==NOSTOS_TO_MESH && !ready) return NOSTOS_NOT_READY;
     return NOSTOS_OK;

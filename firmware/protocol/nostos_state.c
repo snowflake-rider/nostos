@@ -29,6 +29,7 @@ nostos_result_t nostos_receiver_approve_session(nostos_receiver_t *r, uint8_t so
         r->pending_stop=(nostos_request_slot_t){0};
     if (r->pending_button.message.source_id==source)
         r->pending_button=(nostos_request_slot_t){0};
+    r->pending_shared_data_requests[source-1]=0U;
     for (size_t i=0; i<NOSTOS_INCIDENT_CAPACITY; ++i)
         if (r->incidents[i].source_id==source)
             r->incidents[i]=(nostos_incident_record_t){0};
@@ -119,6 +120,9 @@ nostos_result_t nostos_receiver_apply(nostos_receiver_t *r, const nostos_message
             return NOSTOS_FULL;
         }
         r->pending_button=(nostos_request_slot_t){.message=m,.pending=true};
+    } else if (m.type==NOSTOS_SHARED_DATA_REQUEST) {
+        r->pending_shared_data_requests[m.source_id-1] |=
+            m.payload.shared_data_request.mask;
     } else if (m.type==NOSTOS_ENVIRONMENT) {
         nostos_environment_t *e=&m.payload.environment;
         nostos_i16_value_t *t=&n->environment.temperature_c_x10;
@@ -170,6 +174,16 @@ nostos_result_t nostos_receiver_take_stop(nostos_receiver_t *r, nostos_message_t
 { return r?take_request(&r->pending_stop,m):NOSTOS_BAD_ARGUMENT; }
 nostos_result_t nostos_receiver_take_button(nostos_receiver_t *r, nostos_message_t *m)
 { return r?take_request(&r->pending_button,m):NOSTOS_BAD_ARGUMENT; }
+uint8_t nostos_receiver_take_shared_data_request(nostos_receiver_t *r)
+{
+    if (!r) return 0U;
+    uint8_t mask=0U;
+    for (size_t i=0; i<NOSTOS_NODE_COUNT; ++i) {
+        mask|=r->pending_shared_data_requests[i];
+        r->pending_shared_data_requests[i]=0U;
+    }
+    return mask;
+}
 void nostos_receiver_clear_requests(nostos_receiver_t *r)
 {
     if (!r) return;
