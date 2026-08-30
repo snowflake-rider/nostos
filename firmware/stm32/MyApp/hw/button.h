@@ -14,7 +14,7 @@ void button_init(void);
  */
 message_type_t button_get_message(void);
 
-/* BTN1 -> BTN2 -> BTN3 -> BTN4 순서로 설정되는 로컬 요청을 한 번 꺼냅니다. */
-bool button_take_calibration_request(void);
+/* BTN4가 안정적으로 눌리면 로컬 출력 리셋 요청을 한 번 꺼냅니다. */
+bool button_take_output_reset_request(void);
 
 #endif /* BUTTON_H */

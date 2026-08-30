@@ -42,6 +42,31 @@ void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms)
 }
 void message_protocol_service_rx_error_isr(void) { rx_overflow=true; }
 
+void message_protocol_service_clear_pending(void)
+{
+    uint32_t mask = __get_PRIMASK();
+    __disable_irq();
+    rx_tail = rx_head;
+    rx_overflow = false;
+    __set_PRIMASK(mask);
+
+    if (!initialized)
+    {
+        return;
+    }
+
+    nostos_uart_reset(&endpoint.uart);
+    endpoint.receiver.request_head = 0U;
+    endpoint.receiver.request_count = 0U;
+
+    /* 현재 안전 상태를 기억해 리셋 직후 같은 출력이 자동 재적용되지 않게 합니다. */
+    endpoint.last_outputs = nostos_receiver_outputs(
+        &endpoint.receiver,
+        HAL_GetTick()
+    );
+    endpoint.outputs_initialized = true;
+}
+
 static bool transmit(void *context, const uint8_t *frame, size_t length)
 {
     (void)context;

@@ -11,7 +11,9 @@
 GPIO_TypeDef host_gpio_a, host_gpio_b, host_gpio_c;
 static uint32_t tick;
 static unsigned audio_play_count;
+static unsigned audio_stop_count;
 static message_type_t last_audio_message;
+static bool audio_playing;
 
 uint32_t HAL_GetTick(void)
 {
@@ -38,6 +40,7 @@ vs1003b_status_t audio_service_play(message_type_t message)
 {
     ++audio_play_count;
     last_audio_message = message;
+    audio_playing = true;
     return VS1003B_STATUS_OK;
 }
 
@@ -48,12 +51,19 @@ vs1003b_status_t audio_service_process(void)
 
 bool audio_service_is_playing(void)
 {
-    return false;
+    return audio_playing;
 }
 
 uint32_t audio_service_position(void)
 {
     return 0U;
+}
+
+vs1003b_status_t audio_service_stop(void)
+{
+    ++audio_stop_count;
+    audio_playing = false;
+    return VS1003B_STATUS_OK;
 }
 
 static bool red_on(void)
@@ -83,7 +93,9 @@ static void reset_outputs(void)
     host_gpio_c = (GPIO_TypeDef){0};
     tick = 100U;
     audio_play_count = 0U;
+    audio_stop_count = 0U;
     last_audio_message = MSG_NONE;
+    audio_playing = false;
     message_service_init(VS1003B_STATUS_OK);
 }
 
@@ -187,15 +199,44 @@ static void only_fall_starts_buzzer(void)
     CHECK(buzzer_pin_on());
 }
 
+static void output_reset_stops_everything_and_clears_latches(void)
+{
+    reset_outputs();
+    message_service_handle_local(MSG_SPEED_UP_REQUEST);
+    message_service_handle(MSG_FALL_DETECTED);
+
+    CHECK(audio_playing);
+    CHECK(red_on());
+    CHECK(buzzer_pin_on());
+
+    message_service_reset_outputs();
+
+    const message_service_status_t *status = message_service_get_status();
+    CHECK(audio_stop_count == 1U);
+    CHECK(!audio_playing && !status->audio_playing);
+    CHECK(!red_on() && !green_on() && !blue_on());
+    CHECK(status->alert_state == ALERT_STATE_OFF);
+    CHECK(!buzzer_pin_on());
+    CHECK(status->buzzer_pattern == BUZZER_PATTERN_NONE);
+
+    /* 긴급 래치와 후방 상태도 초기화되어 새 이벤트를 다시 처리합니다. */
+    message_service_handle(MSG_REAR_WARNING);
+    CHECK(alert_get_state() == ALERT_STATE_REAR_WARNING);
+    message_service_handle(MSG_FALL_DETECTED);
+    CHECK(buzzer_get_pattern() == BUZZER_PATTERN_EMERGENCY);
+}
+
 int main(void)
 {
     local_buttons_show_color_and_audio();
     remote_buttons_are_audio_only();
     rear_safe_and_button_timeout_follow_calibration();
     only_fall_starts_buzzer();
+    output_reset_stops_everything_and_clears_latches();
     puts("PASS local BTN1/2/3 RGB+audio and 2-second color timeout");
     puts("PASS remote BTN1/2/3 audio-only");
     puts("PASS REAR_SAFE green only after calibration and button timeout restores it");
     puts("PASS buzzer starts only for confirmed FALL_DETECTED");
+    puts("PASS output reset stops RGB/buzzer/audio and clears output latches");
     return 0;
 }

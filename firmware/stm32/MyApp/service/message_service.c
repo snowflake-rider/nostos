@@ -17,6 +17,16 @@ static message_type_t rear_state = MSG_NONE;
 static bool emergency_latched = false;
 static bool fall_buzzer_latched = false;
 
+static void message_service_update_status(void)
+{
+    service_status.audio_playing = audio_service_is_playing();
+    service_status.audio_position = audio_service_position();
+    service_status.buzzer_active = buzzer_is_active();
+    service_status.buzzer_pattern = buzzer_get_pattern();
+    service_status.alert_state = alert_get_state();
+    service_status.alert_led_on = alert_is_led_on();
+}
+
 static void message_service_play_audio(message_type_t message)
 {
     if (service_status.audio_status == VS1003B_STATUS_OK)
@@ -34,12 +44,19 @@ void message_service_init(vs1003b_status_t initial_audio_status)
     fall_buzzer_latched = false;
 
     service_status.audio_status = initial_audio_status;
-    service_status.audio_playing = audio_service_is_playing();
-    service_status.audio_position = audio_service_position();
-    service_status.buzzer_active = buzzer_is_active();
-    service_status.buzzer_pattern = buzzer_get_pattern();
-    service_status.alert_state = alert_get_state();
-    service_status.alert_led_on = alert_is_led_on();
+    message_service_update_status();
+}
+
+void message_service_reset_outputs(void)
+{
+    rear_state = MSG_NONE;
+    emergency_latched = false;
+    fall_buzzer_latched = false;
+
+    alert_reset();
+    buzzer_stop();
+    service_status.audio_status = audio_service_stop();
+    message_service_update_status();
 }
 
 void message_service_handle(message_type_t message)
@@ -118,12 +135,7 @@ void message_service_process(void)
     alert_process();
     buzzer_process();
 
-    service_status.audio_playing = audio_service_is_playing();
-    service_status.audio_position = audio_service_position();
-    service_status.buzzer_active = buzzer_is_active();
-    service_status.buzzer_pattern = buzzer_get_pattern();
-    service_status.alert_state = alert_get_state();
-    service_status.alert_led_on = alert_is_led_on();
+    message_service_update_status();
 }
 
 const message_service_status_t *message_service_get_status(void)

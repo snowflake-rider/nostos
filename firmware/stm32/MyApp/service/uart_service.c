@@ -125,6 +125,17 @@ bool uart_service_get_message(message_type_t *message)
     return true;
 }
 
+void uart_service_clear_pending(void)
+{
+    __disable_irq();
+    pending_message = MSG_NONE;
+    message_pending = false;
+    __enable_irq();
+#if NOSTOS_PROTOCOL_V2
+    message_protocol_service_clear_pending();
+#endif
+}
+
 HAL_StatusTypeDef uart_service_get_status(void)
 {
     return uart_status;

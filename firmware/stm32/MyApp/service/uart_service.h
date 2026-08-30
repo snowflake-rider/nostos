@@ -19,6 +19,9 @@ HAL_StatusTypeDef uart_service_send_message(message_type_t message);
 /* 수신된 유효 메시지가 있으면 true를 반환하고 메시지를 꺼냅니다. */
 bool uart_service_get_message(message_type_t *message);
 
+/* 아직 처리하지 않은 수신 메시지 한 개를 폐기합니다. */
+void uart_service_clear_pending(void);
+
 HAL_StatusTypeDef uart_service_get_status(void);
 uint32_t uart_service_get_tx_count(void);
 uint32_t uart_service_get_rx_count(void);

@@ -92,6 +92,11 @@ vs1003b_status_t audio_service_process(void)
     return vs1003b_play_process();
 }
 
+vs1003b_status_t audio_service_stop(void)
+{
+    return vs1003b_play_stop();
+}
+
 bool audio_service_is_playing(void)
 {
     return vs1003b_is_playing();

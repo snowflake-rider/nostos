@@ -16,6 +16,9 @@ typedef enum
 /* 경고 출력 장치를 안전한 초기 상태로 만듭니다. */
 void alert_init(void);
 
+/* 현재 안전 상태와 임시 버튼 색상을 지우고 RGB 출력을 즉시 끕니다. */
+void alert_reset(void);
+
 /* MPU6050 캘리브레이션 성공 뒤에만 REAR_SAFE 초록 표시를 허용합니다. */
 void alert_set_rear_safe_enabled(bool enabled);
 

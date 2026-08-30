@@ -14,6 +14,16 @@ static message_type_t local_button_color = MSG_NONE;
 static uint32_t local_button_color_until_ms = 0U;
 static bool rear_safe_enabled = false;
 
+void alert_reset(void)
+{
+    alert_state = ALERT_STATE_OFF;
+    led_on = false;
+    next_toggle_ms = 0U;
+    local_button_color = MSG_NONE;
+    local_button_color_until_ms = 0U;
+    rgb_led_off();
+}
+
 static void alert_apply_output(void)
 {
     if (local_button_color == MSG_SPEED_UP_REQUEST)
@@ -95,12 +105,8 @@ static void alert_select_state(alert_state_t state)
 void alert_init(void)
 {
     rgb_led_init();
-    alert_state = ALERT_STATE_OFF;
-    led_on = false;
-    next_toggle_ms = 0U;
-    local_button_color = MSG_NONE;
-    local_button_color_until_ms = 0U;
     rear_safe_enabled = false;
+    alert_reset();
 }
 
 void alert_set_rear_safe_enabled(bool enabled)

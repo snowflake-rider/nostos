@@ -17,6 +17,8 @@ void message_protocol_service_process(void);
 /* Called by HAL Rx ISR; all parse/apply/output work is deferred to process(). */
 void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms);
 void message_protocol_service_rx_error_isr(void);
+/* ISR 수신 링, 부분 프레임, 아직 재생하지 않은 요청 큐를 모두 비웁니다. */
+void message_protocol_service_clear_pending(void);
 nostos_result_t message_protocol_service_publish_event(uint8_t type);
 /* Deployment overrides this weak hook to restore an approved boot context.
  * Default returns NOT_READY. No insecure fixed epoch or auto-approval. */

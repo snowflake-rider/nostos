@@ -16,6 +16,9 @@ vs1003b_status_t audio_service_play_calibration_completed(void);
 /* app_process()에서 반복 호출하여 오디오 데이터를 조금씩 전송합니다. */
 vs1003b_status_t audio_service_process(void);
 
+/* 현재 오디오를 즉시 중단하고 다음 재생을 위해 코덱을 다시 준비합니다. */
+vs1003b_status_t audio_service_stop(void);
+
 /* 디버깅 및 상태 표시용 재생 정보입니다. */
 bool audio_service_is_playing(void);
 uint32_t audio_service_position(void);

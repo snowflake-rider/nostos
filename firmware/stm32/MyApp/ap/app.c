@@ -1,5 +1,6 @@
 #include "app.h"
 
+#include "app_config.h"
 #include "audio_service.h"
 #include "alert.h"
 #include "button.h"
@@ -16,9 +17,6 @@ volatile nostos_result_t protocol_debug_boot_status=NOSTOS_NOT_READY;
 #endif
 
 #define VS1003B_SCI_CLOCKF_ADDRESS 0x03U
-#define VS1003B_SCI_VOL_ADDRESS 0x0BU
-#define VS1003B_CLOCKF_3X 0x9800U
-#define VS1003B_TEST_VOLUME 0x5050U
 
 static message_type_t last_message = MSG_NONE;
 
@@ -26,7 +24,6 @@ static message_type_t last_message = MSG_NONE;
 volatile vs1003b_status_t vs1003b_debug_status = VS1003B_STATUS_INVALID_ARGUMENT;
 volatile uint16_t vs1003b_debug_mode = 0U;
 volatile uint16_t vs1003b_debug_clockf = 0U;
-volatile uint16_t vs1003b_debug_volume = 0U;
 volatile bool vs1003b_debug_audio_playing = false;
 volatile uint32_t vs1003b_debug_audio_position = 0U;
 volatile bool buzzer_debug_active = false;
@@ -76,50 +73,12 @@ void app_init(
 
     if (vs1003b_debug_status == VS1003B_STATUS_OK)
     {
-        vs1003b_debug_status = vs1003b_write_register(
-            VS1003B_SCI_CLOCKF_ADDRESS,
-            VS1003B_CLOCKF_3X
-        );
-    }
-
-    if (vs1003b_debug_status == VS1003B_STATUS_OK)
-    {
         uint16_t clockf = 0U;
         vs1003b_debug_status = vs1003b_read_register(
             VS1003B_SCI_CLOCKF_ADDRESS,
             &clockf
         );
         vs1003b_debug_clockf = clockf;
-
-        if ((vs1003b_debug_status == VS1003B_STATUS_OK) &&
-            (clockf != VS1003B_CLOCKF_3X))
-        {
-            vs1003b_debug_status = VS1003B_STATUS_REGISTER_MISMATCH;
-        }
-    }
-
-    if (vs1003b_debug_status == VS1003B_STATUS_OK)
-    {
-        vs1003b_debug_status = vs1003b_write_register(
-            VS1003B_SCI_VOL_ADDRESS,
-            VS1003B_TEST_VOLUME
-        );
-    }
-
-    if (vs1003b_debug_status == VS1003B_STATUS_OK)
-    {
-        uint16_t volume = 0U;
-        vs1003b_debug_status = vs1003b_read_register(
-            VS1003B_SCI_VOL_ADDRESS,
-            &volume
-        );
-        vs1003b_debug_volume = volume;
-
-        if ((vs1003b_debug_status == VS1003B_STATUS_OK) &&
-            (volume != VS1003B_TEST_VOLUME))
-        {
-            vs1003b_debug_status = VS1003B_STATUS_REGISTER_MISMATCH;
-        }
     }
 
 #if NOSTOS_PROTOCOL_V2
@@ -138,10 +97,21 @@ void app_process(void)
 {
     message_type_t message = button_get_message();
 
-    if (button_take_calibration_request())
+    if (button_take_output_reset_request())
     {
-        safety_debug_calibration_request_accepted =
-            safety_service_start_calibration();
+        last_message = MSG_NONE;
+        message_debug_inject = MSG_NONE;
+        uart_service_clear_pending();
+        (void)safety_service_take_calibration_completed();
+#if NOSTOS_PROTOCOL_V2
+        alert_reset();
+        buzzer_stop();
+        vs1003b_debug_status = audio_service_stop();
+#else
+        message_service_reset_outputs();
+        vs1003b_debug_status = message_service_get_status()->audio_status;
+#endif
+        return;
     }
 
     if (message != MSG_NONE)

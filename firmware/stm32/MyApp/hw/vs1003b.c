@@ -1,5 +1,6 @@
 #include "vs1003b.h"
 
+#include "app_config.h"
 #include "main.h"
 
 #include <stdbool.h>
@@ -8,7 +9,10 @@
 #define VS1003B_SCI_READ_OPCODE 0x03U
 #define VS1003B_SCI_WRITE_OPCODE 0x02U
 #define VS1003B_SCI_MODE_ADDRESS 0x00U
+#define VS1003B_SCI_CLOCKF_ADDRESS 0x03U
+#define VS1003B_SCI_VOL_ADDRESS 0x0BU
 #define VS1003B_SCI_MODE_RESET_VALUE 0x0800U
+#define VS1003B_CLOCKF_3X 0x9800U
 #define VS1003B_SM_TESTS 0x0020U
 
 #define VS1003B_RESET_LOW_MS 2U
@@ -24,6 +28,15 @@ static uint32_t play_size = 0U;
 static uint32_t play_position = 0U;
 static bool play_finishing = false;
 static bool play_active = false;
+
+static void vs1003b_clear_playback_state(void)
+{
+    play_data = NULL;
+    play_size = 0U;
+    play_position = 0U;
+    play_finishing = false;
+    play_active = false;
+}
 
 static const uint8_t vs1003b_sine_start_command[8] = {
     0x53U, 0xEFU, 0x6EU, 0x03U, 0x00U, 0x00U, 0x00U, 0x00U,
@@ -62,6 +75,68 @@ static void vs1003b_hardware_reset(void)
     HAL_GPIO_WritePin(VS_RST_GPIO_Port, VS_RST_Pin, GPIO_PIN_RESET);
     HAL_Delay(VS1003B_RESET_LOW_MS);
     HAL_GPIO_WritePin(VS_RST_GPIO_Port, VS_RST_Pin, GPIO_PIN_SET);
+}
+
+static vs1003b_status_t vs1003b_configure_after_reset(uint16_t *mode_value)
+{
+    uint16_t value = 0U;
+
+    vs1003b_hardware_reset();
+
+    if (!vs1003b_wait_ready(VS1003B_DREQ_TIMEOUT_MS))
+    {
+        return VS1003B_STATUS_DREQ_TIMEOUT;
+    }
+
+    vs1003b_status_t status = vs1003b_read_register(
+        VS1003B_SCI_MODE_ADDRESS,
+        mode_value
+    );
+    if (status != VS1003B_STATUS_OK)
+    {
+        return status;
+    }
+    if (*mode_value != VS1003B_SCI_MODE_RESET_VALUE)
+    {
+        return VS1003B_STATUS_MODE_MISMATCH;
+    }
+
+    status = vs1003b_write_register(
+        VS1003B_SCI_CLOCKF_ADDRESS,
+        VS1003B_CLOCKF_3X
+    );
+    if (status != VS1003B_STATUS_OK)
+    {
+        return status;
+    }
+
+    status = vs1003b_read_register(VS1003B_SCI_CLOCKF_ADDRESS, &value);
+    if (status != VS1003B_STATUS_OK)
+    {
+        return status;
+    }
+    if (value != VS1003B_CLOCKF_3X)
+    {
+        return VS1003B_STATUS_REGISTER_MISMATCH;
+    }
+
+    status = vs1003b_write_register(VS1003B_SCI_VOL_ADDRESS, VS1003B_VOLUME);
+    if (status != VS1003B_STATUS_OK)
+    {
+        return status;
+    }
+
+    status = vs1003b_read_register(VS1003B_SCI_VOL_ADDRESS, &value);
+    if (status != VS1003B_STATUS_OK)
+    {
+        return status;
+    }
+    if (value != VS1003B_VOLUME)
+    {
+        return VS1003B_STATUS_REGISTER_MISMATCH;
+    }
+
+    return VS1003B_STATUS_OK;
 }
 
 vs1003b_status_t vs1003b_read_register(uint8_t address, uint16_t *value)
@@ -266,6 +341,20 @@ uint32_t vs1003b_play_position(void)
     return play_position;
 }
 
+vs1003b_status_t vs1003b_play_stop(void)
+{
+    if (vs1003b_spi == NULL)
+    {
+        return VS1003B_STATUS_INVALID_ARGUMENT;
+    }
+
+    /* RST를 Low로 내리기 전에 소프트웨어 재생 상태부터 즉시 폐기합니다. */
+    vs1003b_clear_playback_state();
+
+    uint16_t mode = 0U;
+    return vs1003b_configure_after_reset(&mode);
+}
+
 vs1003b_status_t vs1003b_sine_test_start(void)
 {
     uint16_t mode = 0U;
@@ -305,31 +394,12 @@ vs1003b_status_t vs1003b_sine_test_stop(void)
 
 vs1003b_status_t vs1003b_init(SPI_HandleTypeDef *hspi, uint16_t *mode_value)
 {
-    vs1003b_status_t status;
-
     if ((hspi == NULL) || (mode_value == NULL))
     {
         return VS1003B_STATUS_INVALID_ARGUMENT;
     }
 
     vs1003b_spi = hspi;
-    vs1003b_hardware_reset();
-
-    if (!vs1003b_wait_ready(VS1003B_DREQ_TIMEOUT_MS))
-    {
-        return VS1003B_STATUS_DREQ_TIMEOUT;
-    }
-
-    status = vs1003b_read_register(VS1003B_SCI_MODE_ADDRESS, mode_value);
-    if (status != VS1003B_STATUS_OK)
-    {
-        return status;
-    }
-
-    if (*mode_value != VS1003B_SCI_MODE_RESET_VALUE)
-    {
-        return VS1003B_STATUS_MODE_MISMATCH;
-    }
-
-    return VS1003B_STATUS_OK;
+    vs1003b_clear_playback_state();
+    return vs1003b_configure_after_reset(mode_value);
 }

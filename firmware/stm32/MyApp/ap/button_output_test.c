@@ -68,6 +68,16 @@ void button_output_test_process(void)
 {
     message_type_t message = button_get_message();
 
+    if (button_take_output_reset_request())
+    {
+        message_service_reset_outputs();
+        rgb_led_off();
+        test_status.last_message = MSG_NONE;
+        test_status.rgb_active = false;
+        button_output_test_update_status();
+        return;
+    }
+
     if (message != MSG_NONE)
     {
         if (button_output_test_set_rgb(message))

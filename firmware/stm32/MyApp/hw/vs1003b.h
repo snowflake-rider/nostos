@@ -39,6 +39,8 @@ vs1003b_status_t vs1003b_sine_test_stop(void);
 /* Flash에 있는 오디오 데이터를 DREQ에 맞춰 비차단 방식으로 재생합니다. */
 vs1003b_status_t vs1003b_play_start(const uint8_t *data, uint32_t size);
 vs1003b_status_t vs1003b_play_process(void);
+/* 현재 스트림을 폐기하고 코덱을 제품 클럭/볼륨으로 다시 준비합니다. */
+vs1003b_status_t vs1003b_play_stop(void);
 bool vs1003b_is_playing(void);
 uint32_t vs1003b_play_position(void);
 

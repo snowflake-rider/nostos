@@ -23,6 +23,9 @@ typedef struct
 /* 출력 장치를 초기화하고 VS1003B의 초기 상태를 전달받습니다. */
 void message_service_init(vs1003b_status_t initial_audio_status);
 
+/* RGB, 부저, 오디오와 서비스의 출력 래치를 즉시 초기 상태로 되돌립니다. */
+void message_service_reset_outputs(void);
+
 /* 메시지 의미에 맞게 LED, 음성, 부저 출력을 요청합니다. */
 void message_service_handle(message_type_t message);
 

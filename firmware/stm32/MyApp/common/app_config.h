@@ -16,6 +16,11 @@
 #define FEATURE_BUTTON_OUTPUT_TEST 0
 #endif
 
+/* VS1003B 제품 출력 볼륨: 각 바이트는 채널별 0.5 dB 감쇠값입니다. */
+#ifndef VS1003B_VOLUME
+#define VS1003B_VOLUME 0x1818U
+#endif
+
 /* SSD1306 128x64 OLED를 I2C1(PB8/PB9)에서 갱신합니다. */
 #ifndef FEATURE_SSD1306_DISPLAY
 #define FEATURE_SSD1306_DISPLAY 1
