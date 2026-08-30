@@ -9,6 +9,7 @@
 nostos/
 ├── .gitignore                    로컬 생성물·보존 예외 제외 규칙
 ├── README.md                     빠른 시작과 일상 명령
+├── DEVICES.md                    핵심 장치와 역할
 ├── PINS.md                       현재 배선과 미적용 대체 핀 제안
 ├── STRUCTURE.md                  구조·의존성·버전·릴리스 기준(이 문서)
 ├── AGENTS.md                     작업 절차와 검증 규칙
@@ -151,20 +152,16 @@ manifest에 넣지 않습니다.
 `releases/baselines/`는 구조 변경 전 검증 사실을 보존하는 곳이며 공식 릴리스가 아닙니다. baseline의
 경로와 hash는 당시 상태를 설명하므로 현재 트리와 달라도 고쳐 쓰지 않습니다.
 
-## 현재 전환기 예외
+## v1.0.0 설치 전환
 
-현재 checkout은 새 운영 체계를 준비하는 단계이며 아직 공식 릴리스가 아닙니다.
-
-- `firmware/VERSION`은 과거 값 `v1`을 그대로 유지합니다. 첫 공식 패키지 전에 정확한 SemVer로
-  결정하고 양쪽 타깃의 버전 metadata 영향까지 다시 검증해야 합니다.
-- `firmware/profiles/release.json`은 `draft`입니다. source-set·toolchain·실물 검증 기준을 확정한
-  뒤에만 `approved`로 변경할 수 있으며, 통합 도구는 draft profile의 공식 package를 거부합니다.
-- `nostos-v1.0.0` tag와 공식 v1.0.0 패키지는 아직 없습니다. `releases/baselines/2026-08-29-v1.json`은
-  검증 기록일 뿐 공식 릴리스 manifest가 아닙니다.
-- protocol v2 소스는 기본값에서 비활성화되어 있지만 현재 빌드 입력에는 포함됩니다. 첫 공식 tag
-  전 source-set 정책과 v1/v2 호환 범위를 별도 작업으로 확정해야 합니다.
+- `firmware/VERSION`과 승인된 release profile은 protocol v1 제품 빌드 `v1.0.0`을 고정합니다.
+- `nostos-v1.0.0` tag와 package는 이 설정을 포함한 clean commit에서 host test와 STM32·ESP32
+  target build가 다시 통과한 뒤 생성합니다. `releases/baselines/2026-08-29-v1.json`은 이전 검증
+  기록일 뿐 공식 릴리스 manifest가 아닙니다.
+- protocol v2 소스는 빌드 입력에 남아 있지만 release profile 기본값에서는 비활성화합니다.
 - 통합 도구의 `fw flash`는 현재 STM32와 ESP32 모두 plan-only입니다. 특히 실제 ESP32 Flash는 아직
-  연결하지 않았으며, 실물 Flash는 별도 승인과 구현·검증이 필요합니다.
+  연결하지 않았으므로, 실물 설치는 별도 승인 후 verified package의 manifest와 local inventory를
+  직접 대조하고 application-only 쓰기와 read-back을 수행합니다.
 - 기존 STM32 Flash script에는 실제 쓰기 기능, 배포 장비 식별자와 과거 허용 hash가 남아 있습니다.
   이것은 통합 도구 밖의 전환기 안전장치이며 장기적으로는 로컬 inventory와 검증된 패키지 manifest를
   읽는 명시적 실행 단계로 교체해야 합니다.

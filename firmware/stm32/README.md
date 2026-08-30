@@ -19,7 +19,10 @@ bash firmware/stm32/tools/test-host.sh
 bash firmware/tools/fw build stm32
 ```
 
-기본 Release 설정은 `NOSTOS_PROTOCOL_V2=OFF`, `BUTTON_OUTPUT_TEST=OFF`, `SSD1306_DISPLAY=ON`, `DHT11_SENSOR=ON`입니다. CubeMX 입력은 [nostos_stm32.ioc](nostos_stm32.ioc)입니다.
+현재 연결 보드용 기본 Release 설정은 `NOSTOS_PROTOCOL_V2=OFF`, `BUTTON_OUTPUT_TEST=OFF`,
+`SSD1306_DISPLAY=ON`, `MPU6050_SENSOR=OFF`, `DHT11_SENSOR=OFF`입니다. CubeMX 입력은
+[nostos_stm32.ioc](nostos_stm32.ioc)입니다. 다른 역할의 STM32에 센서를 장착할 때는 해당 보드용
+빌드 프로필에서 필요한 센서만 명시적으로 활성화해야 합니다.
 
 ## 현재 기본 동작
 
@@ -28,7 +31,7 @@ bash firmware/tools/fw build stm32
 - BTN3: `STOP`(0x13), 빨강 RGB + 로컬 오디오 + USART1 TX
 - USART1 RX로 받은 BTN1~3: 원격 오디오만 재생
 - BTN4 단독: 메시지·RGB·오디오·부저 없음
-- BTN1 → BTN2 → BTN3 → BTN4를 5초 안에 입력: MPU6050 캘리브레이션
+- BTN1 → BTN2 → BTN3 → BTN4를 5초 안에 입력: MPU6050 활성 빌드에서 캘리브레이션
 - 부저: 확정 `FALL_DETECTED`에서만 동작
 
 캘리브레이션은 50ms 간격의 안정된 샘플 40개를 수집하며 메인 루프와 UART를 막는 `HAL_Delay()`를 사용하지 않습니다. 기준값은 RAM에 있으므로 재부팅 후 다시 캘리브레이션해야 합니다.
@@ -37,12 +40,13 @@ bash firmware/tools/fw build stm32
 
 | 장치 | 연결 | 동작 |
 | --- | --- | --- |
-| SSD1306 | I2C1 PB8/PB9, 기본 주소 0x3C | `DHT WAIT/OK/ERROR`, 온도·습도 표시 |
-| DHT11 | PA1 | 약 1.2초마다 측정 |
-| MPU6050 | I2C1 | 장착 자세 캘리브레이션·낙상 판정 |
+| SSD1306 | I2C1 PB8/PB9, 기본 주소 0x3C | 현재 보드에서 `DHT NOT FITTED` 표시 |
+| DHT11 | PA1, 선택 장치 | 현재 보드 미장착·샘플링 비활성화 |
+| MPU6050 | I2C1, 선택 장치 | 현재 보드 미장착·I2C 접근 비활성화 |
 | VS1003B | SPI | 로컬/원격 안내 음원 재생 |
 
-MPU6050과 OLED는 같은 I2C1을 순차 사용합니다. DHT11 측정 구간의 IRQ 제한, OLED 주소·풀업, 실제 UART 부하에서의 수신 안정성은 실물 검증 대상입니다.
+센서 장착 빌드에서는 MPU6050과 OLED가 같은 I2C1을 순차 사용합니다. 현재 연결 보드에서는 OLED만
+I2C1을 사용합니다. OLED 주소·풀업과 실제 UART 부하에서의 수신 안정성은 실물 검증 대상입니다.
 
 ## Flash 경계
 

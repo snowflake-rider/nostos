@@ -15,6 +15,7 @@ static bool display_ready;
 static uint32_t display_tick;
 
 #if FEATURE_SSD1306_DISPLAY
+#if FEATURE_DHT11_SENSOR
 static char *append_text(char *out, const char *text)
 {
     while (*text != '\0') *out++ = *text++;
@@ -96,6 +97,14 @@ static void render_environment(void)
         ssd1306_draw_text(0U, 48U, line);
     }
 }
+#else
+static void render_environment(void)
+{
+    ssd1306_clear();
+    ssd1306_draw_text(0U, 0U, "NOSTOS NODE");
+    ssd1306_draw_text(0U, 16U, "DHT NOT FITTED");
+}
+#endif
 
 static bool initialize_and_render(void)
 {

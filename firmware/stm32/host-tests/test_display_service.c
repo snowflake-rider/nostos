@@ -85,6 +85,7 @@ int main(void)
     CHECK(display_service_is_ready());
     CHECK(oled_init_count == 1U);
     CHECK(oled_update_count == 1U);
+#if FEATURE_DHT11_SENSOR
     CHECK(drawn_count == 4U);
     CHECK(strcmp(drawn_lines[0], "NOSTOS SENSOR") == 0);
     CHECK(strcmp(drawn_lines[1], "TEMP --.- C") == 0);
@@ -110,13 +111,30 @@ int main(void)
     fake_tick = 600U;
     display_service_process();
     CHECK(!display_service_is_ready());
+    uint32_t retry_start = 600U;
+#else
+    CHECK(drawn_count == 2U);
+    CHECK(strcmp(drawn_lines[0], "NOSTOS NODE") == 0);
+    CHECK(strcmp(drawn_lines[1], "DHT NOT FITTED") == 0);
+
+    fake_tick = 200U;
+    display_service_process();
+    CHECK(oled_update_count == 2U);
+    CHECK(drawn_count == 2U);
+
+    fake_oled_update_ok = false;
+    fake_tick = 400U;
+    display_service_process();
+    CHECK(!display_service_is_ready());
+    uint32_t retry_start = 400U;
+#endif
 
     fake_oled_init_ok = true;
     fake_oled_update_ok = true;
-    fake_tick = 2599U;
+    fake_tick = retry_start + 1999U;
     display_service_process();
     CHECK(oled_init_count == 1U);
-    fake_tick = 2600U;
+    fake_tick = retry_start + 2000U;
     display_service_process();
     CHECK(oled_init_count == 2U);
     CHECK(display_service_is_ready());

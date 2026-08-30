@@ -56,6 +56,7 @@ check_root_layout() {
     for required_file in \
         '.gitignore' \
         'AGENTS.md' \
+        'DEVICES.md' \
         'PINS.md' \
         'README.md' \
         'STRUCTURE.md' \
@@ -105,7 +106,7 @@ check_root_layout() {
     while IFS= read -r -d '' root_entry; do
         root_name="${root_entry##*/}"
         case "$root_name" in
-            .git|.gitignore|.worktrees|AGENTS.md|PINS.md|README.md|STRUCTURE.md|firmware|releases|apps|docs)
+            .git|.gitignore|.worktrees|AGENTS.md|DEVICES.md|PINS.md|README.md|REQUIREMENT.md|RIDER-*.md|STRUCTURE.md|firmware|releases|apps|docs)
                 ;;
             stm32|esp32|protocol|VERSION|build.sh|test-host.sh|flash-stm32-all.sh|manifest.json)
                 # Reported above with the more specific legacy-path diagnostic.

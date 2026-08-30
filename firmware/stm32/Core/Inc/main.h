@@ -65,9 +65,11 @@ void Error_Handler(void);
 #define HCSR04_ECHO_GPIO_Port GPIOA
 #define RGB_R_Pin GPIO_PIN_4
 #define RGB_R_GPIO_Port GPIOA
-#define VS_DREQ_Pin GPIO_PIN_4
+#define VS_DREQ_Pin GPIO_PIN_5
 #define VS_DREQ_GPIO_Port GPIOC
-#define VS_XDCS_Pin GPIO_PIN_5
+#define VS_XCS_Pin GPIO_PIN_6
+#define VS_XCS_GPIO_Port GPIOC
+#define VS_XDCS_Pin GPIO_PIN_8
 #define VS_XDCS_GPIO_Port GPIOC
 #define RGB_G_Pin GPIO_PIN_0
 #define RGB_G_GPIO_Port GPIOB
@@ -75,8 +77,6 @@ void Error_Handler(void);
 #define VS_RST_GPIO_Port GPIOB
 #define BTN2_Pin GPIO_PIN_10
 #define BTN2_GPIO_Port GPIOB
-#define VS_XCS_Pin GPIO_PIN_12
-#define VS_XCS_GPIO_Port GPIOB
 #define BTN4_Pin GPIO_PIN_7
 #define BTN4_GPIO_Port GPIOC
 #define BTN3_Pin GPIO_PIN_8

@@ -118,7 +118,7 @@ add_executable(test_display_service test_display_service.c
 target_include_directories(test_display_service PRIVATE fakes
     ../MyApp/service ../MyApp/hw ../MyApp/common)
 target_compile_definitions(test_display_service PRIVATE
-    FEATURE_SSD1306_DISPLAY=1)
+    FEATURE_SSD1306_DISPLAY=1 FEATURE_DHT11_SENSOR=1)
 target_compile_options(test_display_service PRIVATE
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 if(ENABLE_SANITIZERS)
@@ -128,6 +128,34 @@ if(ENABLE_SANITIZERS)
         -fsanitize=address,undefined)
 endif()
 add_test(NAME display_service COMMAND test_display_service)
+
+add_executable(test_display_no_dht test_display_service.c
+    ../MyApp/service/display_service.c)
+target_include_directories(test_display_no_dht PRIVATE fakes
+    ../MyApp/service ../MyApp/hw ../MyApp/common)
+target_compile_definitions(test_display_no_dht PRIVATE
+    FEATURE_SSD1306_DISPLAY=1 FEATURE_DHT11_SENSOR=0)
+target_compile_options(test_display_no_dht PRIVATE
+    -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+if(ENABLE_SANITIZERS)
+    target_compile_options(test_display_no_dht PRIVATE
+        -fsanitize=address,undefined -fno-omit-frame-pointer)
+    target_link_options(test_display_no_dht PRIVATE
+        -fsanitize=address,undefined)
+endif()
+add_test(NAME display_no_dht COMMAND test_display_no_dht)
+
+# Compile the actual services with the connected board's sensorless policy.
+add_library(check_sensorless_services OBJECT
+    ../MyApp/service/environment_service.c
+    ../MyApp/service/safety_service.c)
+target_include_directories(check_sensorless_services PRIVATE fakes ../Core/Inc
+    ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
+target_compile_definitions(check_sensorless_services PRIVATE
+    FEATURE_DHT11_SENSOR=0 FEATURE_FALL_DETECTION=0
+    FEATURE_ULTRASONIC_SENSOR=0 NOSTOS_PROTOCOL_V2=0)
+target_compile_options(check_sensorless_services PRIVATE
+    -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 
 # Compile the real app integration that consumes the BTN4 local request.
 add_library(check_calibration_app OBJECT ../MyApp/ap/app.c)

@@ -30,6 +30,7 @@ REQUIRED_PROFILE_PATHS = (
     ("targets", "stm32", "buildPolicy", "protocolV2"),
     ("targets", "stm32", "buildPolicy", "buttonOutputTest"),
     ("targets", "stm32", "buildPolicy", "ssd1306Display"),
+    ("targets", "stm32", "buildPolicy", "mpu6050Sensor"),
     ("targets", "stm32", "buildPolicy", "dht11Sensor"),
     ("targets", "stm32", "artifact"),
     ("targets", "esp32", "chip"),
@@ -127,7 +128,13 @@ def validate_profile(firmware_root: Path, profile_file: Path) -> dict[str, Any]:
         raise ReleaseError("release profile STM32 chip must be 'STM32F411xC_xE'")
     if nested(profile, ("targets", "stm32", "buildPolicy", "generator")) != "Ninja":
         raise ReleaseError("release profile STM32 generator must be 'Ninja'")
-    for option in ("protocolV2", "buttonOutputTest", "ssd1306Display", "dht11Sensor"):
+    for option in (
+        "protocolV2",
+        "buttonOutputTest",
+        "ssd1306Display",
+        "mpu6050Sensor",
+        "dht11Sensor",
+    ):
         if not isinstance(nested(profile, ("targets", "stm32", "buildPolicy", option)), bool):
             raise ReleaseError(f"release profile STM32 buildPolicy.{option} must be boolean")
     if nested(profile, ("targets", "esp32", "chip")) != "esp32s3":
@@ -486,6 +493,7 @@ def build_metadata(
             "NOSTOS_PROTOCOL_V2": "ON" if policy.get("protocolV2") else "OFF",
             "BUTTON_OUTPUT_TEST": "ON" if policy.get("buttonOutputTest") else "OFF",
             "SSD1306_DISPLAY": "ON" if policy.get("ssd1306Display") else "OFF",
+            "MPU6050_SENSOR": "ON" if policy.get("mpu6050Sensor") else "OFF",
             "DHT11_SENSOR": "ON" if policy.get("dht11Sensor") else "OFF",
         }
         if cache.get("CMAKE_GENERATOR") != policy.get("generator"):
@@ -635,6 +643,7 @@ def verify_build_receipt(
             "NOSTOS_PROTOCOL_V2": "ON" if policy.get("protocolV2") else "OFF",
             "BUTTON_OUTPUT_TEST": "ON" if policy.get("buttonOutputTest") else "OFF",
             "SSD1306_DISPLAY": "ON" if policy.get("ssd1306Display") else "OFF",
+            "MPU6050_SENSOR": "ON" if policy.get("mpu6050Sensor") else "OFF",
             "DHT11_SENSOR": "ON" if policy.get("dht11Sensor") else "OFF",
         }
         if (

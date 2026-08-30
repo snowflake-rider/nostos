@@ -6,9 +6,9 @@
 #define FEATURE_ULTRASONIC_SENSOR 1
 #endif
 
-/* MPU6050 기반 낙차 감지는 공용 기준 기능으로 사용합니다. */
+/* 현재 연결 보드에는 MPU6050이 없습니다. 센서 장착 빌드에서만 1로 설정합니다. */
 #ifndef FEATURE_FALL_DETECTION
-#define FEATURE_FALL_DETECTION 1
+#define FEATURE_FALL_DETECTION 0
 #endif
 
 /* 1: 버튼→RGB→오디오 코덱 독립 진단. 제품 빌드 기본값은 반드시 0입니다. */
@@ -21,9 +21,9 @@
 #define FEATURE_SSD1306_DISPLAY 1
 #endif
 
-/* DHT11을 PA1에서 읽어 로컬 OLED에 온도/습도를 표시합니다. */
+/* 현재 연결 보드에는 DHT11이 없습니다. 센서 장착 빌드에서만 1로 설정합니다. */
 #ifndef FEATURE_DHT11_SENSOR
-#define FEATURE_DHT11_SENSOR 1
+#define FEATURE_DHT11_SENSOR 0
 #endif
 
 #ifndef SSD1306_I2C_ADDRESS

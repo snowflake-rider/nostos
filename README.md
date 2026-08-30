@@ -10,6 +10,7 @@ NOSTOS의 STM32F411RE 애플리케이션과 ESP32-S3 Bluetooth Mesh bridge를 �
 .
 ├── .gitignore            로컬 생성물·보존 예외 제외 규칙
 ├── README.md             빠른 시작과 일상 명령(이 문서)
+├── DEVICES.md            핵심 장치와 역할
 ├── PINS.md               현재 배선과 미적용 대체 핀 제안
 ├── STRUCTURE.md          구조와 버전 관리의 단일 기준 문서
 ├── AGENTS.md             작업·검증·장비 안전 규칙
@@ -36,5 +37,5 @@ bash firmware/tools/fw build esp32
 
 빌드와 호스트 테스트는 장비를 변경하지 않습니다. Flash는 빌드 트리가 아니라 SHA-256으로 고정된 release package만 입력으로 사용하며, 현재 통합 도구의 Flash 명령은 계획 확인용 dry-run만 지원합니다.
 
-세부 펌웨어 동작은 [firmware/README.md](firmware/README.md), 현재 배선과 대체 핀 제안은
-[PINS.md](PINS.md)를 참고하세요.
+세부 펌웨어 동작은 [firmware/README.md](firmware/README.md), 핵심 장치는
+[DEVICES.md](DEVICES.md), 현재 배선과 대체 핀 제안은 [PINS.md](PINS.md)를 참고하세요.

@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "profile": "release",
-  "status": "draft",
+  "status": "approved",
   "versionFile": "VERSION",
   "targets": {
     "stm32": {
@@ -12,7 +12,8 @@
         "protocolV2": false,
         "buttonOutputTest": false,
         "ssd1306Display": true,
-        "dht11Sensor": true
+        "mpu6050Sensor": false,
+        "dht11Sensor": false
       },
       "artifact": "stm32/build/Release/nostos_stm32.bin"
     },

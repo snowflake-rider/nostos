@@ -13,7 +13,8 @@ build_stm32() {
             -DNOSTOS_PROTOCOL_V2=OFF
             -DBUTTON_OUTPUT_TEST=OFF
             -DSSD1306_DISPLAY=ON
-            -DDHT11_SENSOR=ON
+            -DMPU6050_SENSOR=OFF
+            -DDHT11_SENSOR=OFF
         )
         if ! command -v ninja >/dev/null 2>&1; then
             cmake_args+=(-G "Unix Makefiles")
