@@ -35,6 +35,7 @@
 #define DISPLAY_PROGRESS_INNER_WIDTH 116U
 #define DISPLAY_PROGRESS_MAX 1000U
 #define DISPLAY_HOLD_MAX_MS 3000U
+#define DISPLAY_CALIBRATION_STABLE_TENTHS 20U
 
 static const char ticker_text[] =
     "Have an amazing ride! Remember, safety first.";
@@ -157,7 +158,7 @@ static void render_button_message(void)
     char line[24];
     char *out = line;
     out = append_text(out, sender);
-    out = append_text(out, " SENT ");
+    out = append_text(out, ": ");
     out = append_text(out, action);
     *out = '\0';
     ssd1306_draw_text(0U, DISPLAY_MESSAGE_Y, line);
@@ -329,8 +330,9 @@ static void render_calibration(void)
     switch (calibration_state)
     {
         case DISPLAY_CALIBRATION_INIT:
-            draw_text_centered(0U, DISPLAY_WIDTH, 12U, "CAL INIT");
-            draw_text_centered(0U, DISPLAY_WIDTH, 32U, "PREPARING SENSOR");
+            draw_text_centered(0U, DISPLAY_WIDTH, 6U, "Calibration");
+            draw_text_centered(0U, DISPLAY_WIDTH, 22U, "Initialization");
+            draw_text_centered(0U, DISPLAY_WIDTH, 42U, "PREPARING SENSOR");
             break;
 
         case DISPLAY_CALIBRATION_RUNNING:
@@ -339,9 +341,14 @@ static void render_calibration(void)
             draw_text_centered(0U, DISPLAY_WIDTH, 27U, "AND HOLD IT STILL");
             render_progress_gauge(calibration_progress_permille);
             out = line;
-            out = append_u32(out,
-                ((uint32_t)calibration_progress_permille + 5U) / 10U);
-            *out++ = '%';
+            uint32_t remaining_tenths =
+                (((uint32_t)DISPLAY_PROGRESS_MAX -
+                  calibration_progress_permille) *
+                 DISPLAY_CALIBRATION_STABLE_TENTHS +
+                 (DISPLAY_PROGRESS_MAX - 1U)) /
+                DISPLAY_PROGRESS_MAX;
+            out = append_u32_x10(out, remaining_tenths);
+            out = append_text(out, "s LEFT");
             *out = '\0';
             draw_text_centered(0U, DISPLAY_WIDTH, 55U, line);
             break;
