@@ -1,11 +1,6 @@
 #ifndef APP_CONFIG_H
 #define APP_CONFIG_H
 
-/* 1: HC-SR04 후방 감지 사용, 0: 관련 센서 접근과 메시지 생성 중지 */
-#ifndef FEATURE_ULTRASONIC_SENSOR
-#define FEATURE_ULTRASONIC_SENSOR 1
-#endif
-
 /* 현재 연결 보드에는 MPU6050이 없습니다. 센서 장착 빌드에서만 1로 설정합니다. */
 #ifndef FEATURE_FALL_DETECTION
 #define FEATURE_FALL_DETECTION 0

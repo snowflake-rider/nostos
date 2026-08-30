@@ -1,44 +1,40 @@
 # NOSTOS 공통 메시지 protocol
 
-STM32와 ESP32가 함께 빌드하는 메시지 계약입니다. v1 기본 경로는 STM32 UART에서 메시지 ID 1바이트를 사용하고, ESP32 Mesh payload에서는 `[버전, 메시지 ID]` 2바이트를 사용합니다.
+STM32와 ESP32가 함께 빌드하는 v2 wire 계약입니다. 두 target은 같은 `nostos_protocol.*`,
+`nostos_uart.*`, `nostos_bridge.*`, `nostos_state.*`, `sensor_link.*`를 사용합니다.
 
-## 가장 작은 예제
+## 공유 항목
 
-```c
-#include "event_protocol.h"
+application에서 공유하는 데이터와 사건은 다음으로 제한합니다.
 
-uint8_t packet[EVENT_WIRE_SIZE];
-uint8_t received;
+| 구분 | v2 type | 값 |
+| --- | --- | --- |
+| 버튼 1 | `10` SPEED_DOWN | payload 없음 |
+| 버튼 2 | `11` SPEED_UP | payload 없음 |
+| 버튼 3 | `13` STOP | payload 없음 |
+| 환경 | `41` ENVIRONMENT | 온도, 습도 |
+| 주행 | `44` RIDE | 속도, 누적 바퀴 이동거리 |
+| 낙상 | `30/42` FALL/FALL_CLEAR | 사건 발생, 해제 |
 
-if (!event_encode(MSG_STOP_REQUEST, packet, sizeof(packet))) {
-    return 1;
-}
-if (!event_decode(packet, sizeof(packet), &received)) {
-    return 1;
-}
-```
+`50` HEARTBEAT와 `51` ACK는 내부 상태/제어용입니다. 이 등록표에 없는 type은 codec과 bridge에서
+거부합니다. 로컬 ESP32→STM32 sensor link는 `06` RIDE와 identity/session handshake만 전달합니다.
 
-`MSG_STOP_REQUEST`는 `0x13`이고, 위 packet은 `01 13`입니다. `event_decode()`는 길이·버전·메시지 ID를 검사합니다.
+RIDE의 `distance_mm`는 바퀴 회전에서 누적한 이동거리입니다. valid가 false이면 속도와 거리의 wire 값은
+모두 0이어야 하며, 수신 상태는 마지막 정상값과 정상값 시각을 보존합니다.
 
-## 구성
+전체 바이트, session/order, queue, freshness 계약은 [V2.md](V2.md)를 따릅니다.
 
-| 파일 | 역할 |
-| --- | --- |
-| `message_type.h` | 공통 메시지 ID |
-| `event_protocol.*` | v1 Mesh payload encode/decode |
-| `event_bridge.*` | UART↔Mesh 큐와 전송 방향 |
-| `nostos_*` | 기본 OFF인 선택형 v2 호환 경로 |
+## 2바이트 event framing
 
-센서 읽기와 사건 판정은 STM32가 담당하고 ESP32는 메시지를 전달합니다. 전송 callback의 성공은 상대 노드 수신을 뜻하지 않으므로 실제 수신 측까지 별도로 확인해야 합니다.
+`event_protocol.*`, `event_bridge.*`, `message_type.h`도 버튼 1/2/3과 FALL 네 event만 허용합니다.
+현재 v2 sensor data나 session 상태를 표현하는 framing은 아닙니다.
 
 ## 검사
 
 ```sh
-cmake -S firmware/protocol -B /tmp/nostos-protocol -DENABLE_SANITIZERS=ON
-cmake --build /tmp/nostos-protocol --parallel
-ctest --test-dir /tmp/nostos-protocol --output-on-failure
+bash firmware/tools/fw check protocol
+bash firmware/tools/fw test protocol
 ```
 
-저장소 전체 호스트 검사는 루트에서 `bash firmware/tools/fw test`를 사용합니다.
-
-v2 호환 코드는 현재 v1 기본 설정에서 비활성화되어 있습니다. 계약은 [V2.md](V2.md)에 남아 있으며, 활성화와 정식 배포는 별도 기능 변경·검증 후 새 bundle release로 진행합니다.
+`check`는 strict compile의 빠른 회귀이고 `test`는 sanitizer 빌드입니다. 공통 wire 변경 뒤에는 양쪽
+target build와 실물 검증도 필요합니다.

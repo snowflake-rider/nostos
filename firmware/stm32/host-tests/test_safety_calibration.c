@@ -48,7 +48,7 @@ static void calibration_uses_mounted_gravity_direction(void)
     CHECK(!status->calibration_valid);
 
     /* 캘리브레이션 전에는 큰 값도 낙상 상태를 시작하지 않습니다. */
-    CHECK(safety_detector_check(0U, false, 0.0f, true,
+    CHECK(safety_detector_check(0U, true,
                                 2.0f, 0.0f, 0.0f,
                                 0.0f, 0.0f, 0.0f) == SAFETY_EVENT_NONE);
     CHECK(safety_detector_get_status()->fall_state == FALL_STATE_IDLE);
@@ -77,7 +77,7 @@ static void calibration_uses_mounted_gravity_direction(void)
     CHECK(near(status->gyro_offset_y, gy, 0.001f));
     CHECK(near(status->gyro_offset_z, gz, 0.001f));
 
-    CHECK(safety_detector_check(100U, false, 0.0f, true,
+    CHECK(safety_detector_check(100U, true,
                                 ax, ay, az, gx, gy, gz) ==
           SAFETY_EVENT_NONE);
     status = safety_detector_get_status();
@@ -86,12 +86,12 @@ static void calibration_uses_mounted_gravity_direction(void)
     CHECK(near(status->tilt_cosine, 1.0f, 0.001f));
 
     /* 기준 방향의 1.6배 충격 뒤, 기준과 직각인 자세에서 카운트다운합니다. */
-    CHECK(safety_detector_check(200U, false, 0.0f, true,
+    CHECK(safety_detector_check(200U, true,
                                 ax * 1.6f, ay * 1.6f, az * 1.6f,
                                 gx, gy, gz) == SAFETY_EVENT_NONE);
     CHECK(safety_detector_get_status()->fall_state ==
           FALL_STATE_IMPACT_DETECTED);
-    CHECK(safety_detector_check(1200U, false, 0.0f, true,
+    CHECK(safety_detector_check(1200U, true,
                                 0.8320503f, 0.5547002f, 0.0f,
                                 gx, gy, gz) == SAFETY_EVENT_FALL_COUNTDOWN);
     CHECK(safety_detector_get_status()->fall_state == FALL_STATE_COUNTDOWN);

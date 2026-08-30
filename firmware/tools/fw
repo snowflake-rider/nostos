@@ -14,13 +14,17 @@ usage: firmware/tools/fw <command> [options]
 
 commands:
   doctor
+  check [all|stm32|esp32|protocol]
   test [all|stm32|esp32|protocol]
   build [all|stm32|esp32]
+  release-build [all|stm32|esp32]
+  dev --target stm32|esp32 --node NAME (--dry-run|--execute)
   package --version X.Y.Z
   verify --release PATH_OR_ID
   flash --release PATH_OR_ID --target stm32|esp32 --node NAME --dry-run
 
-The flash command is intentionally plan-only. It never builds or writes hardware.
+check and build are cached development paths. dev builds one target and writes one node only
+when --execute is explicit. flash remains a verified release plan and never writes hardware.
 EOF
 }
 
@@ -64,7 +68,6 @@ check_root_layout() {
         'firmware/README.md' \
         'firmware/build.sh' \
         'firmware/test-host.sh' \
-        'firmware/flash-stm32-all.sh' \
         'firmware/profiles/release.json' \
         'firmware/inventory/boards.example.json' \
         'firmware/tools/fw' \
@@ -96,7 +99,7 @@ check_root_layout() {
     done
 
     for forbidden_name in \
-        stm32 esp32 protocol VERSION build.sh test-host.sh flash-stm32-all.sh manifest.json; do
+        stm32 esp32 protocol VERSION build.sh test-host.sh manifest.json; do
         if [[ -e "$REPO_DIR/$forbidden_name" || -L "$REPO_DIR/$forbidden_name" ]]; then
             printf 'FAIL %-22s legacy root path present: %s\n' 'canonical layout' "$forbidden_name" >&2
             layout_failures=$((layout_failures + 1))
@@ -108,7 +111,7 @@ check_root_layout() {
         case "$root_name" in
             .git|.gitignore|.worktrees|AGENTS.md|DEVICES.md|PINS.md|README.md|REQUIREMENT.md|RIDER-*.md|STRUCTURE.md|firmware|releases|apps|docs)
                 ;;
-            stm32|esp32|protocol|VERSION|build.sh|test-host.sh|flash-stm32-all.sh|manifest.json)
+            stm32|esp32|protocol|VERSION|build.sh|test-host.sh|manifest.json)
                 # Reported above with the more specific legacy-path diagnostic.
                 ;;
             *)
@@ -262,6 +265,34 @@ run_test() {
     esac
 }
 
+run_check() {
+    local target="${1:-all}"
+    if [[ "$#" -gt 1 ]]; then
+        die_usage 'check accepts at most one target'
+    fi
+
+    case "$target" in
+        all)
+            bash "$FIRMWARE_DIR/test-host.sh" --fast
+            ;;
+        stm32)
+            bash "$FIRMWARE_DIR/stm32/tools/test-host.sh" --fast
+            ;;
+        esp32)
+            bash "$FIRMWARE_DIR/esp32/test-host.sh" --fast
+            ;;
+        protocol)
+            local protocol_build="$FIRMWARE_DIR/out/host-tests/protocol/fast"
+            cmake -S "$FIRMWARE_DIR/protocol" -B "$protocol_build" -DENABLE_SANITIZERS=OFF
+            cmake --build "$protocol_build" --parallel
+            ctest --test-dir "$protocol_build" --output-on-failure
+            ;;
+        *)
+            die_usage "unknown check target: $target"
+            ;;
+    esac
+}
+
 run_build() {
     local target="${1:-all}"
     if [[ "$#" -gt 1 ]]; then
@@ -270,19 +301,33 @@ run_build() {
     case "$target" in
         all)
             bash "$FIRMWARE_DIR/build.sh" all
-            python3 "$RELEASE_TOOL" record-build \
-                --firmware-root "$FIRMWARE_DIR" \
-                --repo-root "$REPO_DIR" \
-                --profile "$PROFILE" \
-                --target stm32
-            python3 "$RELEASE_TOOL" record-build \
-                --firmware-root "$FIRMWARE_DIR" \
-                --repo-root "$REPO_DIR" \
-                --profile "$PROFILE" \
-                --target esp32
             ;;
         stm32|esp32)
             bash "$FIRMWARE_DIR/build.sh" "$target"
+            ;;
+        *)
+            die_usage "unknown build target: $target"
+            ;;
+    esac
+}
+
+run_release_build() {
+    local target="${1:-all}"
+    if [[ "$#" -gt 1 ]]; then
+        die_usage 'release-build accepts at most one target'
+    fi
+    NOSTOS_RELEASE_BUILD=1 bash "$FIRMWARE_DIR/build.sh" "$target"
+    case "$target" in
+        all)
+            for receipt_target in stm32 esp32; do
+                python3 "$RELEASE_TOOL" record-build \
+                    --firmware-root "$FIRMWARE_DIR" \
+                    --repo-root "$REPO_DIR" \
+                    --profile "$PROFILE" \
+                    --target "$receipt_target"
+            done
+            ;;
+        stm32|esp32)
             python3 "$RELEASE_TOOL" record-build \
                 --firmware-root "$FIRMWARE_DIR" \
                 --repo-root "$REPO_DIR" \
@@ -290,9 +335,71 @@ run_build() {
                 --target "$target"
             ;;
         *)
-            die_usage "unknown build target: $target"
+            die_usage "unknown release-build target: $target"
             ;;
     esac
+}
+
+run_dev() {
+    local target=''
+    local node=''
+    local action=''
+
+    while [[ "$#" -gt 0 ]]; do
+        case "$1" in
+            --target)
+                [[ "$#" -ge 2 ]] || die_usage '--target requires stm32 or esp32'
+                target="$2"
+                shift 2
+                ;;
+            --node)
+                [[ "$#" -ge 2 ]] || die_usage '--node requires a name'
+                node="$2"
+                shift 2
+                ;;
+            --dry-run|--execute)
+                [[ -z "$action" ]] || die_usage 'dev accepts exactly one of --dry-run or --execute'
+                action="$1"
+                shift
+                ;;
+            *)
+                die_usage "unknown dev option: $1"
+                ;;
+        esac
+    done
+
+    [[ -n "$node" ]] || die_usage 'dev requires --node NAME from boards.local.json'
+    case "$target" in
+        stm32|esp32) ;;
+        '') die_usage 'dev requires --target stm32|esp32' ;;
+        *) die_usage "unknown dev target: $target" ;;
+    esac
+    [[ -n "$action" ]] || die_usage 'dev requires exactly one of --dry-run or --execute'
+
+    if [[ "$target" == esp32 && "$action" == --execute ]] && ! command -v esptool.py >/dev/null 2>&1; then
+        local search_root="${XDG_DATA_HOME:-${HOME}/.local/share}/nostos-toolchains"
+        local export_script="${NOSTOS_IDF_EXPORT:-}"
+        local env_cache="$FIRMWARE_DIR/out/idf-env-cache.sh"
+        if [[ -f "$env_cache" ]]; then
+            # shellcheck disable=SC1090
+            source "$env_cache"
+        fi
+        if [[ -z "$export_script" && -d "$search_root" ]]; then
+            export_script="$(find "$search_root" -path '*/esp-idf-v5.5.5/export.sh' -type f -print -quit 2>/dev/null || true)"
+        fi
+        if ! command -v esptool.py >/dev/null 2>&1 && [[ -n "$export_script" && -f "$export_script" ]]; then
+            # shellcheck disable=SC1090
+            source "$export_script" >/dev/null 2>&1
+        fi
+    fi
+
+    python3 "$RELEASE_TOOL" dev-flash \
+        --firmware-root "$FIRMWARE_DIR" \
+        --profile "$PROFILE" \
+        --inventory "$INVENTORY" \
+        --target "$target" \
+        --node "$node" \
+        "$action"
 }
 
 run_package() {
@@ -411,11 +518,20 @@ case "$command_name" in
         require_no_args "$@"
         doctor
         ;;
+    check)
+        run_check "$@"
+        ;;
     test)
         run_test "$@"
         ;;
     build)
         run_build "$@"
+        ;;
+    release-build)
+        run_release_build "$@"
+        ;;
+    dev)
+        run_dev "$@"
         ;;
     package)
         run_package "$@"

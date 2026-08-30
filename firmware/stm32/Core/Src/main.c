@@ -28,6 +28,11 @@
 #include "button_output_test.h"
 #endif
 #include "uart_service.h"
+#if NOSTOS_FREERTOS
+#include "app_rtos.h"
+#include "FreeRTOS.h"
+#include "task.h"
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -114,6 +119,14 @@ int main(void)
   /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 캘리브레이션 텍스트 로그. */
   safety_service_set_log_uart(&huart2);
 #endif
+#if NOSTOS_FREERTOS && !FEATURE_BUTTON_OUTPUT_TEST
+  if (!app_rtos_start())
+  {
+    Error_Handler();
+  }
+  vTaskStartScheduler();
+  Error_Handler();
+#endif
   /* USER CODE END 2 */
 
   /* Infinite loop */
@@ -125,7 +138,7 @@ int main(void)
     /* USER CODE BEGIN 3 */
 #if FEATURE_BUTTON_OUTPUT_TEST
     button_output_test_process();
-#else
+#elif !NOSTOS_FREERTOS
     app_process();
 #endif
   }
@@ -318,7 +331,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOC, HCSR04_TRIG_Pin|RGB_B_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(RGB_B_GPIO_Port, RGB_B_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(RGB_R_GPIO_Port, RGB_R_Pin, GPIO_PIN_RESET);
@@ -331,13 +344,6 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(VS_RST_GPIO_Port, VS_RST_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin : HCSR04_TRIG_Pin */
-  GPIO_InitStruct.Pin = HCSR04_TRIG_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
-  GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
-  HAL_GPIO_Init(HCSR04_TRIG_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RGB_B_Pin */
   GPIO_InitStruct.Pin = RGB_B_Pin;
@@ -352,12 +358,6 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
-
-  /*Configure GPIO pin : HCSR04_ECHO_Pin */
-  GPIO_InitStruct.Pin = HCSR04_ECHO_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
-  GPIO_InitStruct.Pull = GPIO_PULLDOWN;
-  HAL_GPIO_Init(HCSR04_ECHO_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pin : RGB_R_Pin */
   GPIO_InitStruct.Pin = RGB_R_Pin;

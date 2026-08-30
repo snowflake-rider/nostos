@@ -5,12 +5,8 @@ bool event_id_valid(uint8_t id)
     switch (id) {
     case MSG_SPEED_DOWN_REQUEST:
     case MSG_SPEED_UP_REQUEST:
-    case MSG_SAFETY_REMINDER:
     case MSG_STOP_REQUEST:
-    case MSG_REAR_SAFE:
-    case MSG_REAR_WARNING:
     case MSG_FALL_DETECTED:
-    case MSG_SOS:
         return true;
     default:
         return false;

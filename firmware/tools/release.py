@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Create and verify immutable, offline NOSTOS firmware release bundles."""
+"""Build, inspect, and verify NOSTOS firmware release and development flows."""
 
 from __future__ import annotations
 
@@ -1078,6 +1078,193 @@ def inventory_device(inventory_file: Path, node: str, target: str) -> dict[str, 
     return device
 
 
+def require_dev_artifact(path: Path, label: str) -> Path:
+    if not path.is_file() or path.is_symlink():
+        raise ReleaseError(f"{label} is missing or is not a regular file: {path}")
+    if path.stat().st_size <= 0:
+        raise ReleaseError(f"{label} is empty: {path}")
+    return path
+
+
+def run_checked(
+    command: list[str], label: str, *, environment: dict[str, str] | None = None
+) -> None:
+    try:
+        subprocess.run(command, check=True, env=environment)
+    except FileNotFoundError as exc:
+        raise ReleaseError(f"{label} executable not found: {command[0]}") from exc
+    except subprocess.CalledProcessError as exc:
+        raise ReleaseError(f"{label} failed with exit code {exc.returncode}") from exc
+
+
+def stm32_dev_hardware_options(
+    device: dict[str, Any], target_profile: dict[str, Any]
+) -> dict[str, str]:
+    policy = nested(target_profile, ("buildPolicy",))
+    hardware = device.get("hardwareProfile")
+    if hardware is None:
+        hardware = {}
+    if not isinstance(hardware, dict):
+        raise ReleaseError("STM32 inventory hardwareProfile must be an object")
+
+    fields = {
+        "NOSTOS_STM32_SSD1306_DISPLAY": "ssd1306Display",
+        "NOSTOS_STM32_MPU6050_SENSOR": "mpu6050Sensor",
+        "NOSTOS_STM32_DHT11_SENSOR": "dht11Sensor",
+    }
+    options: dict[str, str] = {}
+    for environment_name, profile_name in fields.items():
+        value = hardware.get(profile_name, policy.get(profile_name))
+        if not isinstance(value, bool):
+            raise ReleaseError(
+                f"STM32 inventory hardwareProfile.{profile_name} must be boolean"
+            )
+        options[environment_name] = "ON" if value else "OFF"
+    return options
+
+
+def validate_esp_dev_partition(
+    firmware_root: Path, target_profile: dict[str, Any], device: dict[str, Any]
+) -> Path:
+    partition = require_dev_artifact(
+        profile_path(
+            firmware_root,
+            nested(target_profile, ("artifacts", "partitionTable")),
+            "targets.esp32.artifacts.partitionTable",
+        ),
+        "ESP32 partition table",
+    )
+    if device.get("partitionLayout") != target_profile["partitionLayout"]:
+        raise ReleaseError("ESP32 inventory partitionLayout does not match the current build profile")
+    if device.get("partitionTableSha256") != sha256(partition):
+        raise ReleaseError("ESP32 inventory partitionTableSha256 does not match the current build")
+    return partition
+
+
+def dev_flash(args: argparse.Namespace) -> None:
+    firmware_root = args.firmware_root.resolve()
+    canonical_profile = canonical_profile_path(firmware_root, args.profile)
+    profile = validate_profile(firmware_root, canonical_profile)
+    device = inventory_device(args.inventory.resolve(), args.node, args.target)
+    execute = bool(args.execute)
+
+    if args.target == "stm32":
+        target_profile = nested(profile, ("targets", "stm32"))
+        hardware_options = stm32_dev_hardware_options(device, target_profile)
+        artifact = profile_path(
+            firmware_root, target_profile["artifact"], "targets.stm32.artifact"
+        )
+        offset = canonical_offset(target_profile["flashAddress"], "STM32 flashAddress")
+        tool_name = "st-flash"
+        preserved = "option bytes and OTP; no chip erase"
+    else:
+        target_profile = nested(profile, ("targets", "esp32"))
+        artifact = profile_path(
+            firmware_root,
+            nested(target_profile, ("artifacts", "application")),
+            "targets.esp32.artifacts.application",
+        )
+        offset = canonical_offset(
+            nested(target_profile, ("flashOffsets", "application")),
+            "ESP32 application offset",
+        )
+        tool_name = "esptool.py"
+        preserved = "bootloader, partition table, NVS, and provisioning"
+
+    print("development flash plan")
+    print(f"target: {args.target}")
+    print(f"node: {args.node}")
+    print(f"artifact: {artifact}")
+    print(f"offset: {offset}")
+    print(f"preserved: {preserved}")
+    print("scope: one application image on one named node")
+    print("release receipt/package verification: SKIPPED (development path)")
+    print("external full read-back: SKIPPED (development path)")
+    if args.target == "stm32":
+        print(
+            "hardware profile: "
+            f"SSD1306={hardware_options['NOSTOS_STM32_SSD1306_DISPLAY']} "
+            f"MPU6050={hardware_options['NOSTOS_STM32_MPU6050_SENSOR']} "
+            f"DHT11={hardware_options['NOSTOS_STM32_DHT11_SENSOR']}"
+        )
+
+    if not execute:
+        artifact_state = "ready" if artifact.is_file() and not artifact.is_symlink() else "not built"
+        print(f"artifact state: {artifact_state}")
+        print("build action: incremental target build on execute")
+        print("hardware action: NONE")
+        return
+
+    if args.target == "esp32":
+        partition_path = profile_path(
+            firmware_root,
+            nested(target_profile, ("artifacts", "partitionTable")),
+            "targets.esp32.artifacts.partitionTable",
+        )
+        if partition_path.exists():
+            validate_esp_dev_partition(firmware_root, target_profile, device)
+
+    tool = shutil.which(tool_name)
+    if tool is None:
+        if args.target == "esp32":
+            raise ReleaseError(
+                "esptool.py not found; activate the ESP-IDF v5.5.5 environment before dev Flash"
+            )
+        raise ReleaseError("st-flash not found; install stlink before dev Flash")
+
+    build_script = require_dev_artifact(firmware_root / "build.sh", "firmware build script")
+    build_environment = None
+    if args.target == "stm32":
+        build_environment = os.environ.copy()
+        build_environment.update(hardware_options)
+    run_checked(
+        ["bash", str(build_script), args.target],
+        f"{args.target} incremental build",
+        environment=build_environment,
+    )
+    artifact = require_dev_artifact(artifact, f"{args.target} application image")
+
+    if args.target == "stm32":
+        command = [
+            tool,
+            "--serial",
+            str(device["serial"]),
+            "--reset",
+            "write",
+            str(artifact),
+            offset,
+        ]
+    else:
+        validate_esp_dev_partition(firmware_root, target_profile, device)
+        policy = nested(target_profile, ("buildPolicy",))
+        command = [
+            tool,
+            "--chip",
+            str(target_profile["chip"]),
+            "--port",
+            str(device["port"]),
+            "--before",
+            "default_reset",
+            "--after",
+            "hard_reset",
+            "write_flash",
+            "--flash_mode",
+            str(policy["flashMode"]),
+            "--flash_freq",
+            str(policy["flashFrequency"]),
+            "--flash_size",
+            str(policy["flashSize"]),
+            offset,
+            str(artifact),
+        ]
+
+    print(f"application bytes: {artifact.stat().st_size}")
+    print(f"application sha256: {sha256(artifact)}")
+    run_checked(command, f"{args.target} development Flash")
+    print("development Flash: PASS")
+    print("hardware functional verification: NOT PERFORMED")
+
+
 def plan_flash(args: argparse.Namespace) -> None:
     firmware_root = args.firmware_root.resolve()
     release_dir = resolve_release(firmware_root, args.profile, args.release)
@@ -1151,6 +1338,16 @@ def parser() -> argparse.ArgumentParser:
     plan_parser.add_argument("--release", required=True)
     plan_parser.add_argument("--target", choices=("stm32", "esp32"), required=True)
     plan_parser.add_argument("--node", required=True)
+
+    dev_parser = sub.add_parser("dev-flash")
+    dev_parser.add_argument("--firmware-root", type=Path, required=True)
+    dev_parser.add_argument("--profile", type=Path, required=True)
+    dev_parser.add_argument("--inventory", type=Path, required=True)
+    dev_parser.add_argument("--target", choices=("stm32", "esp32"), required=True)
+    dev_parser.add_argument("--node", required=True)
+    dev_action = dev_parser.add_mutually_exclusive_group(required=True)
+    dev_action.add_argument("--dry-run", action="store_true")
+    dev_action.add_argument("--execute", action="store_true")
     return result
 
 
@@ -1171,6 +1368,8 @@ def main() -> int:
             verify(args)
         elif args.command == "plan-flash":
             plan_flash(args)
+        elif args.command == "dev-flash":
+            dev_flash(args)
         else:
             raise ReleaseError(f"unknown command: {args.command}")
     except ReleaseError as exc:

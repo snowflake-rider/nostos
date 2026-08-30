@@ -24,12 +24,8 @@ static message_type_t uart_service_decode(uint8_t value)
         case MSG_NONE:
         case MSG_SPEED_DOWN_REQUEST:
         case MSG_SPEED_UP_REQUEST:
-        case MSG_SAFETY_REMINDER:
         case MSG_STOP_REQUEST:
-        case MSG_REAR_SAFE:
-        case MSG_REAR_WARNING:
         case MSG_FALL_DETECTED:
-        case MSG_SOS:
             return (message_type_t)value;
 
         default:

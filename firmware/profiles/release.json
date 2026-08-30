@@ -1,7 +1,7 @@
 {
   "schemaVersion": 1,
   "profile": "release",
-  "status": "approved",
+  "status": "draft",
   "versionFile": "VERSION",
   "targets": {
     "stm32": {
@@ -9,7 +9,7 @@
       "flashAddress": "0x08000000",
       "buildPolicy": {
         "generator": "Ninja",
-        "protocolV2": false,
+        "protocolV2": true,
         "buttonOutputTest": false,
         "ssd1306Display": true,
         "mpu6050Sensor": false,
@@ -28,7 +28,7 @@
         "application": "0x10000"
       },
       "buildPolicy": {
-        "protocolV2": false,
+        "protocolV2": true,
         "flashMode": "dio",
         "flashSize": "16MB",
         "flashFrequency": "80m"
@@ -43,12 +43,12 @@
   },
   "protocols": {
     "uart": {
-      "version": 1,
-      "wireFormat": "single-byte-message-id"
+      "version": 2,
+      "wireFormat": "7e-framed-length-body-crc16"
     },
     "mesh": {
-      "version": 1,
-      "wireFormat": "version-byte-plus-message-id"
+      "version": 2,
+      "wireFormat": "common-body-v2"
     }
   },
   "package": {

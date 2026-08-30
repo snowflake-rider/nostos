@@ -7,14 +7,13 @@
 typedef enum
 {
     BUZZER_PATTERN_NONE = 0,
-    BUZZER_PATTERN_REAR_WARNING,
     BUZZER_PATTERN_EMERGENCY
 } buzzer_pattern_t;
 
 /* 액티브 부저를 꺼진 상태로 초기화합니다. */
 void buzzer_init(void);
 
-/* 후방 경고 또는 긴급 경고 패턴을 비차단 방식으로 시작합니다. */
+/* 긴급 경고 패턴을 비차단 방식으로 시작합니다. */
 void buzzer_play_pattern(buzzer_pattern_t pattern);
 
 /* 진행 중인 패턴을 즉시 중단합니다. */

@@ -57,12 +57,8 @@ void Error_Handler(void);
 /* USER CODE END EFP */
 
 /* Private defines -----------------------------------------------------------*/
-#define HCSR04_TRIG_Pin GPIO_PIN_0
-#define HCSR04_TRIG_GPIO_Port GPIOC
 #define RGB_B_Pin GPIO_PIN_1
 #define RGB_B_GPIO_Port GPIOC
-#define HCSR04_ECHO_Pin GPIO_PIN_0
-#define HCSR04_ECHO_GPIO_Port GPIOA
 #define RGB_R_Pin GPIO_PIN_4
 #define RGB_R_GPIO_Port GPIOA
 #define VS_DREQ_Pin GPIO_PIN_5

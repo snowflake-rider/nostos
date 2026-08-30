@@ -28,6 +28,10 @@ void HAL_GPIO_WritePin(GPIO_TypeDef *port, uint16_t pin, GPIO_PinState state);
 HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *uart, uint8_t *data, uint16_t size);
 HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *uart, const uint8_t *data,
                                  uint16_t size, uint32_t timeout);
+HAL_StatusTypeDef HAL_I2C_Master_Transmit(I2C_HandleTypeDef *i2c, uint16_t address,
+                                         uint8_t *data, uint16_t size,
+                                         uint32_t timeout);
+void HAL_Delay(uint32_t delay);
 #define __disable_irq() ((void)0)
 #define __enable_irq() ((void)0)
 #endif

@@ -26,17 +26,17 @@ static void capacity_and_fifo(void)
     event_bridge_init(&b);
     for (unsigned round = 0; round < 20; ++round) {
         for (unsigned i = 0; i < 32; ++i) {
-            uint8_t wire[] = {1, 0x31};
+            uint8_t wire[] = {1, 0x30};
             if (i % 2 == 0) CHECK(event_bridge_uart(&b, 0x10, 100 + i, true) == EVENT_OK);
             else CHECK(event_bridge_mesh(&b, wire, 2, (uint16_t)(i + 2), 1, 100 + i) == EVENT_OK);
         }
-        CHECK(event_bridge_uart(&b, 0x20, 132, true) == EVENT_FULL);
-        const uint8_t wire[] = {1, 0x20};
+        CHECK(event_bridge_uart(&b, 0x11, 132, true) == EVENT_FULL);
+        const uint8_t wire[] = {1, 0x30};
         CHECK(event_bridge_mesh(&b, wire, 2, 2, 1, 132) == EVENT_FULL);
         for (unsigned i = 0; i < 32; ++i) {
             CHECK(event_bridge_next(&b, 140, true, &job) == EVENT_OK);
             CHECK(job.received_ms == 100 + i);
-            CHECK(job.id == (i % 2 == 0 ? 0x10 : 0x31));
+            CHECK(job.id == (i % 2 == 0 ? 0x10 : 0x30));
         }
         CHECK(event_bridge_next(&b, 140, true, &job) == EVENT_EMPTY);
     }
@@ -72,7 +72,7 @@ static void rejection_and_expiry(void)
     CHECK(event_bridge_next(&b, 1099, true, &job) == EVENT_OK);
     CHECK(event_bridge_uart(&b, 0x10, 100, true) == EVENT_OK);
     CHECK(event_bridge_next(&b, 1100, true, &job) == EVENT_EXPIRED);
-    const uint8_t wire[] = {1, 0x20};
+    const uint8_t wire[] = {1, 0x30};
     CHECK(event_bridge_mesh(&b, wire, 2, 2, 1, 100) == EVENT_OK);
     CHECK(event_bridge_next(&b, 1101, true, &job) == EVENT_EXPIRED);
     CHECK(event_bridge_uart(&b, 0x10, 100, true) == EVENT_OK);
@@ -101,22 +101,22 @@ int main(void)
     CHECK(event_bridge_next(&bridge, 101, true, &job) == EVENT_OK);
     CHECK(job.direction == EVENT_TO_MESH && job.id == 0x10);
     CHECK(event_bridge_next(&bridge, 101, true, &job) == EVENT_EMPTY);
-    uint8_t wire[] = {1, 0x31};
+    uint8_t wire[] = {1, 0x30};
     CHECK(event_bridge_mesh(&bridge, wire, 2, 0x1234, 0x0001, 200) == EVENT_OK);
     wire[1] = 0x10; /* callback-owned bytes may change after the call */
     CHECK(event_bridge_next(&bridge, 201, false, &job) == EVENT_OK);
-    CHECK(job.direction == EVENT_TO_UART && job.id == 0x31 && job.source == 0x1234);
+    CHECK(job.direction == EVENT_TO_UART && job.id == 0x30 && job.source == 0x1234);
     CHECK(event_bridge_next(&bridge, 201, true, &job) == EVENT_EMPTY);
     CHECK(event_bridge_mesh(&bridge, wire, 2, 1, 1, 200) == EVENT_SELF);
     CHECK(event_bridge_next(&bridge, 201, true, &job) == EVENT_EMPTY);
     fake_io_t io = {.success = true};
     event_transport_t transport = {.context = &io, .mesh = mesh_send, .uart = uart_send};
-    CHECK(event_bridge_uart(&bridge, 0x20, 300, true) == EVENT_OK);
+    CHECK(event_bridge_uart(&bridge, 0x11, 300, true) == EVENT_OK);
     CHECK(event_bridge_next(&bridge, 301, true, &job) == EVENT_OK);
     CHECK(event_job_send(&job, &transport));
     event_bridge_complete(&bridge, job.direction, true);
     CHECK(io.mesh_calls == 1 && io.uart_calls == 0);
-    CHECK(io.bytes[0] == 1 && io.bytes[1] == 0x20);
+    CHECK(io.bytes[0] == 1 && io.bytes[1] == 0x11);
     CHECK(event_bridge_mesh(&bridge, wire, 2, 2, 1, 300) == EVENT_OK);
     CHECK(event_bridge_next(&bridge, 301, true, &job) == EVENT_OK);
     io.success = false;

@@ -14,16 +14,10 @@ typedef enum {
   /* 라이더가 버튼으로 보내는 요청 */
   MSG_SPEED_DOWN_REQUEST = 0x10,
   MSG_SPEED_UP_REQUEST = 0x11,
-  MSG_SAFETY_REMINDER = 0x12,
   MSG_STOP_REQUEST = 0x13,
 
-  /* 후방 거리 센서에서 발생하는 상태 */
-  MSG_REAR_SAFE = 0x20,
-  MSG_REAR_WARNING = 0x21,
-
-  /* 낙차 및 사고 관련 메시지 */
+  /* 낙상 발생 */
   MSG_FALL_DETECTED = 0x30,
-  MSG_SOS = 0x31,
 
   MSG_UNKNOWN = 0xFF
 } message_type_t;

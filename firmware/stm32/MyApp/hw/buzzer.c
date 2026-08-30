@@ -10,12 +10,6 @@ typedef struct
     uint16_t duration_ms;
 } buzzer_step_t;
 
-static const buzzer_step_t rear_warning_steps[] = {
-    {true, 100U},
-    {false, 100U},
-    {true, 100U},
-};
-
 static const buzzer_step_t emergency_steps[] = {
     {true, 300U},
     {false, 150U},
@@ -74,18 +68,9 @@ void buzzer_play_pattern(buzzer_pattern_t pattern)
     current_pattern = pattern;
     current_step_index = 0U;
 
-    if (pattern == BUZZER_PATTERN_REAR_WARNING)
-    {
-        current_steps = rear_warning_steps;
-        current_step_count = sizeof(rear_warning_steps) /
-                             sizeof(rear_warning_steps[0]);
-    }
-    else
-    {
-        current_steps = emergency_steps;
-        current_step_count = sizeof(emergency_steps) /
-                             sizeof(emergency_steps[0]);
-    }
+    current_steps = emergency_steps;
+    current_step_count = sizeof(emergency_steps) /
+                         sizeof(emergency_steps[0]);
 
     active = current_steps[0].on;
     buzzer_write(active);
@@ -104,15 +89,7 @@ void buzzer_process(void)
 
     if (current_step_index >= current_step_count)
     {
-        if (current_pattern == BUZZER_PATTERN_EMERGENCY)
-        {
-            current_step_index = 0U;
-        }
-        else
-        {
-            buzzer_stop();
-            return;
-        }
+        current_step_index = 0U;
     }
 
     active = current_steps[current_step_index].on;

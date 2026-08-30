@@ -55,15 +55,23 @@ static nostos_result_t decode_incident(const uint8_t *p, nostos_message_t *m)
     m->payload.incident=(nostos_incident_ref_t){get32(p),get16(p+4)};
     return m->payload.incident.session_id && m->payload.incident.incident_id?NOSTOS_OK:NOSTOS_BAD_VALUE;
 }
-static nostos_result_t encode_speed(const nostos_message_t *m, uint8_t *p)
+static nostos_result_t encode_ride(const nostos_message_t *m, uint8_t *p)
 {
-    p[0]=(uint8_t)m->payload.speed.valid; put16(p+1,m->payload.speed.kmh_x10);
+    const nostos_ride_t *ride=&m->payload.ride;
+    if (!ride->valid && (ride->kmh_x10!=0U || ride->distance_mm!=0U))
+        return NOSTOS_BAD_VALUE;
+    p[0]=(uint8_t)ride->valid;
+    put16(p+1,ride->kmh_x10);
+    put32(p+3,ride->distance_mm);
     return NOSTOS_OK;
 }
-static nostos_result_t decode_speed(const uint8_t *p, nostos_message_t *m)
+static nostos_result_t decode_ride(const uint8_t *p, nostos_message_t *m)
 {
-    if (p[0]>1U || (!p[0] && get16(p+1))) return NOSTOS_BAD_VALUE;
-    m->payload.speed=(nostos_speed_t){p[0]!=0U,get16(p+1)};
+    uint16_t kmh_x10=get16(p+1);
+    uint32_t distance_mm=get32(p+3);
+    if (p[0]>1U || (p[0]==0U && (kmh_x10!=0U || distance_mm!=0U)))
+        return NOSTOS_BAD_VALUE;
+    m->payload.ride=(nostos_ride_t){p[0]!=0U,kmh_x10,distance_mm};
     return NOSTOS_OK;
 }
 static nostos_result_t encode_environment(const nostos_message_t *m, uint8_t *p)
@@ -115,17 +123,11 @@ static nostos_result_t decode_ack(const uint8_t *p, nostos_message_t *m)
 const nostos_type_info_t nostos_types[NOSTOS_TYPE_COUNT] = {
     {NOSTOS_SPEED_DOWN,0U,"SPEED_DOWN",encode_empty,decode_empty},
     {NOSTOS_SPEED_UP,0U,"SPEED_UP",encode_empty,decode_empty},
-    {NOSTOS_SAFETY_REMINDER,0U,"SAFETY_REMINDER",encode_empty,decode_empty},
     {NOSTOS_STOP,0U,"STOP",encode_empty,decode_empty},
-    {NOSTOS_REAR_SAFE,0U,"REAR_SAFE",encode_empty,decode_empty},
-    {NOSTOS_REAR_WARNING,0U,"REAR_WARNING",encode_empty,decode_empty},
-    {NOSTOS_REAR_UNKNOWN,0U,"REAR_UNKNOWN",encode_empty,decode_empty},
     {NOSTOS_FALL,6U,"FALL",encode_incident,decode_incident},
-    {NOSTOS_SOS,6U,"SOS",encode_incident,decode_incident},
-    {NOSTOS_SPEED,3U,"SPEED",encode_speed,decode_speed},
     {NOSTOS_ENVIRONMENT,2U,"ENVIRONMENT",encode_environment,decode_environment},
     {NOSTOS_FALL_CLEAR,6U,"FALL_CLEAR",encode_incident,decode_incident},
-    {NOSTOS_SOS_CLEAR,6U,"SOS_CLEAR",encode_incident,decode_incident},
+    {NOSTOS_RIDE,7U,"RIDE",encode_ride,decode_ride},
     {NOSTOS_HEARTBEAT,1U,"HEARTBEAT",encode_heartbeat,decode_heartbeat},
     {NOSTOS_ACK,9U,"ACK",encode_ack,decode_ack}
 };

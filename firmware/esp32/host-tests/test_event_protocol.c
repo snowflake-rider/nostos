@@ -9,15 +9,14 @@ int main(void)
     CHECK(wire[0] == 0x01 && wire[1] == 0x10);
     CHECK(event_decode(wire, sizeof(wire), &decoded));
     CHECK(decoded == 0x10);
-    const uint8_t ids[] = {0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x30, 0x31};
+    const uint8_t ids[] = {0x10, 0x11, 0x13, 0x30};
     for (size_t i = 0; i < sizeof(ids); ++i) {
         CHECK(event_encode(ids[i], wire, 2));
         CHECK(wire[0] == 1 && wire[1] == ids[i]);
         CHECK(event_decode(wire, 2, &decoded) && decoded == ids[i]);
     }
     for (unsigned i = 0; i <= 255; ++i) {
-        bool expected = (i >= 0x10 && i <= 0x13) || i == 0x20 || i == 0x21 ||
-                        i == 0x30 || i == 0x31;
+        bool expected = i == 0x10 || i == 0x11 || i == 0x13 || i == 0x30;
         CHECK(event_id_valid((uint8_t)i) == expected);
         wire[0] = 1;
         wire[1] = (uint8_t)i;
@@ -38,6 +37,15 @@ int main(void)
     CHECK(!event_encode(0x10, NULL, 2));
     CHECK(!event_encode(0x10, wire, 1));
     CHECK(!event_encode(0x10, wire, 3));
-    puts("PASS codec: 8 IDs, all 256 byte values, strict length/version/null checks");
+    const uint8_t removed_ids[] = {0x12, 0x20, 0x21, 0x31};
+    for (size_t i = 0; i < sizeof(removed_ids); ++i) {
+        CHECK(!event_encode(removed_ids[i], wire, 2));
+        wire[0] = 1;
+        wire[1] = removed_ids[i];
+        decoded = 0xEE;
+        CHECK(!event_decode(wire, 2, &decoded));
+        CHECK(decoded == 0xEE);
+    }
+    puts("PASS codec: 4 allowed IDs, 4 removed IDs rejected, strict all-byte checks");
     return 0;
 }

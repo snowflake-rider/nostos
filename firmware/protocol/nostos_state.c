@@ -27,18 +27,17 @@ nostos_result_t nostos_receiver_approve_session(nostos_receiver_t *r, uint8_t so
     n->health.report.seen=false;
     n->environment.temperature_c_x10.quality=NOSTOS_UNMEASURED;
     n->environment.humidity_pct_x10.quality=NOSTOS_UNMEASURED;
-    n->speed.speed_kmh_x10.quality=NOSTOS_UNMEASURED;
-    n->rear.state=NOSTOS_REAR_IS_UNKNOWN; n->rear.quality=NOSTOS_UNMEASURED;
-    /* Drop queued requests from the replaced source epoch, preserve others. */
-    size_t keep=0;
-    for (size_t i=0; i<r->request_count; ++i) {
-        size_t from=(r->request_head+i)%NOSTOS_REQUEST_CAPACITY;
-        if (r->requests[from].source_id==source) continue;
-        size_t to=(r->request_head+keep++)%NOSTOS_REQUEST_CAPACITY;
-        r->requests[to]=r->requests[from];
-        r->request_received_ms[to]=r->request_received_ms[from];
+    n->ride.speed_kmh_x10.quality=NOSTOS_UNMEASURED;
+    n->ride.distance_mm.quality=NOSTOS_UNMEASURED;
+    /* Drop pending requests from the replaced source epoch, preserve others. */
+    if (r->pending_stop.pending &&
+        r->pending_stop.message.source_id==source) {
+        r->pending_stop.pending=false;
     }
-    r->request_count=keep;
+    if (r->pending_button.pending &&
+        r->pending_button.message.source_id==source) {
+        r->pending_button.pending=false;
+    }
     return NOSTOS_OK;
 }
 static nostos_result_t window_check(const nostos_rx_window_t *w, const nostos_message_t *m)
@@ -63,8 +62,8 @@ static void window_mark(nostos_rx_window_t *w, uint16_t seq)
 static nostos_result_t apply_incident(nostos_receiver_t *r, nostos_node_state_t *node,
     const nostos_message_t *m, uint32_t now)
 {
-    bool clear=m->type==NOSTOS_FALL_CLEAR || m->type==NOSTOS_SOS_CLEAR;
-    uint8_t kind=(m->type==NOSTOS_FALL || m->type==NOSTOS_FALL_CLEAR)?NOSTOS_FALL:NOSTOS_SOS;
+    bool clear=m->type==NOSTOS_FALL_CLEAR;
+    uint8_t kind=NOSTOS_FALL;
     nostos_incident_ref_t ref=m->payload.incident;
     if ((!clear && ref.session_id!=m->session_id) || ref.session_id>m->session_id) return NOSTOS_UNAUTHORIZED;
     nostos_incident_record_t *slot=NULL, *free_slot=NULL;
@@ -80,7 +79,7 @@ static nostos_result_t apply_incident(nostos_receiver_t *r, nostos_node_state_t 
         *slot=(nostos_incident_record_t){.source_id=m->source_id,.kind=kind,.ref=ref,.used=true};
     }
     slot->closed|=clear;
-    nostos_incident_state_t *s=kind==NOSTOS_FALL?&node->fall:&node->sos;
+    nostos_incident_state_t *s=&node->fall;
     if (clear && same_ref(s->incident,ref)) s->phase=NOSTOS_INCIDENT_CLOSED;
     /* An old CLEAR can close its own record without replacing a newer display. */
     if (newer(&s->last_report,m) && (!s->last_report.seen ||
@@ -109,16 +108,23 @@ nostos_result_t nostos_receiver_apply(nostos_receiver_t *r, const nostos_message
     nostos_report_t *ordering=NULL;
     switch (m.type) {
     case NOSTOS_ENVIRONMENT: ordering=&n->environment.report; break;
-    case NOSTOS_SPEED: ordering=&n->speed.report; break;
-    case NOSTOS_REAR_SAFE: case NOSTOS_REAR_WARNING: case NOSTOS_REAR_UNKNOWN: ordering=&n->rear.report; break;
+    case NOSTOS_RIDE: ordering=&n->ride.report; break;
     case NOSTOS_HEARTBEAT: ordering=&n->health.report; break;
     default: break;
     }
     if (ordering && !newer(ordering,&m)) return NOSTOS_STALE;
-    if (m.type>=NOSTOS_SPEED_DOWN && m.type<=NOSTOS_STOP) {
-        if (r->request_count==NOSTOS_REQUEST_CAPACITY) return NOSTOS_FULL;
-        size_t slot=(r->request_head+r->request_count)%NOSTOS_REQUEST_CAPACITY;
-        r->requests[slot]=m; r->request_received_ms[slot]=now; ++r->request_count;
+    if (m.type==NOSTOS_STOP) {
+        r->pending_stop=(nostos_request_slot_t){.message=m,.pending=true};
+    } else if (m.type==NOSTOS_SPEED_DOWN || m.type==NOSTOS_SPEED_UP) {
+        if (r->pending_button.pending) {
+            /* Intentionally reject a second button while the one-slot
+             * application mailbox is occupied, but consume its sequence so
+             * transport duplication cannot replay it later. */
+            n->reachability=(nostos_reachability_t){now,true};
+            window_mark(w,m.sequence);
+            return NOSTOS_FULL;
+        }
+        r->pending_button=(nostos_request_slot_t){.message=m,.pending=true};
     } else if (m.type==NOSTOS_ENVIRONMENT) {
         nostos_environment_t *e=&m.payload.environment;
         nostos_i16_value_t *t=&n->environment.temperature_c_x10;
@@ -126,16 +132,19 @@ nostos_result_t nostos_receiver_apply(nostos_receiver_t *r, const nostos_message
         t->quality=e->temperature_quality; h->quality=e->humidity_quality;
         if (t->quality==NOSTOS_VALID) { t->value=e->temperature_c_x10; t->has_value=true; t->value_received_ms=now; }
         if (h->quality==NOSTOS_VALID) { h->value=e->humidity_pct_x10; h->has_value=true; h->value_received_ms=now; }
-    } else if (m.type==NOSTOS_SPEED) {
-        nostos_u16_value_t *s=&n->speed.speed_kmh_x10;
-        s->quality=m.payload.speed.valid?NOSTOS_VALID:NOSTOS_UNMEASURED;
-        if (m.payload.speed.valid) { s->value=m.payload.speed.kmh_x10; s->has_value=true; s->value_received_ms=now; }
+    } else if (m.type==NOSTOS_RIDE) {
+        nostos_u16_value_t *speed=&n->ride.speed_kmh_x10;
+        nostos_u32_value_t *distance=&n->ride.distance_mm;
+        speed->quality=m.payload.ride.valid?NOSTOS_VALID:NOSTOS_UNMEASURED;
+        distance->quality=speed->quality;
+        if (m.payload.ride.valid) {
+            speed->value=m.payload.ride.kmh_x10;
+            speed->has_value=true; speed->value_received_ms=now;
+            distance->value=m.payload.ride.distance_mm;
+            distance->has_value=true; distance->value_received_ms=now;
+        }
     } else if (m.type==NOSTOS_HEARTBEAT) n->health.status=m.payload.status;
-    else if (m.type==NOSTOS_REAR_SAFE || m.type==NOSTOS_REAR_WARNING || m.type==NOSTOS_REAR_UNKNOWN) {
-        n->rear.state=m.type==NOSTOS_REAR_SAFE?NOSTOS_REAR_IS_SAFE:
-            m.type==NOSTOS_REAR_WARNING?NOSTOS_REAR_IS_WARNING:NOSTOS_REAR_IS_UNKNOWN;
-        n->rear.quality=m.type==NOSTOS_REAR_UNKNOWN?NOSTOS_SENSOR_ERROR:NOSTOS_VALID;
-    } else if (m.type==NOSTOS_ACK) {
+    else if (m.type==NOSTOS_ACK) {
         /* ACK is a control observation for the caller, not shared sensor state.
          * Matching an outstanding transaction is the sender's responsibility. */
         if (m.payload.ack.source_id!=r->local_source) return NOSTOS_UNAUTHORIZED;
@@ -153,12 +162,25 @@ nostos_result_t nostos_receiver_wire(nostos_receiver_t *r, const uint8_t *w, siz
     nostos_message_t m; nostos_result_t result=nostos_message_decode(w,n,&m);
     return result==NOSTOS_OK?nostos_receiver_apply(r,&m,now):result;
 }
-nostos_result_t nostos_receiver_pop_request(nostos_receiver_t *r, nostos_message_t *m)
+static nostos_result_t take_request(
+    nostos_request_slot_t *slot,
+    nostos_message_t *message)
 {
-    if (!r || !m) return NOSTOS_BAD_ARGUMENT;
-    if (!r->request_count) return NOSTOS_EMPTY;
-    *m=r->requests[r->request_head]; r->request_head=(r->request_head+1)%NOSTOS_REQUEST_CAPACITY; --r->request_count;
+    if (!slot || !message) return NOSTOS_BAD_ARGUMENT;
+    if (!slot->pending) return NOSTOS_EMPTY;
+    *message=slot->message;
+    slot->pending=false;
     return NOSTOS_OK;
+}
+nostos_result_t nostos_receiver_take_stop(nostos_receiver_t *r, nostos_message_t *m)
+{ return r?take_request(&r->pending_stop,m):NOSTOS_BAD_ARGUMENT; }
+nostos_result_t nostos_receiver_take_button(nostos_receiver_t *r, nostos_message_t *m)
+{ return r?take_request(&r->pending_button,m):NOSTOS_BAD_ARGUMENT; }
+void nostos_receiver_clear_requests(nostos_receiver_t *r)
+{
+    if (!r) return;
+    r->pending_stop.pending=false;
+    r->pending_button.pending=false;
 }
 nostos_result_t nostos_receiver_mute(nostos_receiver_t *r, uint8_t source, uint8_t kind, nostos_incident_ref_t ref)
 {
@@ -173,21 +195,15 @@ nostos_result_t nostos_receiver_mute(nostos_receiver_t *r, uint8_t source, uint8
 }
 nostos_outputs_t nostos_receiver_outputs(const nostos_receiver_t *r, uint32_t now)
 {
+    (void)now;
     nostos_outputs_t o={NOSTOS_LED_OFF,NOSTOS_BUZZER_OFF};
     if (!r) return o;
-    bool emergency=false, audible=false, rear_warning=false, rear_safe=false;
+    bool emergency=false, audible=false;
     for (size_t i=0; i<NOSTOS_INCIDENT_CAPACITY; ++i) {
         const nostos_incident_record_t *x=&r->incidents[i];
         if (x->used && !x->closed) { emergency=true; audible|=!x->muted; }
     }
-    for (size_t i=0; i<NOSTOS_NODE_COUNT; ++i) {
-        const nostos_rear_state_t *s=&r->shared_data.nodes[i].rear;
-        if (nostos_report_fresh(&s->report,now,NOSTOS_FRESH_MS) && s->quality==NOSTOS_VALID) {
-            rear_warning|=s->state==NOSTOS_REAR_IS_WARNING;
-            rear_safe|=s->state==NOSTOS_REAR_IS_SAFE;
-        }
-    }
-    o.led=emergency?NOSTOS_LED_RED_BLINK:rear_warning?NOSTOS_LED_YELLOW_BLINK:rear_safe?NOSTOS_LED_GREEN:NOSTOS_LED_OFF;
-    o.buzzer=audible?NOSTOS_BUZZER_EMERGENCY:(!emergency && rear_warning)?NOSTOS_BUZZER_REAR:NOSTOS_BUZZER_OFF;
+    o.led=emergency?NOSTOS_LED_RED_BLINK:NOSTOS_LED_OFF;
+    o.buzzer=audible?NOSTOS_BUZZER_EMERGENCY:NOSTOS_BUZZER_OFF;
     return o;
 }

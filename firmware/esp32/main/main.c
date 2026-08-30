@@ -12,6 +12,42 @@
 #include "bridge_runtime.h"
 #include "mesh_node.h"
 #include "serial_command.h"
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+#include "xoss_ble.h"
+#define XOSS_ROLE_POLL_MS 100U
+#endif
+
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+static void xoss_role_init_task(void *argument)
+{
+    (void)argument;
+    for (;;) {
+        uint16_t primary = mesh_node_primary();
+        if (primary == 0U) {
+            vTaskDelay(pdMS_TO_TICKS(XOSS_ROLE_POLL_MS));
+            continue;
+        }
+        if (primary != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+            ESP_LOGI("XOSS_ROLE", "DISABLED primary=0x%04x owner=0x%04x",
+                     (unsigned)primary,
+                     (unsigned)CONFIG_NOSTOS_SOURCE1_ADDRESS);
+            vTaskDelete(NULL);
+            return;
+        }
+
+        esp_err_t err = xoss_ble_init();
+        if (err != ESP_OK) {
+            ESP_LOGE("XOSS_ROLE", "INIT_FAILED primary=0x%04x err=%s",
+                     (unsigned)primary, esp_err_to_name(err));
+        } else {
+            ESP_LOGI("XOSS_ROLE", "ENABLED primary=0x%04x",
+                     (unsigned)primary);
+        }
+        vTaskDelete(NULL);
+        return;
+    }
+}
+#endif
 
 static void console_task(void *argument)
 {
@@ -34,6 +70,9 @@ static void console_task(void *argument)
         case SERIAL_COMMAND_STATUS:
             mesh_node_log_status();
             bridge_runtime_log_status();
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+            xoss_ble_log_status();
+#endif
             break;
         case SERIAL_COMMAND_ON: err = mesh_node_send_onoff(true, true); break;
         case SERIAL_COMMAND_OFF: err = mesh_node_send_onoff(false, true); break;
@@ -60,6 +99,12 @@ void app_main(void)
     ESP_ERROR_CHECK(bridge_runtime_init());
     ESP_ERROR_CHECK(bluetooth_init());
     ESP_ERROR_CHECK(mesh_node_init());
+#if CONFIG_NOSTOS_XOSS_SPEED_SENSOR
+    if (xTaskCreate(xoss_role_init_task, "xoss_role", 2048U, NULL, 3U, NULL) != pdPASS) {
+        ESP_LOGE("LAYER_8", "XOSS role task allocation failed");
+        return;
+    }
+#endif
     if (xTaskCreate(console_task, "bsg_console", 4096, NULL, 2, NULL) != pdPASS) {
         ESP_LOGE("LAYER_8", "Console task allocation failed");
         return;

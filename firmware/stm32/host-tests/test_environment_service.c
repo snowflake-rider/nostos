@@ -1,5 +1,6 @@
 #include "dht11.h"
 #include "environment_service.h"
+#include "sensor_store.h"
 
 #include <stdbool.h>
 #include <stdint.h>
@@ -48,6 +49,7 @@ bool dht11_read(dht11_data_t *data)
 
 int main(void)
 {
+    sensor_store_init();
     environment_service_init();
     CHECK(init_count == 1U);
     CHECK(initialized_port == GPIOA);

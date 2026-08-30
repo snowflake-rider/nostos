@@ -8,8 +8,6 @@
 typedef enum
 {
     ALERT_STATE_OFF = 0,
-    ALERT_STATE_REAR_SAFE,
-    ALERT_STATE_REAR_WARNING,
     ALERT_STATE_EMERGENCY
 } alert_state_t;
 
@@ -18,9 +16,6 @@ void alert_init(void);
 
 /* 현재 안전 상태와 임시 버튼 색상을 지우고 RGB 출력을 즉시 끕니다. */
 void alert_reset(void);
-
-/* MPU6050 캘리브레이션 성공 뒤에만 REAR_SAFE 초록 표시를 허용합니다. */
-void alert_set_rear_safe_enabled(bool enabled);
 
 /* 외부 안전 메시지에 맞는 LED 상태를 선택합니다. 버튼 메시지는 무시합니다. */
 void alert_show(message_type_t message);

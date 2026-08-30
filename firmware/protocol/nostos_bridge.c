@@ -2,8 +2,7 @@
 #include <string.h>
 static bool urgent_type(uint8_t type)
 {
-    return type==NOSTOS_FALL || type==NOSTOS_SOS ||
-        type==NOSTOS_FALL_CLEAR || type==NOSTOS_SOS_CLEAR;
+    return type==NOSTOS_FALL || type==NOSTOS_FALL_CLEAR;
 }
 nostos_result_t nostos_bridge_init(nostos_bridge_t *b, uint8_t local, const nostos_peer_t peers[NOSTOS_NODE_COUNT])
 {
@@ -31,8 +30,8 @@ nostos_result_t nostos_bridge_accept(nostos_bridge_t *b, nostos_direction_t d,
     if (!b || (d!=NOSTOS_TO_MESH && d!=NOSTOS_TO_UART)) return NOSTOS_BAD_ARGUMENT;
     nostos_message_t m;
     nostos_result_t r=nostos_message_decode(w,n,&m);
-    /* Same-v2 unknown types may be carried opaquely, but never interpreted. */
-    if (r!=NOSTOS_OK && r!=NOSTOS_UNSUPPORTED_TYPE) return r;
+    /* Only the registered application/internal set crosses the bridge. */
+    if (r!=NOSTOS_OK) return r;
     uint8_t claimed=w[2];
     if (d==NOSTOS_TO_MESH) {
         if (claimed!=b->local_source) return NOSTOS_UNAUTHORIZED;

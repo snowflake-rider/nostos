@@ -26,7 +26,8 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
-option(NOSTOS_PROTOCOL_V2 "Use v2 endpoint; requires trusted boot/session provider" OFF)
+option(NOSTOS_PROTOCOL_V2 "Use v2 endpoint; requires trusted boot/session provider" ON)
+option(NOSTOS_FREERTOS "Run the STM32 application on FreeRTOS" ON)
 option(BUTTON_OUTPUT_TEST "Diagnostic button -> RGB -> VS1003B output mode" OFF)
 option(SSD1306_DISPLAY "Enable SSD1306 display on I2C1 PB8/PB9" ON)
 option(MPU6050_SENSOR "Enable MPU6050 fall detection on I2C1 PB8/PB9" OFF)
@@ -37,13 +38,17 @@ endif()
 if(NOSTOS_PROTOCOL_V2)
     add_compile_definitions(NOSTOS_PROTOCOL_V2=1)
 endif()
+if(NOSTOS_FREERTOS)
+    add_compile_definitions(NOSTOS_FREERTOS=1)
+else()
+    add_compile_definitions(NOSTOS_FREERTOS=0)
+endif()
 if(BUTTON_OUTPUT_TEST)
     set(SSD1306_DISPLAY OFF)
     set(MPU6050_SENSOR OFF)
     set(DHT11_SENSOR OFF)
     add_compile_definitions(
         FEATURE_BUTTON_OUTPUT_TEST=1
-        FEATURE_ULTRASONIC_SENSOR=0
     )
 endif()
 if(SSD1306_DISPLAY)
@@ -77,6 +82,21 @@ endif()
 # Add STM32CubeMX generated sources
 add_subdirectory(cmake/stm32cubemx)
 
+if(NOSTOS_FREERTOS)
+    include(FetchContent)
+    add_library(freertos_config INTERFACE)
+    target_include_directories(freertos_config SYSTEM INTERFACE
+        ${CMAKE_CURRENT_SOURCE_DIR}/MyApp/rtos
+    )
+    set(FREERTOS_PORT GCC_ARM_CM4F CACHE STRING "FreeRTOS ARM Cortex-M4F port" FORCE)
+    FetchContent_Declare(freertos_kernel
+        URL https://github.com/FreeRTOS/FreeRTOS-Kernel/archive/3a22924e0a9ddbbc8b0758881c33b3422a5cc20d.tar.gz
+        URL_HASH SHA256=e7d25915c043f4695eb066117cc60a42e7c58e421d971ebaf6fe2ec97208d658
+        DOWNLOAD_EXTRACT_TIMESTAMP TRUE
+    )
+    FetchContent_MakeAvailable(freertos_kernel)
+endif()
+
 # Link directories setup
 target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
     # Add user defined library search paths
@@ -94,6 +114,7 @@ target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ../protocol/nostos_state.c
     ../protocol/nostos_endpoint.c
     ../protocol/nostos_debug.c
+    ../protocol/sensor_link.c
 )
 
 # Add include paths
@@ -103,6 +124,7 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
     MyApp/audio
     MyApp/common
     MyApp/hw
+    MyApp/rtos
     MyApp/service
     ../protocol
 )
@@ -121,3 +143,6 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
 
     # Add user defined libraries
 )
+if(NOSTOS_FREERTOS)
+    target_link_libraries(${CMAKE_PROJECT_NAME} freertos_kernel)
+endif()

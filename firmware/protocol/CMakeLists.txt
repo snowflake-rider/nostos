@@ -24,3 +24,18 @@ add_executable(test_event_bridge tests/test_event_bridge.c)
 target_link_libraries(test_event_bridge PRIVATE event_protocol)
 target_compile_options(test_event_bridge PRIVATE -Wall -Wextra -Wpedantic -Werror)
 add_test(NAME event_bridge COMMAND test_event_bridge)
+add_executable(test_nostos_safety tests/test_nostos_safety.c)
+target_link_libraries(test_nostos_safety PRIVATE nostos_protocol)
+target_compile_options(test_nostos_safety PRIVATE
+  -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+add_test(NAME nostos_safety COMMAND test_nostos_safety)
+
+add_library(sensor_link sensor_link.c)
+target_include_directories(sensor_link PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
+target_compile_options(sensor_link PRIVATE
+  -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+add_executable(test_sensor_link tests/test_sensor_link.c)
+target_link_libraries(test_sensor_link PRIVATE sensor_link)
+target_compile_options(test_sensor_link PRIVATE
+  -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
+add_test(NAME sensor_link COMMAND test_sensor_link)

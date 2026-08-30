@@ -13,7 +13,6 @@ static message_service_status_t service_status = {
     .alert_state = ALERT_STATE_OFF,
     .alert_led_on = false,
 };
-static message_type_t rear_state = MSG_NONE;
 static bool emergency_latched = false;
 static bool fall_buzzer_latched = false;
 
@@ -39,7 +38,6 @@ void message_service_init(vs1003b_status_t initial_audio_status)
 {
     alert_init();
     buzzer_init();
-    rear_state = MSG_NONE;
     emergency_latched = false;
     fall_buzzer_latched = false;
 
@@ -49,7 +47,6 @@ void message_service_init(vs1003b_status_t initial_audio_status)
 
 void message_service_reset_outputs(void)
 {
-    rear_state = MSG_NONE;
     emergency_latched = false;
     fall_buzzer_latched = false;
 
@@ -66,9 +63,9 @@ void message_service_handle(message_type_t message)
         return;
     }
 
-    if ((message == MSG_FALL_DETECTED) || (message == MSG_SOS))
+    if (message == MSG_FALL_DETECTED)
     {
-        if ((message == MSG_FALL_DETECTED) && !fall_buzzer_latched)
+        if (!fall_buzzer_latched)
         {
             fall_buzzer_latched = true;
             buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
@@ -77,29 +74,6 @@ void message_service_handle(message_type_t message)
         if (!emergency_latched)
         {
             emergency_latched = true;
-            alert_show(message);
-            message_service_play_audio(message);
-        }
-
-        return;
-    }
-
-    /* 긴급 상태는 보드가 리셋되기 전까지 후방 상태로 덮어쓰지 않습니다. */
-    if ((message == MSG_REAR_SAFE) || (message == MSG_REAR_WARNING))
-    {
-        if (emergency_latched)
-        {
-            return;
-        }
-
-        if (message == MSG_REAR_SAFE)
-        {
-            rear_state = MSG_REAR_SAFE;
-            alert_show(message);
-        }
-        else if (rear_state != MSG_REAR_WARNING)
-        {
-            rear_state = MSG_REAR_WARNING;
             alert_show(message);
             message_service_play_audio(message);
         }

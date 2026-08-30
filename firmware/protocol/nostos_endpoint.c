@@ -1,7 +1,8 @@
 #include "nostos_endpoint.h"
 nostos_result_t nostos_endpoint_init(nostos_endpoint_t *e, uint8_t source, uint32_t session, const nostos_endpoint_io_t *io)
 {
-    if (!e || !io || !io->uart_send || !io->outputs || !io->audio_ready || !io->audio_play)
+    if (!e || !io || !io->uart_send || !io->outputs ||
+        !io->audio_playing || !io->audio_stop || !io->audio_play)
         return NOSTOS_BAD_ARGUMENT;
     nostos_sender_t s;
     nostos_result_t r=nostos_sender_init(&s,source,session);
@@ -39,18 +40,40 @@ void nostos_endpoint_process(nostos_endpoint_t *e, uint32_t now)
 {
     if(!e) return;
     nostos_outputs_t o=nostos_receiver_outputs(&e->receiver,now);
+    /* A muted FALL keeps the safety incident active even though its buzzer is off. */
+    bool was_emergency=e->outputs_initialized &&
+        e->last_outputs.led==NOSTOS_LED_RED_BLINK;
     if(!e->outputs_initialized || o.led!=e->last_outputs.led || o.buzzer!=e->last_outputs.buzzer) {
         e->io.outputs(e->io.context,o); e->last_outputs=o; e->outputs_initialized=true;
     }
-    /* Expire stale queued requests even while audio is busy; no late replay. */
-    while(e->receiver.request_count) {
-        size_t head=e->receiver.request_head;
-        bool expired=(uint32_t)(now-e->receiver.request_received_ms[head])>NOSTOS_REQUEST_MAX_AGE_MS;
-        if(!expired && !e->io.audio_ready(e->io.context)) break;
-        nostos_message_t m;
-        if(nostos_receiver_pop_request(&e->receiver,&m)!=NOSTOS_OK) break;
-        if(expired) { ++e->expired_requests; continue; }
-        if(!e->io.audio_play(e->io.context,m.type)) ++e->audio_failures;
-        break; /* Bounded one new audio start per app iteration. */
+
+    bool emergency=o.led==NOSTOS_LED_RED_BLINK;
+    if(emergency) {
+        bool pending=e->receiver.pending_stop.pending ||
+            e->receiver.pending_button.pending;
+        bool playing=e->io.audio_playing(e->io.context);
+        nostos_receiver_clear_requests(&e->receiver);
+        if(!was_emergency && (pending || playing)) ++e->fall_preemptions;
+        if(playing && !e->io.audio_stop(e->io.context)) ++e->audio_failures;
+        return;
+    }
+
+    nostos_message_t request;
+    if(nostos_receiver_take_stop(&e->receiver,&request)==NOSTOS_OK) {
+        bool displaced=e->receiver.pending_button.pending;
+        bool playing=e->io.audio_playing(e->io.context);
+        e->receiver.pending_button.pending=false;
+        if(displaced || playing) ++e->stop_preemptions;
+        if(playing && !e->io.audio_stop(e->io.context)) ++e->audio_failures;
+        if(!e->io.audio_play(e->io.context,&request)) ++e->audio_failures;
+        return;
+    }
+
+    if(nostos_receiver_take_button(&e->receiver,&request)==NOSTOS_OK) {
+        if(e->io.audio_playing(e->io.context)) {
+            ++e->dropped_busy_buttons;
+            return;
+        }
+        if(!e->io.audio_play(e->io.context,&request)) ++e->audio_failures;
     }
 }

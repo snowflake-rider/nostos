@@ -144,6 +144,14 @@ void bridge_runtime_mesh_complete(int error)
     else mesh_async_failed++;
     portEXIT_CRITICAL(&bridge_lock);
 }
+esp_err_t bridge_runtime_send_sensor_ride(bool valid, uint16_t kmh_x10,
+                                          uint32_t distance_mm)
+{
+    (void)valid;
+    (void)kmh_x10;
+    (void)distance_mm;
+    return ESP_ERR_NOT_SUPPORTED;
+}
 
 void bridge_runtime_log_status(void)
 {

@@ -76,11 +76,11 @@ static void check_path(uint8_t id, size_t sender)
 
 int main(void)
 {
-    const uint8_t ids[] = {0x10, 0x11, 0x12, 0x13, 0x20, 0x21, 0x30, 0x31};
+    const uint8_t ids[] = {0x10, 0x11, 0x13, 0x30};
     for (size_t sender = 0; sender < 3; ++sender) {
         for (size_t i = 0; i < sizeof(ids); ++i) check_path(ids[i], sender);
     }
-    puts("PASS event path: 8 IDs, 3 simulated origins, repeated UART inputs");
+    puts("PASS event path: 4 allowed IDs, 3 simulated origins, repeated UART inputs");
     puts("PASS event path: exact 2-byte Mesh payload -> 1-byte peer UART, no self echo or RX republish");
     puts("HARDWARE_UART_AND_MESH=NOT_TESTED");
     return 0;

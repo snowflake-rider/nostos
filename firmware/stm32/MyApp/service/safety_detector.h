@@ -9,8 +9,6 @@
 typedef enum
 {
     SAFETY_EVENT_NONE = 0,
-    SAFETY_EVENT_REAR_SAFE,
-    SAFETY_EVENT_REAR_WARNING,
     SAFETY_EVENT_FALL_COUNTDOWN,
     SAFETY_EVENT_FALL_DETECTED,
 } safety_event_t;
@@ -37,7 +35,6 @@ typedef enum
 typedef struct
 {
     safety_event_t current_event;
-    float current_distance_cm;
     float total_acceleration_g;
     float total_rotation_dps;
     float tilt_cosine;
@@ -67,8 +64,6 @@ bool safety_detector_add_calibration_sample(
 void safety_detector_fail_calibration(safety_calibration_state_t failure_state);
 safety_event_t safety_detector_check(
     uint32_t current_tick,
-    bool distance_valid,
-    float distance_cm,
     bool mpu_valid,
     float accel_x,
     float accel_y,

@@ -26,19 +26,12 @@ static bool button_output_test_set_rgb(message_type_t message)
             rgb_led_set(true, false, false);
             return true;
 
-        case MSG_SAFETY_REMINDER:
-            rgb_led_set(false, false, true);
-            return true;
-
         case MSG_STOP_REQUEST:
             rgb_led_set(true, true, true);
             return true;
 
         case MSG_NONE:
-        case MSG_REAR_SAFE:
-        case MSG_REAR_WARNING:
         case MSG_FALL_DETECTED:
-        case MSG_SOS:
         case MSG_UNKNOWN:
         default:
             return false;

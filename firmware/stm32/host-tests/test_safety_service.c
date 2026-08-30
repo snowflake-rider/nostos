@@ -2,6 +2,7 @@
 
 #include "message_router.h"
 #include "mpu6050.h"
+#include "sensor_store.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -108,6 +109,7 @@ static void reset_service(I2C_HandleTypeDef *i2c, UART_HandleTypeDef *uart)
     };
     log_length = 0U;
     log_output[0] = '\0';
+    sensor_store_init();
     safety_service_init(i2c);
     safety_service_set_log_uart(uart);
 }

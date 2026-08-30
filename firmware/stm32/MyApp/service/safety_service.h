@@ -13,8 +13,6 @@ typedef struct
     bool mpu_data_valid;
     uint8_t mpu_address;
     uint32_t mpu_failure_count;
-    bool distance_valid;
-    float distance_cm;
     safety_event_t event;
     fall_state_t fall_state;
     uint32_t countdown_remaining_seconds;

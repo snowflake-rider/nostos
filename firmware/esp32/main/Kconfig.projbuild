@@ -1,25 +1,38 @@
 menu "NOSTOS message protocol"
 config NOSTOS_PROTOCOL_V2
     bool "Use framed v2 protocol (all connected STM32/ESP32 must use v2)"
-    default n
-config NOSTOS_LOCAL_SOURCE
-    int "Local rider/source (1..3)"
-    range 1 3
-    default 1
-    depends on NOSTOS_PROTOCOL_V2
+    default y
 config NOSTOS_SOURCE1_ADDRESS
-    hex "Provisioned Mesh address for source1 (0 disables startup)"
+    hex "Provisioned Mesh primary for source1 (76)"
     range 0x0 0x7fff
-    default 0x0
+    default 0x0003
     depends on NOSTOS_PROTOCOL_V2
 config NOSTOS_SOURCE2_ADDRESS
-    hex "Provisioned Mesh address for source2 (0 disables startup)"
+    hex "Provisioned Mesh primary for source2 (D6)"
     range 0x0 0x7fff
-    default 0x0
+    default 0x0005
     depends on NOSTOS_PROTOCOL_V2
 config NOSTOS_SOURCE3_ADDRESS
-    hex "Provisioned Mesh address for source3 (0 disables startup)"
+    hex "Provisioned Mesh primary for source3 (B6)"
     range 0x0 0x7fff
-    default 0x0
+    default 0x0006
     depends on NOSTOS_PROTOCOL_V2
+config NOSTOS_XOSS_SPEED_SENSOR
+    bool "Enable XOSS CSC speed-sensor GATT client"
+    default y
+    depends on NOSTOS_PROTOCOL_V2 && BT_GATTC_ENABLE
+config NOSTOS_XOSS_DEVICE_NAME
+    string "Exact BLE advertising name for the XOSS sensor"
+    default "XOSS S-26518"
+    depends on NOSTOS_XOSS_SPEED_SENSOR
+config NOSTOS_XOSS_WHEEL_CIRCUMFERENCE_MM
+    int "Measured wheel circumference in millimetres"
+    range 1 10000
+    default 2100
+    depends on NOSTOS_XOSS_SPEED_SENSOR
+config NOSTOS_XOSS_STALE_MS
+    int "Speed sample stale timeout in milliseconds"
+    range 1000 30000
+    default 3000
+    depends on NOSTOS_XOSS_SPEED_SENSOR
 endmenu

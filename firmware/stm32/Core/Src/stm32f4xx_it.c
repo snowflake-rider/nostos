@@ -22,6 +22,13 @@
 #include "stm32f4xx_it.h"
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
+#if NOSTOS_FREERTOS
+#include "FreeRTOS.h"
+#include "task.h"
+extern void vPortSVCHandler(void);
+extern void xPortPendSVHandler(void);
+extern void xPortSysTickHandler(void);
+#endif
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -144,12 +151,16 @@ void UsageFault_Handler(void)
   */
 void SVC_Handler(void)
 {
+#if NOSTOS_FREERTOS
+  vPortSVCHandler();
+#else
   /* USER CODE BEGIN SVCall_IRQn 0 */
 
   /* USER CODE END SVCall_IRQn 0 */
   /* USER CODE BEGIN SVCall_IRQn 1 */
 
   /* USER CODE END SVCall_IRQn 1 */
+#endif
 }
 
 /**
@@ -170,12 +181,16 @@ void DebugMon_Handler(void)
   */
 void PendSV_Handler(void)
 {
+#if NOSTOS_FREERTOS
+  xPortPendSVHandler();
+#else
   /* USER CODE BEGIN PendSV_IRQn 0 */
 
   /* USER CODE END PendSV_IRQn 0 */
   /* USER CODE BEGIN PendSV_IRQn 1 */
 
   /* USER CODE END PendSV_IRQn 1 */
+#endif
 }
 
 /**
@@ -187,6 +202,12 @@ void SysTick_Handler(void)
 
   /* USER CODE END SysTick_IRQn 0 */
   HAL_IncTick();
+#if NOSTOS_FREERTOS
+  if (xTaskGetSchedulerState() != taskSCHEDULER_NOT_STARTED)
+  {
+    xPortSysTickHandler();
+  }
+#endif
   /* USER CODE BEGIN SysTick_IRQn 1 */
 
   /* USER CODE END SysTick_IRQn 1 */

@@ -8,7 +8,7 @@
 #define NOSTOS_NODE_COUNT 3U
 #define NOSTOS_HEADER_SIZE 9U
 #define NOSTOS_WIRE_MAX 64U
-#define NOSTOS_TYPE_COUNT 15U
+#define NOSTOS_TYPE_COUNT 9U
 
 typedef enum {
     NOSTOS_OK = 0, NOSTOS_EMPTY, NOSTOS_BAD_ARGUMENT, NOSTOS_BAD_LENGTH,
@@ -21,12 +21,10 @@ typedef enum {
 
 typedef enum {
     NOSTOS_SPEED_DOWN = 0x10, NOSTOS_SPEED_UP = 0x11,
-    NOSTOS_SAFETY_REMINDER = 0x12, NOSTOS_STOP = 0x13,
-    NOSTOS_REAR_SAFE = 0x20, NOSTOS_REAR_WARNING = 0x21,
-    NOSTOS_REAR_UNKNOWN = 0x22,
-    NOSTOS_FALL = 0x30, NOSTOS_SOS = 0x31,
-    NOSTOS_SPEED = 0x40, NOSTOS_ENVIRONMENT = 0x41,
-    NOSTOS_FALL_CLEAR = 0x42, NOSTOS_SOS_CLEAR = 0x43,
+    NOSTOS_STOP = 0x13,
+    NOSTOS_FALL = 0x30,
+    NOSTOS_ENVIRONMENT = 0x41, NOSTOS_FALL_CLEAR = 0x42,
+    NOSTOS_RIDE = 0x44,
     NOSTOS_HEARTBEAT = 0x50, NOSTOS_ACK = 0x51
 } nostos_type_t;
 
@@ -47,7 +45,11 @@ typedef struct {
     uint16_t humidity_pct_x10;
     nostos_quality_t temperature_quality, humidity_quality;
 } nostos_environment_t;
-typedef struct { bool valid; uint16_t kmh_x10; } nostos_speed_t;
+typedef struct {
+    bool valid;
+    uint16_t kmh_x10;
+    uint32_t distance_mm; /* Cumulative wheel travel distance. */
+} nostos_ride_t;
 /* ACK confirms application acceptance, not audible output or network delivery.
  * It is never automatically ACKed and never causes an actuator change. */
 typedef struct {
@@ -62,7 +64,7 @@ typedef struct nostos_message {
     uint16_t sequence;
     union {
         nostos_environment_t environment;
-        nostos_speed_t speed;
+        nostos_ride_t ride;
         nostos_incident_ref_t incident;
         uint8_t status;
         nostos_ack_t ack;

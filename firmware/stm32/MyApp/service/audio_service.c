@@ -1,8 +1,6 @@
 #include "audio_service.h"
 
 #include "calibration_completed_audio.h"
-#include "cheer_up_audio.h"
-#include "rear_warning_audio.h"
 #include "speed_down_request_audio.h"
 #include "speed_up_request_audio.h"
 #include "stop_request_audio.h"
@@ -29,25 +27,13 @@ static audio_asset_t audio_service_find_asset(message_type_t message)
             asset.size = speed_up_request_audio_size;
             break;
 
-        case MSG_SAFETY_REMINDER:
-            asset.data = cheer_up_audio_data;
-            asset.size = cheer_up_audio_size;
-            break;
-
         case MSG_STOP_REQUEST:
             asset.data = stop_request_audio_data;
             asset.size = stop_request_audio_size;
             break;
 
-        case MSG_REAR_WARNING:
-            asset.data = rear_warning_audio_data;
-            asset.size = rear_warning_audio_size;
-            break;
-
         case MSG_NONE:
-        case MSG_REAR_SAFE:
         case MSG_FALL_DETECTED:
-        case MSG_SOS:
         case MSG_UNKNOWN:
         default:
             break;

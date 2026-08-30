@@ -25,7 +25,7 @@ typedef struct {
     size_t urgent_head, urgent_count, normal_head, normal_count, free_count, count, urgent_streak;
 } nostos_bridge_t;
 /* Caller serializes calls; no locks, hardware, dynamic allocation or TTL here.
- * FALL/SOS and their CLEAR messages keep four slots unavailable to normal
+ * FALL and FALL_CLEAR messages keep four slots unavailable to normal
  * traffic and normally leave the bridge before normal traffic. After four
  * urgent jobs, one waiting normal job runs to prevent starvation. Each class
  * is FIFO. */
