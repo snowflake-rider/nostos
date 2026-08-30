@@ -8,7 +8,6 @@
 #define MPU_SAMPLE_PERIOD_MS 50U
 #define MPU_RETRY_PERIOD_MS 1000U
 #define MPU_MAX_CONSECUTIVE_FAILURES 10U
-#define MPU_CALIBRATION_TIMEOUT_MS 10000U
 #define MPU_LOG_TIMEOUT_MS 100U
 static I2C_HandleTypeDef *sensor_i2c = NULL;
 static UART_HandleTypeDef *log_uart = NULL;
@@ -17,6 +16,9 @@ static safety_service_status_t service_status;
 static uint32_t mpu_sample_tick = 0U;
 static uint32_t mpu_retry_tick = 0U;
 static uint32_t calibration_started_tick = 0U;
+static uint32_t cal_session_tick = 0U;
+static uint32_t recalibration_hold_started_tick = 0U;
+static bool recalibration_button_pressed = false;
 static bool calibration_completed_pending = false;
 static safety_event_t last_event = SAFETY_EVENT_NONE;
 
@@ -101,6 +103,73 @@ static void safety_service_update_debug_status(void)
     service_status.gyro_offset_x = detector->gyro_offset_x;
     service_status.gyro_offset_y = detector->gyro_offset_y;
     service_status.gyro_offset_z = detector->gyro_offset_z;
+
+    uint32_t progress = 0U;
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_RUNNING)
+    {
+        progress = (detector->calibration_sample_count * 1000U) /
+            SAFETY_CALIBRATION_REQUIRED_SAMPLES;
+    }
+    else if ((service_status.cal_session_state == SAFETY_CAL_SESSION_SUCCESS) ||
+             (service_status.cal_session_state == SAFETY_CAL_SESSION_READY))
+    {
+        progress = 1000U;
+    }
+    else if (service_status.cal_session_state == SAFETY_CAL_SESSION_REQUIRED)
+    {
+        progress = (service_status.recalibration_hold_ms * 1000U) /
+            SAFETY_RECALIBRATION_HOLD_MS;
+    }
+    if (progress > 1000U)
+    {
+        progress = 1000U;
+    }
+    service_status.calibration_progress_per_mille = (uint16_t)progress;
+}
+
+#if FEATURE_FALL_DETECTION
+static void safety_service_begin_session(uint32_t now)
+{
+    safety_detector_init();
+    service_status.mpu_ready = false;
+    service_status.mpu_data_valid = false;
+    service_status.mpu_failure_count = 0U;
+    service_status.cal_session_state = SAFETY_CAL_SESSION_INIT;
+    if (service_status.cal_session_id != UINT32_MAX)
+    {
+        ++service_status.cal_session_id;
+    }
+    service_status.recalibration_hold_ms = 0U;
+    recalibration_button_pressed = false;
+    recalibration_hold_started_tick = now;
+    cal_session_tick = now;
+    mpu_sample_tick = now;
+    mpu_retry_tick = now - MPU_RETRY_PERIOD_MS;
+    calibration_started_tick = now;
+    calibration_completed_pending = false;
+    last_event = SAFETY_EVENT_NONE;
+}
+
+static bool safety_service_fall_must_finish_without_sensor(void)
+{
+    fall_state_t state = safety_detector_get_status()->fall_state;
+    return (state == FALL_STATE_COUNTDOWN) ||
+        (state == FALL_STATE_DETECTED);
+}
+#endif
+
+static void safety_service_require_recalibration(
+    uint32_t now,
+    safety_calibration_state_t failure_state)
+{
+    safety_detector_fail_calibration(failure_state);
+    safety_service_log_calibration_result(failure_state);
+    service_status.cal_session_state = SAFETY_CAL_SESSION_REQUIRED;
+    service_status.recalibration_hold_ms = 0U;
+    recalibration_button_pressed = false;
+    recalibration_hold_started_tick = now;
+    cal_session_tick = now;
+    calibration_completed_pending = false;
 }
 
 void safety_service_init(I2C_HandleTypeDef *i2c)
@@ -111,16 +180,21 @@ void safety_service_init(I2C_HandleTypeDef *i2c)
     log_uart = NULL;
     safety_detector_init();
 
-#if FEATURE_FALL_DETECTION
-    service_status.mpu_ready = mpu6050_init(sensor_i2c);
-#endif
-
     uint32_t now = HAL_GetTick();
     mpu_sample_tick = now;
-    mpu_retry_tick = now;
+    mpu_retry_tick = now - MPU_RETRY_PERIOD_MS;
     calibration_started_tick = now;
+    cal_session_tick = now;
+    recalibration_hold_started_tick = now;
+    recalibration_button_pressed = false;
     calibration_completed_pending = false;
     last_event = SAFETY_EVENT_NONE;
+#if FEATURE_FALL_DETECTION
+    service_status.cal_session_state = SAFETY_CAL_SESSION_INIT;
+    service_status.cal_session_id = 1U;
+#else
+    service_status.cal_session_state = SAFETY_CAL_SESSION_READY;
+#endif
     safety_service_update_debug_status();
 }
 
@@ -139,10 +213,39 @@ bool safety_service_start_calibration(void)
     }
 
     calibration_started_tick = HAL_GetTick();
+    cal_session_tick = calibration_started_tick;
+    service_status.cal_session_state = SAFETY_CAL_SESSION_RUNNING;
     calibration_completed_pending = false;
     safety_service_log_text("CAL_START\r\n");
     safety_service_update_debug_status();
     return true;
+}
+
+void safety_service_set_recalibration_button(bool pressed)
+{
+    if (service_status.cal_session_state != SAFETY_CAL_SESSION_REQUIRED)
+    {
+        recalibration_button_pressed = false;
+        service_status.recalibration_hold_ms = 0U;
+        return;
+    }
+
+    if (pressed == recalibration_button_pressed)
+    {
+        return;
+    }
+
+    recalibration_button_pressed = pressed;
+    service_status.recalibration_hold_ms = 0U;
+    if (pressed)
+    {
+        recalibration_hold_started_tick = HAL_GetTick();
+    }
+}
+
+bool safety_service_buttons_blocked(void)
+{
+    return service_status.cal_session_state != SAFETY_CAL_SESSION_READY;
 }
 
 bool safety_service_take_calibration_completed(void)
@@ -157,15 +260,54 @@ void safety_service_process(void)
     uint32_t now = HAL_GetTick();
 
 #if FEATURE_FALL_DETECTION
-    if (!service_status.mpu_ready &&
-        ((uint32_t)(now - mpu_retry_tick) >= MPU_RETRY_PERIOD_MS))
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_INIT)
     {
-        mpu_retry_tick = now;
-        service_status.mpu_ready = mpu6050_init(sensor_i2c);
-        if (service_status.mpu_ready)
+        uint32_t init_elapsed = (uint32_t)(now - cal_session_tick);
+        if (init_elapsed >= SAFETY_CAL_INIT_TIMEOUT_MS)
         {
-            service_status.mpu_failure_count = 0U;
+            safety_service_require_recalibration(
+                now, SAFETY_CALIBRATION_FAILED_SENSOR);
         }
+        else if ((init_elapsed >= SAFETY_CAL_INIT_DISPLAY_MS) &&
+                 ((uint32_t)(now - mpu_retry_tick) >= MPU_RETRY_PERIOD_MS))
+        {
+            mpu_retry_tick = now;
+            service_status.mpu_ready = mpu6050_init(sensor_i2c);
+            if (service_status.mpu_ready)
+            {
+                service_status.mpu_failure_count = 0U;
+                (void)safety_service_start_calibration();
+            }
+        }
+        safety_service_update_debug_status();
+        return;
+    }
+
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_REQUIRED)
+    {
+        if (recalibration_button_pressed)
+        {
+            uint32_t held_ms =
+                (uint32_t)(now - recalibration_hold_started_tick);
+            service_status.recalibration_hold_ms = held_ms;
+            if (held_ms >= SAFETY_RECALIBRATION_HOLD_MS)
+            {
+                safety_service_begin_session(now);
+            }
+        }
+        safety_service_update_debug_status();
+        return;
+    }
+
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_SUCCESS)
+    {
+        if ((uint32_t)(now - cal_session_tick) >=
+            SAFETY_CAL_SUCCESS_DISPLAY_MS)
+        {
+            service_status.cal_session_state = SAFETY_CAL_SESSION_READY;
+        }
+        safety_service_update_debug_status();
+        return;
     }
 #endif
 
@@ -201,6 +343,11 @@ void safety_service_process(void)
             service_status.mpu_ready = false;
             service_status.mpu_failure_count = 0U;
             mpu_retry_tick = now;
+            if (!safety_service_fall_must_finish_without_sensor())
+            {
+                safety_service_require_recalibration(
+                    now, SAFETY_CALIBRATION_FAILED_SENSOR);
+            }
         }
     }
     else
@@ -208,6 +355,14 @@ void safety_service_process(void)
         (void)sensor_store_update_imu(
             false, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, now
         );
+    }
+#endif
+
+#if FEATURE_FALL_DETECTION
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_REQUIRED)
+    {
+        safety_service_update_debug_status();
+        return;
     }
 #endif
 
@@ -236,11 +391,12 @@ void safety_service_process(void)
         detector = safety_detector_get_status();
         if ((detector->calibration_state == SAFETY_CALIBRATION_COLLECTING) &&
             ((uint32_t)(now - calibration_started_tick) >=
-             MPU_CALIBRATION_TIMEOUT_MS))
+             SAFETY_CAL_RUNNING_TIMEOUT_MS))
         {
-            safety_detector_fail_calibration(
-                SAFETY_CALIBRATION_FAILED_UNSTABLE);
-            detector = safety_detector_get_status();
+            safety_service_require_recalibration(
+                now, SAFETY_CALIBRATION_FAILED_UNSTABLE);
+            safety_service_update_debug_status();
+            return;
         }
 
         if (detector->calibration_state != previous_calibration_state)
@@ -250,19 +406,25 @@ void safety_service_process(void)
             if (detector->calibration_state == SAFETY_CALIBRATION_READY)
             {
                 calibration_completed_pending = true;
+                service_status.cal_session_state = SAFETY_CAL_SESSION_SUCCESS;
+                cal_session_tick = now;
             }
         }
     }
 
-    safety_event_t event = safety_detector_check(
-        now,
-        service_status.mpu_data_valid,
-        mpu_data.accel_x,
-        mpu_data.accel_y,
-        mpu_data.accel_z,
-        mpu_data.gyro_x,
-        mpu_data.gyro_y,
-        mpu_data.gyro_z);
+    safety_event_t event = SAFETY_EVENT_NONE;
+    if (service_status.cal_session_state == SAFETY_CAL_SESSION_READY)
+    {
+        event = safety_detector_check(
+            now,
+            service_status.mpu_data_valid,
+            mpu_data.accel_x,
+            mpu_data.accel_y,
+            mpu_data.accel_z,
+            mpu_data.gyro_x,
+            mpu_data.gyro_y,
+            mpu_data.gyro_z);
+    }
 
     if (event != last_event)
     {

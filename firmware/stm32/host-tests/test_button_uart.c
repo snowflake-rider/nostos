@@ -147,6 +147,32 @@ static void prototype_buttons_use_new_mapping(void)
     }
 }
 
+static void btn1_reports_debounced_stable_state(void)
+{
+    reset_at(100U);
+    CHECK(!button_is_pressed(BUTTON_ID_BTN1));
+    CHECK(!button_is_pressed((button_id_t)99));
+
+    GPIOB->input &= (uint16_t)~GPIO_PIN_5;
+    CHECK(poll_after(0U) == MSG_NONE);
+    CHECK(!button_is_pressed(BUTTON_ID_BTN1));
+    CHECK(poll_after(29U) == MSG_NONE);
+    CHECK(!button_is_pressed(BUTTON_ID_BTN1));
+    CHECK(poll_after(1U) == MSG_SPEED_UP_REQUEST);
+    CHECK(button_is_pressed(BUTTON_ID_BTN1));
+
+    CHECK(poll_after(1000U) == MSG_NONE);
+    CHECK(button_is_pressed(BUTTON_ID_BTN1));
+
+    GPIOB->input |= GPIO_PIN_5;
+    CHECK(poll_after(0U) == MSG_NONE);
+    CHECK(button_is_pressed(BUTTON_ID_BTN1));
+    CHECK(poll_after(29U) == MSG_NONE);
+    CHECK(button_is_pressed(BUTTON_ID_BTN1));
+    CHECK(poll_after(1U) == MSG_NONE);
+    CHECK(!button_is_pressed(BUTTON_ID_BTN1));
+}
+
 static void btn4_requests_local_reset_once(void)
 {
     reset_at(100U);
@@ -211,12 +237,14 @@ int main(void)
     bounce_and_boot_held();
     wraparound_and_transport_failure();
     prototype_buttons_use_new_mapping();
+    btn1_reports_debounced_stable_state();
     btn4_requests_local_reset_once();
     btn4_reset_wins_over_simultaneous_message();
     pending_uart_message_can_be_cleared();
     usb_trace_does_not_change_transport_result();
     puts("PASS PB6 active-low: 29/30ms debounce, one 0x13 byte via selected UART, hold/release/repress");
     puts("PASS BTN1=UP/0x11, BTN2=DOWN/0x10, BTN3=STOP/0x13, BTN4=local reset");
+    puts("PASS BTN1 debounced stable press/hold/release state and invalid button ID");
     puts("PASS BTN4 reset is one-shot, wins over a simultaneous message, and clears pending UART RX");
     puts("PASS bounce, boot-held, tick wrap, and transport failure");
     puts("HARDWARE_PIN_ROUTING_AND_MESH=NOT_TESTED");

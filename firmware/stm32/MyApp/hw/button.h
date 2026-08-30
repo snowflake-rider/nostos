@@ -5,6 +5,14 @@
 
 #include <stdbool.h>
 
+typedef enum
+{
+    BUTTON_ID_BTN1 = 0,
+    BUTTON_ID_BTN2,
+    BUTTON_ID_BTN3,
+    BUTTON_ID_BTN4
+} button_id_t;
+
 /* 버튼 상태와 디바운싱 기준 시각을 초기화합니다. */
 void button_init(void);
 
@@ -13,6 +21,9 @@ void button_init(void);
  * 새 버튼 이벤트가 없으면 MSG_NONE을 반환합니다.
  */
 message_type_t button_get_message(void);
+
+/* 마지막 button_get_message() 폴링에서 확정된 디바운스 상태를 반환합니다. */
+bool button_is_pressed(button_id_t id);
 
 /* BTN4가 안정적으로 눌리면 로컬 출력 리셋 요청을 한 번 꺼냅니다. */
 bool button_take_output_reset_request(void);

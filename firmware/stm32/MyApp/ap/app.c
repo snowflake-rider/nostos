@@ -23,6 +23,38 @@ volatile nostos_result_t protocol_debug_boot_status=NOSTOS_NOT_READY;
 #define VS1003B_SCI_CLOCKF_ADDRESS 0x03U
 
 static message_type_t last_message = MSG_NONE;
+static bool calibration_button_state_known = false;
+static bool calibration_button_last_pressed = false;
+
+static display_calibration_state_t app_calibration_display_state(
+    const safety_service_status_t *status)
+{
+    switch (status->cal_session_state)
+    {
+        case SAFETY_CAL_SESSION_INIT:
+            return DISPLAY_CALIBRATION_INIT;
+        case SAFETY_CAL_SESSION_RUNNING:
+            return DISPLAY_CALIBRATION_RUNNING;
+        case SAFETY_CAL_SESSION_SUCCESS:
+            return DISPLAY_CALIBRATION_SUCCESS;
+        case SAFETY_CAL_SESSION_REQUIRED:
+            return status->recalibration_hold_ms > 0U ?
+                DISPLAY_CALIBRATION_HOLDING :
+                DISPLAY_CALIBRATION_REQUIRED;
+        case SAFETY_CAL_SESSION_READY:
+        default:
+            return DISPLAY_CALIBRATION_READY;
+    }
+}
+
+static void app_update_calibration_display(
+    const safety_service_status_t *status)
+{
+    display_service_set_calibration(
+        app_calibration_display_state(status),
+        status->calibration_progress_per_mille,
+        status->recalibration_hold_ms);
+}
 
 /* 첫 하드웨어 검증 단계에서 디버거 Watch로 확인할 변수입니다. */
 volatile vs1003b_status_t vs1003b_debug_status = VS1003B_STATUS_INVALID_ARGUMENT;
@@ -95,10 +127,15 @@ void app_init(
     message_router_init();
     safety_service_init(sensor_i2c);
     environment_service_init();
+    app_update_calibration_display(safety_service_get_status());
     display_service_init(sensor_i2c);
+    calibration_button_state_known = false;
+    calibration_button_last_pressed = false;
 }
 
-message_type_t app_runtime_poll_button(bool *reset_requested)
+message_type_t app_runtime_poll_button(
+    bool *reset_requested,
+    bool *calibration_button_pressed)
 {
     message_type_t message = button_get_message();
     bool reset = button_take_output_reset_request();
@@ -106,12 +143,21 @@ message_type_t app_runtime_poll_button(bool *reset_requested)
     {
         *reset_requested = reset;
     }
+    if (calibration_button_pressed != NULL)
+    {
+        *calibration_button_pressed = button_is_pressed(BUTTON_ID_BTN1);
+    }
     return reset ? MSG_NONE : message;
 }
 
 bool app_runtime_poll_remote(message_type_t *message)
 {
     return uart_service_get_message(message);
+}
+
+void app_runtime_set_calibration_button_pressed(bool pressed)
+{
+    safety_service_set_recalibration_button(pressed);
 }
 
 void app_runtime_reset(void)
@@ -132,7 +178,8 @@ void app_runtime_reset(void)
 
 void app_runtime_dispatch_local(message_type_t message)
 {
-    if ((message != MSG_NONE) && (message != MSG_UNKNOWN))
+    if (!safety_service_buttons_blocked() &&
+        (message != MSG_NONE) && (message != MSG_UNKNOWN))
     {
         last_message = message;
         uart_debug_status = message_router_publish_local(message);
@@ -164,6 +211,7 @@ void app_runtime_process_services(void)
     safety_service_process();
     environment_service_process();
     const safety_service_status_t *safety_status = safety_service_get_status();
+    app_update_calibration_display(safety_status);
     if (!audio_service_is_playing() &&
         safety_service_take_calibration_completed())
     {
@@ -218,7 +266,21 @@ void app_runtime_process_services(void)
 void app_process(void)
 {
     bool reset_requested = false;
-    message_type_t message = app_runtime_poll_button(&reset_requested);
+    bool calibration_button_pressed = false;
+    message_type_t message = app_runtime_poll_button(
+        &reset_requested,
+        &calibration_button_pressed);
+    if (!calibration_button_state_known)
+    {
+        calibration_button_state_known = true;
+        calibration_button_last_pressed = calibration_button_pressed;
+    }
+    else if (calibration_button_pressed != calibration_button_last_pressed)
+    {
+        calibration_button_last_pressed = calibration_button_pressed;
+        app_runtime_set_calibration_button_pressed(
+            calibration_button_pressed);
+    }
     if (reset_requested)
     {
         app_runtime_reset();

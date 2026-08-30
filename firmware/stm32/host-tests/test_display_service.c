@@ -31,6 +31,10 @@ static uint8_t fill_rect_width[4];
 static uint8_t fill_rect_height[4];
 static uint32_t fill_rect_count;
 static uint32_t outline_rect_count;
+static uint8_t outline_rect_x[2];
+static uint8_t outline_rect_y[2];
+static uint8_t outline_rect_width[2];
+static uint8_t outline_rect_height[2];
 static uint8_t clear_rect_x[10];
 static uint8_t clear_rect_y[10];
 static uint32_t clear_rect_count;
@@ -123,10 +127,13 @@ void ssd1306_fill_rect(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 
 void ssd1306_draw_rect(uint8_t x, uint8_t y, uint8_t width, uint8_t height)
 {
-    (void)x;
-    (void)y;
-    (void)width;
-    (void)height;
+    if (outline_rect_count < 2U)
+    {
+        outline_rect_x[outline_rect_count] = x;
+        outline_rect_y[outline_rect_count] = y;
+        outline_rect_width[outline_rect_count] = width;
+        outline_rect_height[outline_rect_count] = height;
+    }
     ++outline_rect_count;
 }
 
@@ -336,8 +343,77 @@ int main(void)
     }
     CHECK(inverted_rect_x[0] == 100U);
 
-    /* The last active segment pulses from filled to outline. */
+    /* Calibration screens replace the dashboard and show bounded progress. */
+    display_service_set_calibration(DISPLAY_CALIBRATION_INIT, 0U, 0U);
     fake_tick = 400U;
+    display_service_process();
+    CHECK(drawn_count == 2U);
+    CHECK(strcmp(drawn_lines[0], "CAL INIT") == 0);
+    CHECK(strcmp(drawn_lines[1], "PREPARING SENSOR") == 0);
+    CHECK(outline_rect_count == 0U);
+
+    display_service_set_calibration(DISPLAY_CALIBRATION_RUNNING, 600U, 0U);
+    fake_tick = 600U;
+    display_service_process();
+    CHECK(drawn_count == 4U);
+    CHECK(strcmp(drawn_lines[0], "CALIBRATING") == 0);
+    CHECK(strcmp(drawn_lines[1], "KEEP BIKE UPRIGHT") == 0);
+    CHECK(strcmp(drawn_lines[2], "AND HOLD IT STILL") == 0);
+    CHECK(strcmp(drawn_lines[3], "60%") == 0);
+    CHECK(outline_rect_count == 1U);
+    CHECK(outline_rect_x[0] == 4U && outline_rect_y[0] == 42U);
+    CHECK(outline_rect_width[0] == 120U && outline_rect_height[0] == 10U);
+    CHECK(fill_rect_count == 1U);
+    CHECK(fill_rect_x[0] == 6U && fill_rect_y[0] == 44U);
+    CHECK(fill_rect_width[0] == 69U && fill_rect_height[0] == 6U);
+
+    display_service_set_calibration(DISPLAY_CALIBRATION_SUCCESS, 0U, 0U);
+    fake_tick = 800U;
+    display_service_process();
+    CHECK(drawn_count == 3U);
+    CHECK(strcmp(drawn_lines[0], "CAL OK") == 0);
+    CHECK(strcmp(drawn_lines[1], "FALL DETECTION") == 0);
+    CHECK(strcmp(drawn_lines[2], "READY") == 0);
+
+    display_service_set_calibration(DISPLAY_CALIBRATION_REQUIRED, 0U, 0U);
+    fake_tick = 1000U;
+    display_service_process();
+    CHECK(drawn_count == 4U);
+    CHECK(strcmp(drawn_lines[0], "CAL REQUIRED") == 0);
+    CHECK(strcmp(drawn_lines[1], "KEEP BIKE STILL") == 0);
+    CHECK(strcmp(drawn_lines[2], "HOLD BUTTON 1") == 0);
+    CHECK(strcmp(drawn_lines[3], "FOR 3 SECONDS") == 0);
+
+    display_service_set_calibration(DISPLAY_CALIBRATION_HOLDING, 600U, 1800U);
+    fake_tick = 1200U;
+    display_service_process();
+    CHECK(drawn_count == 3U);
+    CHECK(strcmp(drawn_lines[0], "CAL REQUIRED") == 0);
+    CHECK(strcmp(drawn_lines[1], "HOLD BUTTON 1") == 0);
+    CHECK(strcmp(drawn_lines[2], "1.8s") == 0);
+    CHECK(outline_rect_count == 1U);
+    CHECK(fill_rect_count == 1U);
+    CHECK(fill_rect_width[0] == 69U);
+
+    /* Inputs clamp to full scale: 1000 permille and 3000 ms. */
+    display_service_set_calibration(DISPLAY_CALIBRATION_HOLDING, 1200U, 5000U);
+    fake_tick = 1400U;
+    display_service_process();
+    CHECK(strcmp(drawn_lines[2], "3.0s") == 0);
+    CHECK(fill_rect_width[0] == 116U);
+
+    /* FALL remains the absolute full-screen priority over calibration. */
+    display_service_set_fall(true);
+    fake_tick = 1600U;
+    display_service_process();
+    CHECK(drawn_count == 1U);
+    CHECK(strcmp(drawn_lines[0], "FALL DETECTED!") == 0);
+    CHECK(line_count == 6U);
+    display_service_set_fall(false);
+    display_service_set_calibration(DISPLAY_CALIBRATION_READY, 0U, 0U);
+
+    /* The last active segment pulses from filled to outline. */
+    fake_tick = 2000U;
     display_service_process();
     CHECK(clear_rect_count == 5U);
     CHECK(inverted_rect_count == 5U);
@@ -346,7 +422,7 @@ int main(void)
 
     /* A fall replaces the whole dashboard with a blinking full-screen alert. */
     display_service_set_fall(true);
-    fake_tick = 600U;
+    fake_tick = 2200U;
     display_service_process();
     CHECK(drawn_count == 1U);
     CHECK(strcmp(drawn_lines[0], "FALL DETECTED!") == 0);
@@ -359,7 +435,7 @@ int main(void)
     CHECK(inverted_rect_count == 0U);
     CHECK(frame_inverted);
 
-    fake_tick = 800U;
+    fake_tick = 2400U;
     display_service_process();
     CHECK(drawn_count == 1U);
     CHECK(line_count == 6U);
@@ -369,7 +445,7 @@ int main(void)
     ride_valid = false;
     display_service_set_fall(false);
     CHECK(display_service_show_button_message(2U, MSG_SPEED_DOWN_REQUEST));
-    fake_tick = 1000U;
+    fake_tick = 2600U;
     display_service_process();
     CHECK(strcmp(drawn_lines[1], "N/A km/h") == 0);
     CHECK(strcmp(drawn_lines[2], "N/A km") == 0);
@@ -384,11 +460,11 @@ int main(void)
 
     fake_oled_update_ok = false;
     CHECK(display_service_show_button_message(3U, MSG_STOP_REQUEST));
-    fake_tick = 1200U;
+    fake_tick = 2800U;
     display_service_process();
     CHECK(strcmp(drawn_lines[6], "CENTER SENT STOP") == 0);
     CHECK(!display_service_is_ready());
-    uint32_t retry_start = 1200U;
+    uint32_t retry_start = 2800U;
 
     fake_oled_init_ok = true;
     fake_oled_update_ok = true;

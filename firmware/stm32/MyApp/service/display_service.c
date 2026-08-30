@@ -28,6 +28,13 @@
 #define DISPLAY_TICKER_GAP_PX 18U
 #define DISPLAY_FALL_BLINK_MS 400U
 #define DISPLAY_FALL_TEXT_Y 50U
+#define DISPLAY_PROGRESS_X 4U
+#define DISPLAY_PROGRESS_Y 42U
+#define DISPLAY_PROGRESS_WIDTH 120U
+#define DISPLAY_PROGRESS_HEIGHT 10U
+#define DISPLAY_PROGRESS_INNER_WIDTH 116U
+#define DISPLAY_PROGRESS_MAX 1000U
+#define DISPLAY_HOLD_MAX_MS 3000U
 
 static const char ticker_text[] =
     "Have an amazing ride! Remember, safety first.";
@@ -46,6 +53,9 @@ static uint8_t last_button_sender;
 static message_type_t last_button_type;
 static bool fall_active;
 static uint16_t ticker_scroll_px;
+static display_calibration_state_t calibration_state;
+static uint16_t calibration_progress_permille;
+static uint32_t calibration_hold_elapsed_ms;
 
 uint8_t speed_level_from_kmh_x10(bool valid, uint16_t kmh_x10)
 {
@@ -290,11 +300,92 @@ static void render_fall_warning(uint32_t now_ms)
     }
 }
 
+static void render_progress_gauge(uint16_t progress_permille)
+{
+    ssd1306_draw_rect(
+        DISPLAY_PROGRESS_X,
+        DISPLAY_PROGRESS_Y,
+        DISPLAY_PROGRESS_WIDTH,
+        DISPLAY_PROGRESS_HEIGHT);
+
+    uint8_t filled_width = (uint8_t)(
+        ((uint32_t)DISPLAY_PROGRESS_INNER_WIDTH * progress_permille) /
+        DISPLAY_PROGRESS_MAX);
+    if (filled_width != 0U) {
+        ssd1306_fill_rect(
+            (uint8_t)(DISPLAY_PROGRESS_X + 2U),
+            (uint8_t)(DISPLAY_PROGRESS_Y + 2U),
+            filled_width,
+            (uint8_t)(DISPLAY_PROGRESS_HEIGHT - 4U));
+    }
+}
+
+static void render_calibration(void)
+{
+    char line[16];
+    char *out;
+
+    ssd1306_clear();
+    switch (calibration_state)
+    {
+        case DISPLAY_CALIBRATION_INIT:
+            draw_text_centered(0U, DISPLAY_WIDTH, 12U, "CAL INIT");
+            draw_text_centered(0U, DISPLAY_WIDTH, 32U, "PREPARING SENSOR");
+            break;
+
+        case DISPLAY_CALIBRATION_RUNNING:
+            draw_text_centered(0U, DISPLAY_WIDTH, 2U, "CALIBRATING");
+            draw_text_centered(0U, DISPLAY_WIDTH, 15U, "KEEP BIKE UPRIGHT");
+            draw_text_centered(0U, DISPLAY_WIDTH, 27U, "AND HOLD IT STILL");
+            render_progress_gauge(calibration_progress_permille);
+            out = line;
+            out = append_u32(out,
+                ((uint32_t)calibration_progress_permille + 5U) / 10U);
+            *out++ = '%';
+            *out = '\0';
+            draw_text_centered(0U, DISPLAY_WIDTH, 55U, line);
+            break;
+
+        case DISPLAY_CALIBRATION_SUCCESS:
+            draw_text_centered(0U, DISPLAY_WIDTH, 8U, "CAL OK");
+            draw_text_centered(0U, DISPLAY_WIDTH, 27U, "FALL DETECTION");
+            draw_text_centered(0U, DISPLAY_WIDTH, 42U, "READY");
+            break;
+
+        case DISPLAY_CALIBRATION_REQUIRED:
+            draw_text_centered(0U, DISPLAY_WIDTH, 2U, "CAL REQUIRED");
+            draw_text_centered(0U, DISPLAY_WIDTH, 16U, "KEEP BIKE STILL");
+            draw_text_centered(0U, DISPLAY_WIDTH, 30U, "HOLD BUTTON 1");
+            draw_text_centered(0U, DISPLAY_WIDTH, 44U, "FOR 3 SECONDS");
+            break;
+
+        case DISPLAY_CALIBRATION_HOLDING:
+            draw_text_centered(0U, DISPLAY_WIDTH, 4U, "CAL REQUIRED");
+            draw_text_centered(0U, DISPLAY_WIDTH, 18U, "HOLD BUTTON 1");
+            render_progress_gauge(calibration_progress_permille);
+            out = line;
+            out = append_u32_x10(out,
+                calibration_hold_elapsed_ms / 100U);
+            *out++ = 's';
+            *out = '\0';
+            draw_text_centered(0U, DISPLAY_WIDTH, 55U, line);
+            break;
+
+        case DISPLAY_CALIBRATION_READY:
+        default:
+            break;
+    }
+}
+
 static void render_screen(void)
 {
     uint32_t now_ms = HAL_GetTick();
     if (fall_active) {
         render_fall_warning(now_ms);
+        return;
+    }
+    if (calibration_state != DISPLAY_CALIBRATION_READY) {
+        render_calibration();
         return;
     }
 
@@ -320,6 +411,7 @@ void display_service_init(I2C_HandleTypeDef *i2c)
     last_button_type = MSG_NONE;
     fall_active = false;
     ticker_scroll_px = 0U;
+    /* app_init may select CAL INIT before the OLED's first rendered frame. */
 #if FEATURE_SSD1306_DISPLAY
     display_ready = (i2c != NULL) && initialize_and_render();
 #else
@@ -355,6 +447,26 @@ bool display_service_is_ready(void)
 void display_service_set_fall(bool active)
 {
     fall_active = active;
+}
+
+void display_service_set_calibration(
+    display_calibration_state_t state,
+    uint16_t progress_permille,
+    uint32_t hold_elapsed_ms)
+{
+    if (state > DISPLAY_CALIBRATION_HOLDING) {
+        state = DISPLAY_CALIBRATION_READY;
+    }
+    if (progress_permille > DISPLAY_PROGRESS_MAX) {
+        progress_permille = DISPLAY_PROGRESS_MAX;
+    }
+    if (hold_elapsed_ms > DISPLAY_HOLD_MAX_MS) {
+        hold_elapsed_ms = DISPLAY_HOLD_MAX_MS;
+    }
+
+    calibration_state = state;
+    calibration_progress_permille = progress_permille;
+    calibration_hold_elapsed_ms = hold_elapsed_ms;
 }
 
 bool display_service_show_button_message(uint8_t sender_id, uint8_t type)

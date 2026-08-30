@@ -15,6 +15,8 @@
 #define APP_URGENT_QUEUE_LENGTH 4U
 #define APP_NORMAL_QUEUE_LENGTH 12U
 #define APP_RESET_NOTIFICATION (1UL << 0)
+#define APP_CAL_BUTTON_PRESSED_NOTIFICATION (1UL << 1)
+#define APP_CAL_BUTTON_RELEASED_NOTIFICATION (1UL << 2)
 
 #define APP_INPUT_STACK_WORDS 256U
 #define APP_SERVICE_STACK_WORDS 1024U
@@ -88,11 +90,33 @@ static void input_task(void *argument)
 {
     (void)argument;
     TickType_t last_wake = xTaskGetTickCount();
+    bool calibration_button_state_known = false;
+    bool calibration_button_last_pressed = false;
 
     for (;;)
     {
         bool reset_requested = false;
-        message_type_t message = app_runtime_poll_button(&reset_requested);
+        bool calibration_button_pressed = false;
+        message_type_t message = app_runtime_poll_button(
+            &reset_requested,
+            &calibration_button_pressed);
+        if (!calibration_button_state_known)
+        {
+            calibration_button_state_known = true;
+            calibration_button_last_pressed = calibration_button_pressed;
+        }
+        else if (calibration_button_pressed !=
+                 calibration_button_last_pressed)
+        {
+            calibration_button_last_pressed = calibration_button_pressed;
+            uint32_t button_notification = calibration_button_pressed ?
+                APP_CAL_BUTTON_PRESSED_NOTIFICATION :
+                APP_CAL_BUTTON_RELEASED_NOTIFICATION;
+            (void)xTaskNotify(
+                service_task_handle,
+                button_notification,
+                eSetBits);
+        }
         if (reset_requested)
         {
             (void)xTaskNotify(service_task_handle, APP_RESET_NOTIFICATION, eSetBits);
@@ -160,10 +184,22 @@ static void service_task(void *argument)
     for (;;)
     {
         uint32_t notification = 0U;
-        if ((xTaskNotifyWait(0U, UINT32_MAX, &notification, 0U) == pdPASS) &&
-            ((notification & APP_RESET_NOTIFICATION) != 0U))
+        if (xTaskNotifyWait(
+                0U, UINT32_MAX, &notification, 0U) == pdPASS)
         {
-            reset_runtime_queues(&urgent_streak);
+            if ((notification & APP_RESET_NOTIFICATION) != 0U)
+            {
+                reset_runtime_queues(&urgent_streak);
+            }
+            if ((notification & APP_CAL_BUTTON_RELEASED_NOTIFICATION) != 0U)
+            {
+                app_runtime_set_calibration_button_pressed(false);
+            }
+            else if ((notification &
+                      APP_CAL_BUTTON_PRESSED_NOTIFICATION) != 0U)
+            {
+                app_runtime_set_calibration_button_pressed(true);
+            }
         }
 
         app_event_t event;

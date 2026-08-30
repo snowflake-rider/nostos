@@ -106,6 +106,20 @@ message_type_t button_get_message(void)
     return event;
 }
 
+bool button_is_pressed(button_id_t id)
+{
+    switch (id)
+    {
+        case BUTTON_ID_BTN1:
+        case BUTTON_ID_BTN2:
+        case BUTTON_ID_BTN3:
+        case BUTTON_ID_BTN4:
+            return buttons[(size_t)id].stable_pressed;
+        default:
+            return false;
+    }
+}
+
 bool button_take_output_reset_request(void)
 {
     bool requested = output_reset_requested;
