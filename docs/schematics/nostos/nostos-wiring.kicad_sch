@@ -12,7 +12,7 @@
 		(comment 1 "Based on PINS.md and firmware/stm32/nostos_stm32.ioc")
 		(comment 2 "STM32 NUCLEO-F411RE / 3.3V logic / Common GND")
 		(comment 3 "Documentation schematic - verify breakout module power ratings")
-		(comment 4 "Rider Head=Base, Mid=Base+DHT11, Tail=Base+MPU6050")
+		(comment 4 "Node 1=Base, Node 2=Base+DHT11, Node 3=Base+MPU6050")
 	)
 	(lib_symbols
 		(symbol "Nostos:ACTIVE_BUZZER_MODULE"
@@ -1883,7 +1883,7 @@
 		)
 		(uuid "1dbd941c-d7ec-45e8-a355-4f87cf3fb926")
 	)
-	(text "Rider Mid: Base + DHT11 (ON)"
+	(text "Rider Node 2: Base + DHT11 (ON)"
 		(exclude_from_sim no)
 		(at 254 240.03 0)
 		(effects
@@ -1944,7 +1944,7 @@
 		)
 		(uuid "7923a3c0-e465-4e11-98ef-8e0222e6381e")
 	)
-	(text "Rider Tail: Base + MPU6050 (ON)"
+	(text "Rider Node 3: Base + MPU6050 (ON)"
 		(exclude_from_sim no)
 		(at 254 245.11 0)
 		(effects
@@ -1955,7 +1955,7 @@
 		)
 		(uuid "90e355ad-dfde-473b-8b4a-7084b4a36673")
 	)
-	(text "Rider Head: Base configuration (SSD1306 + VS1003B)"
+	(text "Rider Node 1: Base configuration (SSD1306 + VS1003B)"
 		(exclude_from_sim no)
 		(at 254 234.95 0)
 		(effects
@@ -4196,7 +4196,7 @@
 				)
 			)
 		)
-		(property "Value" "MPU6050 (RIDER TAIL, ON)"
+		(property "Value" "MPU6050 (RIDER NODE 3, ON)"
 			(at 63.5 184.15 0)
 			(show_name no)
 			(do_not_autoplace no)
@@ -4280,7 +4280,7 @@
 				)
 			)
 		)
-		(property "Value" "DHT11 (RIDER MID, ON)"
+		(property "Value" "DHT11 (RIDER NODE 2, ON)"
 			(at 132.08 186.69 0)
 			(show_name no)
 			(do_not_autoplace no)

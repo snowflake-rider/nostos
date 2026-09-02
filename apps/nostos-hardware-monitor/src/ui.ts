@@ -7,7 +7,8 @@ import {
 
 import {
   AUDIO_STATUS_NAMES,
-  RESULT_NAMES,
+  MESSAGE_PROTOCOL_RESULT_NAMES,
+  NOSTOS_RESULT_NAMES,
   enumName,
   messageName,
   type Board,
@@ -132,7 +133,7 @@ export class Dashboard {
       gap: 1,
     });
 
-    const connection = makePanel(renderer, "Connection", { height: 9 });
+    const connection = makePanel(renderer, "Connection", { height: 10 });
     this.connectionText = connection.text;
     const buttons = makePanel(renderer, "Buttons (raw / debounced / armed)", { flexGrow: 1 });
     this.buttonText = buttons.text;
@@ -151,7 +152,7 @@ export class Dashboard {
     upperRight.add(rtos.box);
     upperRight.add(outputs.box);
 
-    const transport = makePanel(renderer, "UART + Protocol v2", { height: 10 });
+    const transport = makePanel(renderer, "UART + Protocol", { height: 14 });
     this.transportText = transport.text;
     const events = makePanel(renderer, "Live changes", { flexGrow: 1 });
     this.eventText = events.text;
@@ -229,14 +230,16 @@ export class Dashboard {
 
     const transport = snapshot.transport;
     this.transportText.content = [
-      `v2 boot        ${enumName(RESULT_NAMES, snapshot.protocolStatus)} (${snapshot.protocolStatus})`,
+      `protocol boot  ${enumName(MESSAGE_PROTOCOL_RESULT_NAMES, snapshot.protocolStatus)} (${snapshot.protocolStatus})`,
       `UART           ${uartStatus(transport.uartStatus)}  TX ${transport.tx}  RX ${transport.rx}`,
       `UART errors    invalid ${transport.invalid}  dropped ${transport.dropped}`,
-      `router         local ${transport.localRouted}  remote ${transport.remoteRouted}`,
-      `last RX        ${messageName(transport.lastReceived)}`,
-      `protocol RX    ok ${transport.protocolReceived}  dup ${transport.protocolDuplicates}`,
-      `protocol err   rejected ${transport.protocolRejected}  overflow ${transport.protocolOverflows}`,
-      `last result    ${enumName(RESULT_NAMES, transport.protocolLastResult)}`,
+      `local events   ${transport.localRouted}`,
+      `protocol RX    ok ${transport.protocolReceived}  dup ${transport.protocolDuplicates}  rejected ${transport.protocolRejected}  overflow ${transport.protocolOverflows}`,
+      `message RX     state ${transport.protocolStateUpdates}  pace ${transport.protocolPaceRequests}`,
+      `STOP RX        requests ${transport.protocolStopRequests}`,
+      `STOP ACK       rx ${transport.protocolStopAcks}  matched ${transport.protocolStopAckMatches}  ignored ${transport.protocolStopAckIgnored}`,
+      `protocol TX    total ${transport.protocolTransmitted}  failed ${transport.protocolTransmitFailures}`,
+      `last result    ${enumName(NOSTOS_RESULT_NAMES, transport.protocolLastResult)}`,
     ].join("\n");
 
     this.previous = snapshot;
@@ -251,6 +254,7 @@ export class Dashboard {
       `state     ${this.phase.toUpperCase()}`,
       `detail    ${this.detail}`,
       `node      ${this.board.id}`,
+      `firmware  ${this.board.firmwareVariant}`,
       `ST-Link   ${this.board.serial}`,
       `device    ${this.board.deviceType ?? "STM32"}`,
       `interval  ${this.intervalMs} ms`,
@@ -268,7 +272,9 @@ export class Dashboard {
   private detectChanges(current: TelemetrySnapshot): void {
     const previous = this.previous;
     if (!previous) {
-      this.addEvent(`monitor live; protocol=${enumName(RESULT_NAMES, current.protocolStatus)}`);
+      this.addEvent(
+        `monitor live; protocol=${enumName(MESSAGE_PROTOCOL_RESULT_NAMES, current.protocolStatus)}`,
+      );
       return;
     }
 
@@ -289,6 +295,26 @@ export class Dashboard {
     }
     if (current.transport.tx > previous.transport.tx) {
       this.addEvent(`UART TX +${current.transport.tx - previous.transport.tx}`);
+    }
+    if (current.transport.protocolStopRequests > previous.transport.protocolStopRequests) {
+      this.addEvent(
+        `STOP request RX +${current.transport.protocolStopRequests - previous.transport.protocolStopRequests}`,
+      );
+    }
+    if (current.transport.protocolStopAckMatches > previous.transport.protocolStopAckMatches) {
+      this.addEvent(
+        `STOP ACK matched +${current.transport.protocolStopAckMatches - previous.transport.protocolStopAckMatches}`,
+      );
+    }
+    if (current.transport.protocolStopAckIgnored > previous.transport.protocolStopAckIgnored) {
+      this.addEvent(
+        `STOP ACK ignored +${current.transport.protocolStopAckIgnored - previous.transport.protocolStopAckIgnored}`,
+      );
+    }
+    if (current.transport.protocolTransmitFailures > previous.transport.protocolTransmitFailures) {
+      this.addEvent(
+        `protocol TX failed +${current.transport.protocolTransmitFailures - previous.transport.protocolTransmitFailures}`,
+      );
     }
     if (current.outputs.audioPlaying !== previous.outputs.audioPlaying) {
       this.addEvent(`audio ${current.outputs.audioPlaying ? "START" : "stop"}`);

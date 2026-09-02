@@ -9,13 +9,49 @@
       "flashAddress": "0x08000000",
       "buildPolicy": {
         "generator": "Ninja",
-        "protocolV2": true,
-        "buttonOutputTest": false,
         "ssd1306Display": true,
         "mpu6050Sensor": false,
         "dht11Sensor": false
       },
-      "artifact": "stm32/build/Release/nostos_stm32.bin"
+      "artifact": "stm32/build/Release/nostos_stm32.bin",
+      "variants": [
+        {
+          "id": "node1-base",
+          "label": "Node 1 Base",
+          "buildDirectory": "stm32/build/Release",
+          "artifact": "stm32/build/Release/nostos_stm32.bin",
+          "buildPolicy": {
+            "generator": "Ninja",
+            "ssd1306Display": true,
+            "mpu6050Sensor": false,
+            "dht11Sensor": false
+          }
+        },
+        {
+          "id": "node2-dht11",
+          "label": "Node 2 DHT11",
+          "buildDirectory": "stm32/build/Release-node2-dht11",
+          "artifact": "stm32/build/Release-node2-dht11/nostos_stm32.bin",
+          "buildPolicy": {
+            "generator": "Ninja",
+            "ssd1306Display": true,
+            "mpu6050Sensor": false,
+            "dht11Sensor": true
+          }
+        },
+        {
+          "id": "node3-mpu6050",
+          "label": "Node 3 MPU6050",
+          "buildDirectory": "stm32/build/Release-node3-mpu6050",
+          "artifact": "stm32/build/Release-node3-mpu6050/nostos_stm32.bin",
+          "buildPolicy": {
+            "generator": "Ninja",
+            "ssd1306Display": true,
+            "mpu6050Sensor": true,
+            "dht11Sensor": false
+          }
+        }
+      ]
     },
     "esp32": {
       "chip": "esp32s3",
@@ -28,7 +64,6 @@
         "application": "0x10000"
       },
       "buildPolicy": {
-        "protocolV2": true,
         "flashMode": "dio",
         "flashSize": "16MB",
         "flashFrequency": "80m"
@@ -42,13 +77,17 @@
     }
   },
   "protocols": {
+    "application": {
+      "definitionRevision": 1,
+      "wireFormat": "type-source-payload"
+    },
     "uart": {
-      "version": 2,
-      "wireFormat": "7e-framed-length-body-crc16"
+      "definitionRevision": 1,
+      "wireFormat": "a5-5a-length-application-crc16"
     },
     "mesh": {
-      "version": 2,
-      "wireFormat": "common-body-v2"
+      "definitionRevision": 1,
+      "wireFormat": "application-message"
     }
   },
   "package": {

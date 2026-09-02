@@ -1,4 +1,9 @@
-import { enumName, messageName, RESULT_NAMES, type TelemetrySnapshot } from "./model.js";
+import {
+  MESSAGE_PROTOCOL_RESULT_NAMES,
+  enumName,
+  messageName,
+  type TelemetrySnapshot,
+} from "./model.js";
 import type { EventLevel } from "./web-contract.js";
 
 export interface DetectedEvent {
@@ -14,7 +19,7 @@ export function detectTelemetryEvents(
     return [
       {
         level: current.protocolStatus === 0 ? "info" : "warn",
-        message: `Monitor live · Protocol ${enumName(RESULT_NAMES, current.protocolStatus)}`,
+        message: `Monitor live · Protocol ${enumName(MESSAGE_PROTOCOL_RESULT_NAMES, current.protocolStatus)}`,
       },
     ];
   }
@@ -54,6 +59,30 @@ export function detectTelemetryEvents(
     events.push({
       level: "info",
       message: `UART TX +${current.transport.tx - previous.transport.tx}`,
+    });
+  }
+  if (current.transport.protocolStopRequests > previous.transport.protocolStopRequests) {
+    events.push({
+      level: "warn",
+      message: `STOP request RX +${current.transport.protocolStopRequests - previous.transport.protocolStopRequests}`,
+    });
+  }
+  if (current.transport.protocolStopAckMatches > previous.transport.protocolStopAckMatches) {
+    events.push({
+      level: "info",
+      message: `STOP ACK matched +${current.transport.protocolStopAckMatches - previous.transport.protocolStopAckMatches}`,
+    });
+  }
+  if (current.transport.protocolStopAckIgnored > previous.transport.protocolStopAckIgnored) {
+    events.push({
+      level: "warn",
+      message: `STOP ACK ignored +${current.transport.protocolStopAckIgnored - previous.transport.protocolStopAckIgnored}`,
+    });
+  }
+  if (current.transport.protocolTransmitFailures > previous.transport.protocolTransmitFailures) {
+    events.push({
+      level: "error",
+      message: `Protocol TX failed +${current.transport.protocolTransmitFailures - previous.transport.protocolTransmitFailures}`,
     });
   }
   if (current.outputs.audioPlaying !== previous.outputs.audioPlaying) {

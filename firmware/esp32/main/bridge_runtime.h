@@ -14,5 +14,6 @@ void bridge_runtime_mesh_complete(int error);
  * distance are one atomic sample; the latest sample replaces stale backlog. */
 esp_err_t bridge_runtime_send_sensor_ride(bool valid, uint16_t kmh_x10,
                                           uint32_t distance_mm);
+uint8_t bridge_runtime_local_source_node_id(void);
 void bridge_runtime_log_status(void);
 #endif

@@ -27,8 +27,6 @@ REQUIRED_PROFILE_PATHS = (
     ("targets", "stm32", "chip"),
     ("targets", "stm32", "flashAddress"),
     ("targets", "stm32", "buildPolicy", "generator"),
-    ("targets", "stm32", "buildPolicy", "protocolV2"),
-    ("targets", "stm32", "buildPolicy", "buttonOutputTest"),
     ("targets", "stm32", "buildPolicy", "ssd1306Display"),
     ("targets", "stm32", "buildPolicy", "mpu6050Sensor"),
     ("targets", "stm32", "buildPolicy", "dht11Sensor"),
@@ -40,7 +38,6 @@ REQUIRED_PROFILE_PATHS = (
     ("targets", "esp32", "flashOffsets", "bootloader"),
     ("targets", "esp32", "flashOffsets", "partitionTable"),
     ("targets", "esp32", "flashOffsets", "application"),
-    ("targets", "esp32", "buildPolicy", "protocolV2"),
     ("targets", "esp32", "buildPolicy", "flashMode"),
     ("targets", "esp32", "buildPolicy", "flashSize"),
     ("targets", "esp32", "buildPolicy", "flashFrequency"),
@@ -48,9 +45,16 @@ REQUIRED_PROFILE_PATHS = (
     ("targets", "esp32", "artifacts", "partitionTable"),
     ("targets", "esp32", "artifacts", "application"),
     ("targets", "esp32", "artifacts", "flasherArgs"),
+    ("protocols", "application"),
     ("protocols", "uart"),
     ("protocols", "mesh"),
     ("package", "outputDirectory"),
+)
+
+STM32_FEATURE_FIELDS = (
+    "ssd1306Display",
+    "mpu6050Sensor",
+    "dht11Sensor",
 )
 
 
@@ -113,6 +117,91 @@ def canonical_profile_path(firmware_root: Path, requested: Path) -> Path:
     return expected_lexical
 
 
+def stm32_policy_options(policy: dict[str, Any]) -> dict[str, str]:
+    if policy.get("generator") != "Ninja":
+        raise ReleaseError("release profile STM32 generator must be 'Ninja'")
+    for field in STM32_FEATURE_FIELDS:
+        if not isinstance(policy.get(field), bool):
+            raise ReleaseError(f"release profile STM32 buildPolicy.{field} must be boolean")
+    return {
+        "SSD1306_DISPLAY": "ON" if policy["ssd1306Display"] else "OFF",
+        "MPU6050_SENSOR": "ON" if policy["mpu6050Sensor"] else "OFF",
+        "DHT11_SENSOR": "ON" if policy["dht11Sensor"] else "OFF",
+    }
+
+
+def stm32_variants(
+    firmware_root: Path, profile: dict[str, Any]
+) -> list[dict[str, Any]]:
+    firmware_root = firmware_root.resolve()
+    target = nested(profile, ("targets", "stm32"))
+    raw_variants = target.get("variants")
+    if raw_variants is None:
+        policy = nested(target, ("buildPolicy",))
+        stm32_policy_options(policy)
+        return [
+            {
+                "id": "default",
+                "label": "STM32",
+                "buildDirectory": firmware_root / "stm32/build/Release",
+                "artifact": profile_path(
+                    firmware_root, target["artifact"], "targets.stm32.artifact"
+                ),
+                "buildPolicy": policy,
+                "legacy": True,
+            }
+        ]
+    if not isinstance(raw_variants, list) or not raw_variants:
+        raise ReleaseError("release profile STM32 variants must be a non-empty array")
+
+    variants: list[dict[str, Any]] = []
+    ids: set[str] = set()
+    labels: set[str] = set()
+    directories: set[Path] = set()
+    artifacts: set[Path] = set()
+    for index, item in enumerate(raw_variants):
+        label_prefix = f"targets.stm32.variants[{index}]"
+        if not isinstance(item, dict):
+            raise ReleaseError(f"{label_prefix} must be an object")
+        variant_id = item.get("id")
+        label = item.get("label")
+        policy = item.get("buildPolicy")
+        if not isinstance(variant_id, str) or not re.fullmatch(r"[a-z0-9][a-z0-9-]*", variant_id):
+            raise ReleaseError(f"{label_prefix}.id must be a lowercase identifier")
+        if not isinstance(label, str) or not label.strip():
+            raise ReleaseError(f"{label_prefix}.label must be a non-empty string")
+        if not isinstance(policy, dict):
+            raise ReleaseError(f"{label_prefix}.buildPolicy must be an object")
+        stm32_policy_options(policy)
+        build_directory = profile_path(
+            firmware_root, item.get("buildDirectory"), f"{label_prefix}.buildDirectory"
+        )
+        artifact = profile_path(
+            firmware_root, item.get("artifact"), f"{label_prefix}.artifact"
+        )
+        if artifact.parent.resolve() != build_directory.resolve():
+            raise ReleaseError(f"{label_prefix}.artifact must be inside its buildDirectory")
+        if variant_id in ids or label in labels:
+            raise ReleaseError("STM32 variant ids and labels must be unique")
+        if build_directory.resolve() in directories or artifact.resolve() in artifacts:
+            raise ReleaseError("STM32 variant build directories and artifacts must be unique")
+        ids.add(variant_id)
+        labels.add(label)
+        directories.add(build_directory.resolve())
+        artifacts.add(artifact.resolve())
+        variants.append(
+            {
+                "id": variant_id,
+                "label": label,
+                "buildDirectory": build_directory,
+                "artifact": artifact,
+                "buildPolicy": policy,
+                "legacy": False,
+            }
+        )
+    return variants
+
+
 def validate_profile(firmware_root: Path, profile_file: Path) -> dict[str, Any]:
     firmware_root = firmware_root.resolve()
     profile = load_json(profile_file)
@@ -126,17 +215,8 @@ def validate_profile(firmware_root: Path, profile_file: Path) -> dict[str, Any]:
         raise ReleaseError("release profile status must be 'draft' or 'approved'")
     if nested(profile, ("targets", "stm32", "chip")) != "STM32F411xC_xE":
         raise ReleaseError("release profile STM32 chip must be 'STM32F411xC_xE'")
-    if nested(profile, ("targets", "stm32", "buildPolicy", "generator")) != "Ninja":
-        raise ReleaseError("release profile STM32 generator must be 'Ninja'")
-    for option in (
-        "protocolV2",
-        "buttonOutputTest",
-        "ssd1306Display",
-        "mpu6050Sensor",
-        "dht11Sensor",
-    ):
-        if not isinstance(nested(profile, ("targets", "stm32", "buildPolicy", option)), bool):
-            raise ReleaseError(f"release profile STM32 buildPolicy.{option} must be boolean")
+    stm32_policy_options(nested(profile, ("targets", "stm32", "buildPolicy")))
+    stm32_variants(firmware_root, profile)
     if nested(profile, ("targets", "esp32", "chip")) != "esp32s3":
         raise ReleaseError("release profile ESP32 chip must be 'esp32s3'")
     if nested(profile, ("targets", "esp32", "espIdf")) != "v5.5.5":
@@ -151,18 +231,24 @@ def validate_profile(firmware_root: Path, profile_file: Path) -> dict[str, Any]:
             nested(profile, ("targets", "esp32", "flashOffsets", role)),
             f"ESP32 flashOffsets.{role}",
         )
-    if not isinstance(nested(profile, ("targets", "esp32", "buildPolicy", "protocolV2")), bool):
-        raise ReleaseError("release profile ESP32 buildPolicy.protocolV2 must be boolean")
     for option in ("flashMode", "flashSize", "flashFrequency"):
         if not isinstance(nested(profile, ("targets", "esp32", "buildPolicy", option)), str):
             raise ReleaseError(f"release profile ESP32 buildPolicy.{option} must be a string")
     canonical_offset(nested(profile, ("targets", "stm32", "flashAddress")), "STM32 flashAddress")
-    for protocol_name in ("uart", "mesh"):
+    for protocol_name in ("application", "uart", "mesh"):
         protocol = nested(profile, ("protocols", protocol_name))
-        if not isinstance(protocol, dict) or not isinstance(protocol.get("version"), int):
-            raise ReleaseError(f"protocols.{protocol_name}.version must be an integer")
-        if protocol["version"] < 1:
-            raise ReleaseError(f"protocols.{protocol_name}.version must be positive")
+        if not isinstance(protocol, dict) or not isinstance(
+            protocol.get("definitionRevision"), int
+        ):
+            raise ReleaseError(
+                f"protocols.{protocol_name}.definitionRevision must be an integer"
+            )
+        if protocol["definitionRevision"] < 1:
+            raise ReleaseError(
+                f"protocols.{protocol_name}.definitionRevision must be positive"
+            )
+        if not isinstance(protocol.get("wireFormat"), str) or not protocol["wireFormat"]:
+            raise ReleaseError(f"protocols.{protocol_name}.wireFormat must be a string")
 
     path_keys = (
         ("versionFile",),
@@ -260,19 +346,25 @@ def semver(value: str) -> str:
 
 
 def required_artifacts(firmware_root: Path, profile: dict[str, Any]) -> list[dict[str, Any]]:
-    stm32 = profile_path(
-        firmware_root,
-        nested(profile, ("targets", "stm32", "artifact")),
-        "targets.stm32.artifact",
-    )
+    firmware_root = firmware_root.resolve()
     esp = nested(profile, ("targets", "esp32", "artifacts"))
+    variants = stm32_variants(firmware_root, profile)
     result: list[dict[str, Any]] = [
         {
             "target": "stm32",
             "role": "application",
-            "source": stm32,
-            "relative": Path("stm32/nostos_stm32.bin"),
-        },
+            "variant": variant["id"],
+            "label": variant["label"],
+            "source": variant["artifact"],
+            "relative": (
+                Path("stm32/nostos_stm32.bin")
+                if variant["legacy"]
+                else Path("stm32") / variant["id"] / "nostos_stm32.bin"
+            ),
+        }
+        for variant in variants
+    ]
+    result.extend([
         {
             "target": "esp32",
             "role": "bootloader",
@@ -305,7 +397,7 @@ def required_artifacts(firmware_root: Path, profile: dict[str, Any]) -> list[dic
             ),
             "relative": Path("esp32/flasher_args.json"),
         },
-    ]
+    ])
 
     esp_build_lexical = firmware_root / "esp32" / "build"
     if esp_build_lexical.is_symlink():
@@ -392,7 +484,14 @@ def esp32_flash_offsets(
 
 
 def artifact_record(
-    target: str, role: str, relative: Path, path: Path, offset: str | None = None
+    target: str,
+    role: str,
+    relative: Path,
+    path: Path,
+    offset: str | None = None,
+    *,
+    variant: str | None = None,
+    label: str | None = None,
 ) -> dict[str, Any]:
     result = {
         "target": target,
@@ -403,7 +502,48 @@ def artifact_record(
     }
     if offset is not None:
         result["offset"] = offset
+    if variant is not None:
+        result["variant"] = variant
+    if label is not None:
+        result["label"] = label
     return result
+
+
+def stm32_manifest_entries(
+    firmware_root: Path,
+    profile: dict[str, Any],
+    records: list[dict[str, Any]],
+) -> list[dict[str, Any]]:
+    variants_by_id = {
+        variant["id"]: variant for variant in stm32_variants(firmware_root, profile)
+    }
+    applications = [
+        item
+        for item in records
+        if item["target"] == "stm32" and item["role"] == "application"
+    ]
+    entries: list[dict[str, Any]] = []
+    for item in applications:
+        variant_id = item.get("variant")
+        variant = variants_by_id.get(variant_id)
+        if variant is None:
+            raise ReleaseError("STM32 manifest artifact has no matching profile variant")
+        entries.append(
+            {
+                "variant": variant_id,
+                "label": item["label"],
+                "role": item["role"],
+                "path": item["path"],
+                "offset": item["offset"],
+                "hardwareProfile": {
+                    field: variant["buildPolicy"][field]
+                    for field in STM32_FEATURE_FIELDS
+                },
+            }
+        )
+    if len(entries) != len(variants_by_id):
+        raise ReleaseError("STM32 manifest requires one application per profile variant")
+    return entries
 
 
 def cmake_cache_values(path: Path) -> dict[str, str]:
@@ -459,8 +599,12 @@ def cmake_set_value(path: Path, variable: str) -> str | None:
     return None
 
 
-def stm32_build_compiler(firmware_root: Path) -> Path:
-    metadata_root = firmware_root / "stm32/build/Release/CMakeFiles"
+def stm32_build_compiler(
+    firmware_root: Path, build_directory: Path | None = None
+) -> Path:
+    if build_directory is None:
+        build_directory = firmware_root / "stm32/build/Release"
+    metadata_root = build_directory / "CMakeFiles"
     metadata_files = sorted(metadata_root.glob("*/CMakeCCompiler.cmake"))
     if not metadata_files:
         raise ReleaseError(
@@ -492,6 +636,154 @@ def stm32_build_compiler(firmware_root: Path) -> Path:
     raise ReleaseError(f"unable to resolve STM32 compiler from build metadata: {detail}")
 
 
+def executable_path(value: str | Path | None) -> Path | None:
+    if value is None:
+        return None
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        return None
+    if not candidate.is_file() or not os.access(candidate, os.X_OK):
+        return None
+    # Keep an absolute symlink spelling from PATH or CMake metadata. Replacing a
+    # configured /opt/... compiler with its resolved installation path makes CMake
+    # treat the compiler as changed and can invalidate an otherwise reusable cache.
+    return candidate.absolute()
+
+
+def cached_stm32_tool_paths(firmware_root: Path) -> dict[str, Path]:
+    build_directory = firmware_root / "stm32/build/Release"
+    result: dict[str, Path] = {}
+    cache_file = build_directory / "CMakeCache.txt"
+    if cache_file.is_file():
+        cache = cmake_cache_values(cache_file)
+        for name, variable in (("cmake", "CMAKE_COMMAND"), ("ninja", "CMAKE_MAKE_PROGRAM")):
+            candidate = executable_path(cache.get(variable))
+            if candidate is not None:
+                result[name] = candidate
+
+    metadata_files = sorted(
+        (build_directory / "CMakeFiles").glob("*/CMakeCCompiler.cmake")
+    )
+    for metadata_file in metadata_files:
+        candidate = executable_path(cmake_set_value(metadata_file, "CMAKE_C_COMPILER"))
+        if candidate is not None:
+            result["arm-none-eabi-gcc"] = candidate
+            sibling_objcopy = executable_path(
+                candidate.with_name("arm-none-eabi-objcopy")
+            )
+            if sibling_objcopy is not None:
+                result["arm-none-eabi-objcopy"] = sibling_objcopy
+            break
+    return result
+
+
+def discover_stm32_build_tools(firmware_root: Path) -> dict[str, Path]:
+    firmware_root = firmware_root.resolve()
+    cached = cached_stm32_tool_paths(firmware_root)
+    data_home = Path(
+        os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share"))
+    ).expanduser()
+    search_root = data_home / "nostos-toolchains"
+    result: dict[str, Path] = {}
+
+    for name in ("cmake", "ninja", "arm-none-eabi-gcc", "arm-none-eabi-objcopy"):
+        candidate = executable_path(shutil.which(name))
+        if candidate is None:
+            candidate = cached.get(name)
+        if candidate is None and search_root.is_dir():
+            for found in sorted(search_root.rglob(name)):
+                candidate = executable_path(found)
+                if candidate is not None:
+                    break
+        if candidate is None:
+            raise ReleaseError(
+                f"STM32 release build tool {name} not found in PATH, existing Release "
+                f"metadata, or {search_root}"
+            )
+        result[name] = candidate
+
+    compiler = result["arm-none-eabi-gcc"]
+    objcopy = result["arm-none-eabi-objcopy"]
+    expected_objcopy = compiler.with_name("arm-none-eabi-objcopy")
+    if objcopy != expected_objcopy:
+        raise ReleaseError(
+            "STM32 arm-none-eabi-gcc and arm-none-eabi-objcopy must come from the same "
+            "toolchain directory"
+        )
+    return result
+
+
+def stm32_variant_commands(
+    firmware_root: Path,
+    variant: dict[str, Any],
+    tools: dict[str, Path] | None = None,
+) -> list[list[str]]:
+    if tools is None:
+        tools = discover_stm32_build_tools(firmware_root)
+    source = firmware_root / "stm32"
+    build_directory = variant["buildDirectory"]
+    policy = variant["buildPolicy"]
+    options = stm32_policy_options(policy)
+    compiler = tools["arm-none-eabi-gcc"]
+    objcopy = tools["arm-none-eabi-objcopy"]
+    toolchain_prefix = str(compiler)[: -len("gcc")]
+    configure = [
+        str(tools["cmake"]),
+        "-S",
+        str(source),
+        "-B",
+        str(build_directory),
+        "-G",
+        str(policy["generator"]),
+        f"-DCMAKE_TOOLCHAIN_FILE={source / 'cmake/gcc-arm-none-eabi.cmake'}",
+        f"-DCMAKE_MAKE_PROGRAM={tools['ninja']}",
+        f"-DTOOLCHAIN_PREFIX={toolchain_prefix}",
+        f"-DCMAKE_C_COMPILER={compiler}",
+        f"-DCMAKE_OBJCOPY={objcopy}",
+        "-DCMAKE_BUILD_TYPE=Release",
+        "-DNOSTOS_FREERTOS=ON",
+        *[f"-D{name}={value}" for name, value in options.items()],
+    ]
+    build = [str(tools["cmake"]), "--build", str(build_directory), "--parallel"]
+    convert = [
+        str(objcopy),
+        "-O",
+        "binary",
+        str(build_directory / "nostos_stm32.elf"),
+        str(variant["artifact"]),
+    ]
+    return [configure, build, convert]
+
+
+def build_stm32_variants(args: argparse.Namespace) -> None:
+    firmware_root = args.firmware_root.resolve()
+    canonical_profile = canonical_profile_path(firmware_root, args.profile)
+    profile = validate_profile(firmware_root, canonical_profile)
+    variants = stm32_variants(firmware_root, profile)
+    execute = bool(args.execute)
+    tools = discover_stm32_build_tools(firmware_root)
+    environment = os.environ.copy()
+    tool_directories = list(
+        dict.fromkeys(str(path.parent) for path in tools.values())
+    )
+    environment["PATH"] = os.pathsep.join(
+        [*tool_directories, environment.get("PATH", "")]
+    ).rstrip(os.pathsep)
+    for variant in variants:
+        print(f"STM32 variant: {variant['id']} ({variant['label']})")
+        for command in stm32_variant_commands(firmware_root, variant, tools):
+            print("command: " + " ".join(command))
+            if execute:
+                run_checked(
+                    command,
+                    f"STM32 {variant['id']} build",
+                    environment=environment,
+                )
+        print(f"artifact: {variant['artifact']}")
+    print(f"build action: {'EXECUTED' if execute else 'NONE (dry run)'}")
+    print("hardware action: NONE")
+
+
 def esp32_build_idf_command(
     firmware_root: Path, description: dict[str, Any]
 ) -> list[str]:
@@ -519,15 +811,14 @@ def esp32_effective_build_policy(
     firmware_root: Path, profile: dict[str, Any]
 ) -> dict[str, Any]:
     policy = nested(profile, ("targets", "esp32", "buildPolicy"))
-    if not isinstance(policy, dict) or not isinstance(policy.get("protocolV2"), bool):
-        raise ReleaseError("ESP32 buildPolicy.protocolV2 must be boolean")
+    if not isinstance(policy, dict):
+        raise ReleaseError("ESP32 buildPolicy must be an object")
     for key in ("flashMode", "flashSize", "flashFrequency"):
         if not isinstance(policy.get(key), str) or not policy[key]:
             raise ReleaseError(f"ESP32 buildPolicy.{key} must be a non-empty string")
 
     sdkconfig = load_json(firmware_root / "esp32/build/config/sdkconfig.json")
     expected_sdkconfig = {
-        "NOSTOS_PROTOCOL_V2": policy["protocolV2"],
         "ESPTOOLPY_FLASHMODE": policy["flashMode"],
         "ESPTOOLPY_FLASHSIZE": policy["flashSize"],
         "ESPTOOLPY_FLASHFREQ": policy["flashFrequency"],
@@ -553,7 +844,6 @@ def esp32_effective_build_policy(
                 f"ESP32 flash setting {key}={flash_settings.get(key)!r}, expected {expected!r}"
             )
     return {
-        "protocolV2": policy["protocolV2"],
         "flashMode": policy["flashMode"],
         "flashSize": policy["flashSize"],
         "flashFrequency": policy["flashFrequency"],
@@ -564,30 +854,44 @@ def build_metadata(
     firmware_root: Path, profile: dict[str, Any], target: str, firmware_version: str
 ) -> dict[str, Any]:
     if target == "stm32":
-        cache = cmake_cache_values(firmware_root / "stm32/build/Release/CMakeCache.txt")
-        policy = nested(profile, ("targets", "stm32", "buildPolicy"))
-        expected_options = {
-            "NOSTOS_PROTOCOL_V2": "ON" if policy.get("protocolV2") else "OFF",
-            "BUTTON_OUTPUT_TEST": "ON" if policy.get("buttonOutputTest") else "OFF",
-            "SSD1306_DISPLAY": "ON" if policy.get("ssd1306Display") else "OFF",
-            "MPU6050_SENSOR": "ON" if policy.get("mpu6050Sensor") else "OFF",
-            "DHT11_SENSOR": "ON" if policy.get("dht11Sensor") else "OFF",
-        }
-        if cache.get("CMAKE_GENERATOR") != policy.get("generator"):
-            raise ReleaseError(
-                "STM32 build generator does not match the release profile: "
-                f"{cache.get('CMAKE_GENERATOR')!r}"
-            )
-        for option, expected in expected_options.items():
-            if cache.get(option) != expected:
+        variants = stm32_variants(firmware_root, profile)
+        variant_metadata: list[dict[str, Any]] = []
+        for variant in variants:
+            cache = cmake_cache_values(variant["buildDirectory"] / "CMakeCache.txt")
+            policy = variant["buildPolicy"]
+            expected_options = stm32_policy_options(policy)
+            if cache.get("CMAKE_GENERATOR") != policy.get("generator"):
                 raise ReleaseError(
-                    f"STM32 build option {option}={cache.get(option)!r}, expected {expected}"
+                    f"STM32 {variant['id']} build generator does not match the release profile: "
+                    f"{cache.get('CMAKE_GENERATOR')!r}"
                 )
-        return {
-            "generator": cache["CMAKE_GENERATOR"],
-            "options": expected_options,
-            "compiler": command_version(str(stm32_build_compiler(firmware_root))),
-        }
+            for option, expected in expected_options.items():
+                if cache.get(option) != expected:
+                    raise ReleaseError(
+                        f"STM32 {variant['id']} build option "
+                        f"{option}={cache.get(option)!r}, expected {expected}"
+                    )
+            variant_metadata.append(
+                {
+                    "id": variant["id"],
+                    "label": variant["label"],
+                    "buildDirectory": variant["buildDirectory"].relative_to(
+                        firmware_root
+                    ).as_posix(),
+                    "generator": cache["CMAKE_GENERATOR"],
+                    "options": expected_options,
+                    "compiler": command_version(
+                        str(stm32_build_compiler(firmware_root, variant["buildDirectory"]))
+                    ),
+                }
+            )
+        if len(variants) == 1 and variants[0]["legacy"]:
+            return {
+                "generator": variant_metadata[0]["generator"],
+                "options": variant_metadata[0]["options"],
+                "compiler": variant_metadata[0]["compiler"],
+            }
+        return {"variants": variant_metadata}
 
     if target == "esp32":
         description = load_json(firmware_root / "esp32/build/project_description.json")
@@ -621,8 +925,11 @@ def build_metadata(
     raise ReleaseError(f"unknown build receipt target: {target}")
 
 
-def build_receipt_path(firmware_root: Path, target: str) -> Path:
-    return firmware_root / "out/build-receipts" / f"{target}.json"
+def build_receipt_path(
+    firmware_root: Path, target: str, variant: str | None = None
+) -> Path:
+    suffix = f"-{variant}" if variant is not None else ""
+    return firmware_root / "out/build-receipts" / f"{target}{suffix}.json"
 
 
 def selected_build_artifacts(
@@ -655,40 +962,63 @@ def record_build(args: argparse.Namespace) -> None:
     commit, clean = git_state(repo_root)
     selected = selected_build_artifacts(firmware_root, profile, args.target)
     metadata = build_metadata(firmware_root, profile, args.target, firmware_version)
-    records = [
-        artifact_record(
-            item["target"],
-            item["role"],
-            item["source"].relative_to(firmware_root),
-            item["source"],
+    receipt_specs: list[tuple[str | None, str | None, dict[str, Any], list[dict[str, Any]]]]
+    if args.target == "stm32" and "variants" in metadata:
+        receipt_specs = []
+        for variant_metadata in metadata["variants"]:
+            variant_id = variant_metadata["id"]
+            variant_items = [item for item in selected if item.get("variant") == variant_id]
+            receipt_specs.append(
+                (variant_id, variant_metadata["label"], variant_metadata, variant_items)
+            )
+    else:
+        receipt_specs = [(None, None, metadata, selected)]
+
+    destinations: list[Path] = []
+    for variant_id, variant_label, receipt_metadata, receipt_items in receipt_specs:
+        records = [
+            artifact_record(
+                item["target"],
+                item["role"],
+                item["source"].relative_to(firmware_root),
+                item["source"],
+                variant=item.get("variant"),
+                label=item.get("label"),
+            )
+            for item in receipt_items
+        ]
+        receipt = {
+            "schemaVersion": 1,
+            "target": args.target,
+            "source": {"commit": commit, "clean": clean},
+            "firmwareVersion": firmware_version,
+            "profileSha256": sha256(canonical_profile),
+            "buildMetadata": receipt_metadata,
+            "artifacts": records,
+            "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
+        }
+        if variant_id is not None:
+            receipt["variant"] = variant_id
+            receipt["label"] = variant_label
+        destination = build_receipt_path(firmware_root, args.target, variant_id)
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        descriptor, temporary_name = tempfile.mkstemp(
+            prefix=f".{args.target}.", suffix=".json", dir=destination.parent
         )
-        for item in selected
-    ]
-    receipt = {
-        "schemaVersion": 1,
-        "target": args.target,
-        "source": {"commit": commit, "clean": clean},
-        "firmwareVersion": firmware_version,
-        "profileSha256": sha256(canonical_profile),
-        "buildMetadata": metadata,
-        "artifacts": records,
-        "createdAt": dt.datetime.now(dt.timezone.utc).replace(microsecond=0).isoformat(),
-    }
-    destination = build_receipt_path(firmware_root, args.target)
-    destination.parent.mkdir(parents=True, exist_ok=True)
-    descriptor, temporary_name = tempfile.mkstemp(
-        prefix=f".{args.target}.", suffix=".json", dir=destination.parent
-    )
-    os.close(descriptor)
-    temporary = Path(temporary_name)
-    try:
-        temporary.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
-        os.replace(temporary, destination)
-    finally:
-        temporary.unlink(missing_ok=True)
+        os.close(descriptor)
+        temporary = Path(temporary_name)
+        try:
+            temporary.write_text(
+                json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8"
+            )
+            os.replace(temporary, destination)
+        finally:
+            temporary.unlink(missing_ok=True)
+        destinations.append(destination)
     print(
-        f"build receipt: PASS\ntarget: {args.target}\nreceipt: {destination}\n"
-        f"sourceClean: {str(clean).lower()}"
+        f"build receipt: PASS\ntarget: {args.target}\nreceipts: "
+        + ", ".join(str(path) for path in destinations)
+        + f"\nsourceClean: {str(clean).lower()}"
     )
 
 
@@ -700,70 +1030,95 @@ def verify_build_receipt(
     commit: str,
     firmware_version: str,
 ) -> None:
-    receipt_file = build_receipt_path(firmware_root, target)
-    receipt = load_json(receipt_file)
-    if receipt.get("schemaVersion") != 1 or receipt.get("target") != target:
-        raise ReleaseError(f"invalid {target} build receipt schema or target")
-    source = receipt.get("source")
-    if not isinstance(source, dict) or source.get("commit") != commit or source.get("clean") is not True:
-        raise ReleaseError(
-            f"{target} build receipt must come from clean current HEAD {commit}"
-        )
-    if receipt.get("firmwareVersion") != firmware_version:
-        raise ReleaseError(f"{target} build receipt firmware version does not match")
-    if receipt.get("profileSha256") != sha256(profile_file):
-        raise ReleaseError(f"{target} build receipt profile does not match")
-    metadata = receipt.get("buildMetadata")
-    if not isinstance(metadata, dict):
-        raise ReleaseError(f"{target} build receipt metadata must be an object")
-    if target == "stm32":
-        cache = cmake_cache_values(firmware_root / "stm32/build/Release/CMakeCache.txt")
-        policy = nested(profile, ("targets", "stm32", "buildPolicy"))
-        expected_options = {
-            "NOSTOS_PROTOCOL_V2": "ON" if policy.get("protocolV2") else "OFF",
-            "BUTTON_OUTPUT_TEST": "ON" if policy.get("buttonOutputTest") else "OFF",
-            "SSD1306_DISPLAY": "ON" if policy.get("ssd1306Display") else "OFF",
-            "MPU6050_SENSOR": "ON" if policy.get("mpu6050Sensor") else "OFF",
-            "DHT11_SENSOR": "ON" if policy.get("dht11Sensor") else "OFF",
-        }
-        if (
-            metadata.get("generator") != cache.get("CMAKE_GENERATOR")
-            or metadata.get("generator") != policy.get("generator")
-            or metadata.get("options") != expected_options
-            or not isinstance(metadata.get("compiler"), str)
-            or not metadata["compiler"]
-        ):
-            raise ReleaseError("STM32 build receipt toolchain or options do not match")
-    else:
-        description = load_json(firmware_root / "esp32/build/project_description.json")
-        if (
-            metadata.get("chip") != nested(profile, ("targets", "esp32", "chip"))
-            or metadata.get("espIdf") != nested(profile, ("targets", "esp32", "espIdf"))
-            or metadata.get("projectVersion") != firmware_version
-            or metadata.get("buildPolicy") != esp32_effective_build_policy(firmware_root, profile)
-            or not isinstance(metadata.get("idfCommand"), str)
-            or not metadata["idfCommand"]
-            or description.get("target") != metadata.get("chip")
-            or description.get("git_revision") != metadata.get("espIdf")
-            or description.get("project_version") != firmware_version
-        ):
-            raise ReleaseError("ESP32 build receipt toolchain or project metadata do not match")
-
-    receipt_artifacts = receipt.get("artifacts")
-    if not isinstance(receipt_artifacts, list):
-        raise ReleaseError(f"{target} build receipt artifacts must be an array")
     selected = selected_build_artifacts(firmware_root, profile, target)
-    expected_records = [
-        artifact_record(
-            item["target"],
-            item["role"],
-            item["source"].relative_to(firmware_root),
-            item["source"],
-        )
-        for item in selected
-    ]
-    if receipt_artifacts != expected_records:
-        raise ReleaseError(f"{target} build artifacts differ from the build receipt")
+    if target == "stm32":
+        variants = stm32_variants(firmware_root, profile)
+        if len(variants) == 1 and variants[0]["legacy"]:
+            receipt_specs = [(None, variants[0], selected)]
+        else:
+            receipt_specs = [
+                (
+                    variant["id"],
+                    variant,
+                    [item for item in selected if item.get("variant") == variant["id"]],
+                )
+                for variant in variants
+            ]
+    else:
+        receipt_specs = [(None, None, selected)]
+
+    for variant_id, variant, receipt_items in receipt_specs:
+        receipt_file = build_receipt_path(firmware_root, target, variant_id)
+        receipt = load_json(receipt_file)
+        if receipt.get("schemaVersion") != 1 or receipt.get("target") != target:
+            raise ReleaseError(f"invalid {target} build receipt schema or target")
+        source = receipt.get("source")
+        if (
+            not isinstance(source, dict)
+            or source.get("commit") != commit
+            or source.get("clean") is not True
+        ):
+            raise ReleaseError(
+                f"{target} build receipt must come from clean current HEAD {commit}"
+            )
+        if receipt.get("firmwareVersion") != firmware_version:
+            raise ReleaseError(f"{target} build receipt firmware version does not match")
+        if receipt.get("profileSha256") != sha256(profile_file):
+            raise ReleaseError(f"{target} build receipt profile does not match")
+        metadata = receipt.get("buildMetadata")
+        if not isinstance(metadata, dict):
+            raise ReleaseError(f"{target} build receipt metadata must be an object")
+
+        if target == "stm32":
+            assert variant is not None
+            cache = cmake_cache_values(variant["buildDirectory"] / "CMakeCache.txt")
+            expected_options = stm32_policy_options(variant["buildPolicy"])
+            expected_identity = variant_id is None or (
+                receipt.get("variant") == variant["id"]
+                and receipt.get("label") == variant["label"]
+                and metadata.get("id") == variant["id"]
+                and metadata.get("label") == variant["label"]
+                and metadata.get("buildDirectory")
+                == variant["buildDirectory"].relative_to(firmware_root).as_posix()
+            )
+            if (
+                not expected_identity
+                or metadata.get("generator") != cache.get("CMAKE_GENERATOR")
+                or metadata.get("generator") != variant["buildPolicy"]["generator"]
+                or metadata.get("options") != expected_options
+                or not isinstance(metadata.get("compiler"), str)
+                or not metadata["compiler"]
+            ):
+                raise ReleaseError("STM32 build receipt variant metadata does not match")
+        else:
+            description = load_json(firmware_root / "esp32/build/project_description.json")
+            if (
+                metadata.get("chip") != nested(profile, ("targets", "esp32", "chip"))
+                or metadata.get("espIdf") != nested(profile, ("targets", "esp32", "espIdf"))
+                or metadata.get("projectVersion") != firmware_version
+                or metadata.get("buildPolicy")
+                != esp32_effective_build_policy(firmware_root, profile)
+                or not isinstance(metadata.get("idfCommand"), str)
+                or not metadata["idfCommand"]
+                or description.get("target") != metadata.get("chip")
+                or description.get("git_revision") != metadata.get("espIdf")
+                or description.get("project_version") != firmware_version
+            ):
+                raise ReleaseError("ESP32 build receipt toolchain or project metadata do not match")
+
+        expected_records = [
+            artifact_record(
+                item["target"],
+                item["role"],
+                item["source"].relative_to(firmware_root),
+                item["source"],
+                variant=item.get("variant"),
+                label=item.get("label"),
+            )
+            for item in receipt_items
+        ]
+        if receipt.get("artifacts") != expected_records:
+            raise ReleaseError(f"{target} build artifacts differ from the build receipt")
 
 
 def make_read_only(root: Path) -> None:
@@ -822,7 +1177,7 @@ def package(args: argparse.Namespace) -> None:
     artifacts = required_artifacts(firmware_root, profile)
     missing = [
         str(item["source"])
-        for item in artifacts[:5]
+        for item in artifacts
         if not item["source"].is_file() or item["source"].is_symlink()
     ]
     if missing:
@@ -858,7 +1213,17 @@ def package(args: argparse.Namespace) -> None:
                 offset = stm32_offset
             elif target == "esp32" and role in esp_offsets:
                 offset = esp_offsets[role]
-            records.append(artifact_record(target, role, relative, destination_file, offset))
+            records.append(
+                artifact_record(
+                    target,
+                    role,
+                    relative,
+                    destination_file,
+                    offset,
+                    variant=item.get("variant"),
+                    label=item.get("label"),
+                )
+            )
 
         profile_relative = Path("profile/release.json")
         packaged_profile = staging / profile_relative
@@ -871,7 +1236,6 @@ def package(args: argparse.Namespace) -> None:
         )
 
         record_by_target_role = {(item["target"], item["role"]): item for item in records}
-        stm32_app = record_by_target_role[("stm32", "application")]
         esp32_app = record_by_target_role[("esp32", "application")]
         esp32_partition = record_by_target_role[("esp32", "partition-table")]
 
@@ -894,13 +1258,7 @@ def package(args: argparse.Namespace) -> None:
                 "stm32": {
                     "chip": nested(profile, ("targets", "stm32", "chip")),
                     "mode": "application-only",
-                    "entries": [
-                        {
-                            "role": stm32_app["role"],
-                            "path": stm32_app["path"],
-                            "offset": stm32_app["offset"],
-                        }
-                    ],
+                    "entries": stm32_manifest_entries(firmware_root, profile, records),
                 },
                 "esp32": {
                     "chip": nested(profile, ("targets", "esp32", "chip")),
@@ -986,14 +1344,26 @@ def verify_release(release_dir: Path) -> dict[str, Any]:
         r"[0-9a-f]{64}", release["profileSha256"]
     ):
         raise ReleaseError("release profileSha256 must be a lowercase SHA-256")
-    if not {"uart", "mesh"}.issubset(protocols):
-        raise ReleaseError("manifest protocols must contain uart and mesh contracts")
-    for protocol_name in ("uart", "mesh"):
+    if not {"application", "uart", "mesh"}.issubset(protocols):
+        raise ReleaseError(
+            "manifest protocols must contain application, uart and mesh contracts"
+        )
+    for protocol_name in ("application", "uart", "mesh"):
         contract = protocols.get(protocol_name)
-        if not isinstance(contract, dict) or not isinstance(contract.get("version"), int):
-            raise ReleaseError(f"manifest protocol {protocol_name} requires an integer version")
-        if contract["version"] < 1:
-            raise ReleaseError(f"manifest protocol {protocol_name} version must be positive")
+        if not isinstance(contract, dict) or not isinstance(
+            contract.get("definitionRevision"), int
+        ):
+            raise ReleaseError(
+                f"manifest protocol {protocol_name} requires an integer definitionRevision"
+            )
+        if contract["definitionRevision"] < 1:
+            raise ReleaseError(
+                f"manifest protocol {protocol_name} definitionRevision must be positive"
+            )
+        if not isinstance(contract.get("wireFormat"), str) or not contract["wireFormat"]:
+            raise ReleaseError(
+                f"manifest protocol {protocol_name} requires a wireFormat string"
+            )
 
     expected: set[str] = set()
     targets: set[str] = set()
@@ -1054,6 +1424,29 @@ def verify_release(release_dir: Path) -> dict[str, Any]:
     packaged_profile = load_json(release_dir / profile_artifact["path"])
     if packaged_profile.get("profile") != "release" or packaged_profile.get("status") != "approved":
         raise ReleaseError("packaged release profile must be approved")
+    if protocols != packaged_profile.get("protocols"):
+        raise ReleaseError(
+            "manifest protocols do not exactly match the packaged release profile"
+        )
+
+    packaged_stm32_variants = stm32_variants(release_dir, packaged_profile)
+    profile_has_stm32_variants = isinstance(
+        nested(packaged_profile, ("targets", "stm32")).get("variants"), list
+    )
+    if profile_has_stm32_variants:
+        expected_variants = {
+            variant["id"]: variant for variant in packaged_stm32_variants
+        }
+        stm32_artifacts = [
+            item
+            for item in artifacts
+            if item["target"] == "stm32" and item["role"] == "application"
+        ]
+        if {item.get("variant") for item in stm32_artifacts} != set(expected_variants):
+            raise ReleaseError("STM32 application artifacts do not match profile variants")
+        for item in stm32_artifacts:
+            if item.get("label") != expected_variants[item["variant"]]["label"]:
+                raise ReleaseError("STM32 artifact label does not match its profile variant")
 
     artifact_by_target_path = {(item["target"], item["path"]): item for item in artifacts}
     for target, expected_chip in (("stm32", "STM32F411xC_xE"), ("esp32", "esp32s3")):
@@ -1080,21 +1473,48 @@ def verify_release(release_dir: Path) -> dict[str, Any]:
                     "flashPlan.esp32 partitionTableSha256 must match the packaged partition table"
                 )
         entries = target_plan.get("entries")
-        if not isinstance(entries, list) or len(entries) != 1:
-            raise ReleaseError(f"flashPlan.{target} must contain one application entry")
-        entry = entries[0]
-        if not isinstance(entry, dict) or entry.get("role") != "application":
-            raise ReleaseError(f"flashPlan.{target} entry must be the application")
-        entry_path = entry.get("path")
-        entry_offset = entry.get("offset")
-        if not isinstance(entry_path, str) or not isinstance(entry_offset, str):
-            raise ReleaseError(f"flashPlan.{target} entry requires path and offset strings")
-        canonical_offset(entry_offset, f"flashPlan.{target} offset")
-        artifact = artifact_by_target_path.get((target, entry_path))
-        if artifact is None or artifact.get("role") != "application":
-            raise ReleaseError(f"flashPlan.{target} does not reference its application artifact")
-        if entry.get("offset") != artifact.get("offset"):
-            raise ReleaseError(f"flashPlan.{target} offset does not match the artifact")
+        expected_entry_count = (
+            len(packaged_stm32_variants)
+            if target == "stm32" and profile_has_stm32_variants
+            else 1
+        )
+        if not isinstance(entries, list) or len(entries) != expected_entry_count:
+            raise ReleaseError(
+                f"flashPlan.{target} must contain {expected_entry_count} application entries"
+            )
+        seen_variants: set[str] = set()
+        for entry in entries:
+            if not isinstance(entry, dict) or entry.get("role") != "application":
+                raise ReleaseError(f"flashPlan.{target} entry must be the application")
+            entry_path = entry.get("path")
+            entry_offset = entry.get("offset")
+            if not isinstance(entry_path, str) or not isinstance(entry_offset, str):
+                raise ReleaseError(f"flashPlan.{target} entry requires path and offset strings")
+            canonical_offset(entry_offset, f"flashPlan.{target} offset")
+            artifact = artifact_by_target_path.get((target, entry_path))
+            if artifact is None or artifact.get("role") != "application":
+                raise ReleaseError(
+                    f"flashPlan.{target} does not reference its application artifact"
+                )
+            if entry.get("offset") != artifact.get("offset"):
+                raise ReleaseError(f"flashPlan.{target} offset does not match the artifact")
+            if target == "stm32" and profile_has_stm32_variants:
+                variant_id = entry.get("variant")
+                if variant_id not in expected_variants or variant_id in seen_variants:
+                    raise ReleaseError("flashPlan.stm32 has an invalid or duplicate variant")
+                variant = expected_variants[variant_id]
+                expected_hardware = {
+                    field: variant["buildPolicy"][field]
+                    for field in STM32_FEATURE_FIELDS
+                }
+                if (
+                    entry.get("label") != variant["label"]
+                    or entry.get("hardwareProfile") != expected_hardware
+                    or artifact.get("variant") != variant_id
+                    or artifact.get("label") != variant["label"]
+                ):
+                    raise ReleaseError("flashPlan.stm32 variant metadata does not match")
+                seen_variants.add(variant_id)
     actual: set[str] = set()
     for path in release_dir.rglob("*"):
         relative = path.relative_to(release_dir).as_posix()
@@ -1219,6 +1639,35 @@ def validate_esp_dev_partition(
     if device.get("partitionTableSha256") != sha256(partition):
         raise ReleaseError("ESP32 inventory partitionTableSha256 does not match the current build")
     return partition
+
+
+def select_stm32_flash_entry(
+    entries: list[dict[str, Any]], device: dict[str, Any]
+) -> dict[str, Any]:
+    variant_entries = [entry for entry in entries if "variant" in entry]
+    if not variant_entries:
+        if len(entries) != 1:
+            raise ReleaseError("legacy STM32 flash plan must contain one entry")
+        return entries[0]
+    hardware = device.get("hardwareProfile")
+    if not isinstance(hardware, dict):
+        raise ReleaseError("STM32 inventory hardwareProfile is required for variant selection")
+    requested: dict[str, bool] = {}
+    for field in STM32_FEATURE_FIELDS:
+        value = hardware.get(field)
+        if not isinstance(value, bool):
+            raise ReleaseError(
+                f"STM32 inventory hardwareProfile.{field} must be boolean"
+            )
+        requested[field] = value
+    matches = [
+        entry for entry in variant_entries if entry.get("hardwareProfile") == requested
+    ]
+    if len(matches) != 1:
+        raise ReleaseError(
+            "STM32 inventory hardwareProfile must match exactly one release variant"
+        )
+    return matches[0]
 
 
 def dev_flash(args: argparse.Namespace) -> None:
@@ -1375,7 +1824,14 @@ def plan_flash(args: argparse.Namespace) -> None:
         print(f"transport: serial port={device['port']}")
         print("reset impact: serial connection may reset the ESP32 before and after a future write")
         print("preserved: NVS and partition table (application-only plan)")
-    for entry in target_plan["entries"]:
+    entries = target_plan["entries"]
+    if args.target == "stm32":
+        entries = [select_stm32_flash_entry(entries, device)]
+        if "label" in entries[0]:
+            print(
+                f"variant: {entries[0]['variant']} ({entries[0]['label']})"
+            )
+    for entry in entries:
         item = artifact_by_path[entry["path"]]
         print(
             f"write: {entry['offset']} {item['role']} {item['path']} "
@@ -1399,6 +1855,13 @@ def parser() -> argparse.ArgumentParser:
     receipt_parser.add_argument("--repo-root", type=Path, required=True)
     receipt_parser.add_argument("--profile", type=Path, required=True)
     receipt_parser.add_argument("--target", choices=("stm32", "esp32"), required=True)
+
+    variant_build_parser = sub.add_parser("build-stm32-variants")
+    variant_build_parser.add_argument("--firmware-root", type=Path, required=True)
+    variant_build_parser.add_argument("--profile", type=Path, required=True)
+    variant_build_action = variant_build_parser.add_mutually_exclusive_group(required=True)
+    variant_build_action.add_argument("--dry-run", action="store_true")
+    variant_build_action.add_argument("--execute", action="store_true")
 
     package_parser = sub.add_parser("package")
     package_parser.add_argument("--firmware-root", type=Path, required=True)
@@ -1442,6 +1905,8 @@ def main() -> int:
             )
         elif args.command == "record-build":
             record_build(args)
+        elif args.command == "build-stm32-variants":
+            build_stm32_variants(args)
         elif args.command == "package":
             package(args)
         elif args.command == "verify":

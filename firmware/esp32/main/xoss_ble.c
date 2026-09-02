@@ -1,7 +1,6 @@
 #include "xoss_ble.h"
 
 #include "bridge_runtime.h"
-#include "mesh_node.h"
 #include "speed_sensor.h"
 
 #include "esp_bt_defs.h"
@@ -37,7 +36,6 @@ typedef struct {
     xoss_event_kind_t kind;
     uint8_t length;
     uint8_t bytes[XOSS_NOTIFICATION_MAX];
-    uint32_t session_epoch;
 } xoss_event_t;
 
 static StaticQueue_t event_queue_control;
@@ -64,7 +62,6 @@ static uint32_t rides_forwarded;
 static uint32_t rides_rejected;
 static uint32_t last_ride_ms;
 static uint32_t last_idle_refresh_ms;
-static uint32_t session_epoch;
 static bool ride_stale_reported;
 static bool reconnect_pending;
 static bool initialized;
@@ -101,7 +98,7 @@ static bool enqueue_event(const xoss_event_t *event)
         portEXIT_CRITICAL(&status_lock);
         return false;
     }
-    /* BLE callbacks must never wait behind the worker/reset boundary. */
+    /* BLE callbacks must never wait behind the worker. */
     if (xSemaphoreTake(mutex, 0U) != pdTRUE) {
         portENTER_CRITICAL(&status_lock);
         ++notifications_dropped;
@@ -109,7 +106,6 @@ static bool enqueue_event(const xoss_event_t *event)
         return false;
     }
     xoss_event_t queued = *event;
-    queued.session_epoch = session_epoch;
     BaseType_t result = xQueueSend(queue, &queued, 0U);
     if (result == pdPASS && event->kind == XOSS_EVENT_NOTIFICATION) {
         portENTER_CRITICAL(&status_lock);
@@ -137,7 +133,7 @@ static void record_notification_drop(void)
 static void queue_disconnected_event(void)
 {
     /* This latch is the lifecycle source of truth. The queue entry only wakes
-     * the worker, so a boot-boundary queue reset cannot lose reconnection. */
+     * the worker, so callback bursts cannot lose reconnection. */
     portENTER_CRITICAL(&status_lock);
     reconnect_pending = true;
     portEXIT_CRITICAL(&status_lock);
@@ -151,26 +147,6 @@ static void close_connection_after_setup_error(void)
     if (result != ESP_OK) {
         ESP_LOGE(TAG, "DISCONNECT_START_FAILED %s", esp_err_to_name(result));
     }
-}
-
-static bool advertised_name_matches(uint8_t *data, uint16_t length)
-{
-    uint8_t name_length = 0U;
-    uint8_t *name = esp_ble_resolve_adv_data_by_type(
-        data,
-        length,
-        ESP_BLE_AD_TYPE_NAME_CMPL,
-        &name_length);
-    if (name == NULL) {
-        name = esp_ble_resolve_adv_data_by_type(
-            data,
-            length,
-            ESP_BLE_AD_TYPE_NAME_SHORT,
-            &name_length);
-    }
-    size_t configured_length = strlen(CONFIG_NOSTOS_XOSS_DEVICE_NAME);
-    return name != NULL && configured_length == (size_t)name_length &&
-        memcmp(name, CONFIG_NOSTOS_XOSS_DEVICE_NAME, configured_length) == 0;
 }
 
 static bool advertised_csc_service(uint8_t *data, uint16_t length)
@@ -195,7 +171,8 @@ static bool advertised_csc_service(uint8_t *data, uint16_t length)
 
 static esp_err_t start_mesh_coexistence_scan(void)
 {
-    if (mesh_node_primary() != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+    if (bridge_runtime_local_source_node_id() !=
+        CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE) {
         return ESP_ERR_NOT_SUPPORTED;
     }
     esp_ble_mesh_ble_scan_param_t scan = {.duration = 0U};
@@ -225,7 +202,8 @@ static void mesh_ble_callback(
     }
     if (event != ESP_BLE_MESH_SCAN_BLE_ADVERTISING_PKT_EVT ||
         parameter == NULL || parameter->scan_ble_adv_pkt.data == NULL ||
-        mesh_node_primary() != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+        bridge_runtime_local_source_node_id() !=
+            CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE) {
         return;
     }
 
@@ -235,9 +213,13 @@ static void mesh_ble_callback(
     if (connection_busy) return;
 
     esp_ble_mesh_ble_adv_rpt_t *report = &parameter->scan_ble_adv_pkt;
-    bool name_match = advertised_name_matches(report->data, report->length);
+    bool name_match = xoss_ble_complete_name_matches(
+        report->data, report->length, CONFIG_NOSTOS_XOSS_DEVICE_NAME);
     bool service_match = advertised_csc_service(report->data, report->length);
-    if (!name_match && !service_match) return;
+    /* The configured complete name is the candidate identity. A CSC UUID by
+     * itself is shared by many sensors and must never trigger a connection.
+     * The connected device is still revalidated by GATT CSC discovery. */
+    if (!name_match) return;
 
     portENTER_CRITICAL(&status_lock);
     connection_busy = connecting || connected;
@@ -499,6 +481,15 @@ static esp_err_t forward_stopped_ride(void)
     return result;
 }
 
+static esp_err_t forward_invalid_ride(void)
+{
+    esp_err_t result = bridge_runtime_send_sensor_ride(false, 0U, 0U);
+    portENTER_CRITICAL(&status_lock);
+    if (result == ESP_OK) ++rides_forwarded; else ++rides_rejected;
+    portEXIT_CRITICAL(&status_lock);
+    return result;
+}
+
 static void xoss_task(void *argument)
 {
     (void)argument;
@@ -507,8 +498,7 @@ static void xoss_task(void *argument)
         bool notification_ready = false;
         if (xQueueReceive(event_queue, &event, pdMS_TO_TICKS(500U)) == pdTRUE) {
             if (xSemaphoreTake(runtime_mutex, pdMS_TO_TICKS(1000U)) == pdTRUE) {
-                notification_ready = event.session_epoch == session_epoch &&
-                    event.kind == XOSS_EVENT_NOTIFICATION;
+                notification_ready = event.kind == XOSS_EVENT_NOTIFICATION;
                 if (notification_ready) {
                     process_notification(&event);
                     ride_stale_reported = false;
@@ -529,7 +519,9 @@ static void xoss_task(void *argument)
             portEXIT_CRITICAL(&status_lock);
             if (reconnect) {
                 speed_sensor_rebaseline(&speed_state);
-                (void)forward_stopped_ride();
+                /* A disconnected sensor is unavailable, not a valid 0 km/h
+                 * measurement. Keep the trip only inside the parser state. */
+                (void)forward_invalid_ride();
                 last_idle_refresh_ms = now;
                 ride_stale_reported = true;
             } else if (connection_alive && last != 0U &&
@@ -550,7 +542,8 @@ static void xoss_task(void *argument)
 
         if (reconnect) {
             vTaskDelay(pdMS_TO_TICKS(XOSS_RECONNECT_MS));
-            if (mesh_node_primary() == CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+            if (bridge_runtime_local_source_node_id() ==
+                CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE) {
                 esp_err_t result = start_mesh_coexistence_scan();
                 if (result != ESP_OK) {
                     ESP_LOGE(TAG, "SCAN_RESTART_FAILED %s",
@@ -563,58 +556,10 @@ static void xoss_task(void *argument)
     }
 }
 
-esp_err_t xoss_ble_reset_runtime_session(void)
-{
-    /* Only source 1 owns XOSS; the other provisioned nodes are safe no-ops. */
-    QueueHandle_t queue;
-    SemaphoreHandle_t mutex;
-    portENTER_CRITICAL(&status_lock);
-    queue = event_queue;
-    mutex = runtime_mutex;
-    portEXIT_CRITICAL(&status_lock);
-    if (queue == NULL || mutex == NULL) return ESP_OK;
-    if (xSemaphoreTake(mutex, pdMS_TO_TICKS(1000U)) != pdTRUE) {
-        return ESP_ERR_TIMEOUT;
-    }
-
-    ++session_epoch;
-    if (session_epoch == 0U) session_epoch = 1U;
-    uint32_t reset_epoch = session_epoch;
-    (void)xQueueReset(queue);
-    /* STM identity changed, not the BLE sensor session. Preserve the CSC
-     * baseline and cumulative distance so the new STM session can recover it. */
-    ride_stale_reported = false;
-    portENTER_CRITICAL(&status_lock);
-    bool connection_preserved = connected;
-    bool connection_in_progress = connecting;
-    bool restore_disconnect = reconnect_pending;
-    notifications_received = 0U;
-    notifications_dropped = 0U;
-    rides_forwarded = 0U;
-    rides_rejected = 0U;
-    portEXIT_CRITICAL(&status_lock);
-    if (restore_disconnect) {
-        xoss_event_t disconnected = {
-            .kind = XOSS_EVENT_DISCONNECTED,
-            .session_epoch = reset_epoch,
-        };
-        if (xQueueSend(queue, &disconnected, 0U) != pdPASS) {
-            xSemaphoreGive(mutex);
-            return ESP_FAIL;
-        }
-    }
-    xSemaphoreGive(mutex);
-
-    ESP_LOGI(TAG, "STM_BOOT_SESSION_RESET epoch=%" PRIu32
-        " connected=%u connecting=%u reconnect_pending=%u",
-        reset_epoch, connection_preserved, connection_in_progress,
-        restore_disconnect);
-    return ESP_OK;
-}
-
 esp_err_t xoss_ble_init(void)
 {
-    if (mesh_node_primary() != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
+    if (bridge_runtime_local_source_node_id() !=
+        CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE) {
         return ESP_ERR_NOT_SUPPORTED;
     }
     if (CONFIG_NOSTOS_XOSS_WHEEL_CIRCUMFERENCE_MM <= 0) {
@@ -630,9 +575,8 @@ esp_err_t xoss_ble_init(void)
         &event_queue_control);
     if (new_event_queue == NULL) return ESP_ERR_NO_MEM;
 
-    /* Fully initialize the session before either handle becomes observable. */
+    /* Fully initialize BLE connection state before handles become observable. */
     speed_sensor_reset(&speed_state);
-    session_epoch = 1U;
     ride_stale_reported = false;
     service_found = false;
     measurement_handle = 0U;

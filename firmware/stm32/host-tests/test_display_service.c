@@ -323,9 +323,9 @@ int main(void)
     CHECK(drawn_x[3] == 14 && drawn_y[3] == 23U);
     CHECK(drawn_x[4] == 81 && drawn_y[4] == 23U);
     CHECK(drawn_x[5] == 126 && drawn_y[5] == 39U);
-    CHECK(strcmp(drawn_lines[6], "FRONT: ACCELERATE") == 0);
+    CHECK(strcmp(drawn_lines[6], "N1: ACCELERATE") == 0);
     CHECK(drawn_x[6] == 0U && drawn_y[6] == 55U);
-    CHECK(ssd1306_text_width("CENTER: ACCELERATE") <= 128U);
+    CHECK(ssd1306_text_width("N10: ACCELERATE") <= 128U);
     CHECK(circle_count == 0U);
     CHECK(clear_rect_count == 6U);
     CHECK(inverted_rect_count == 4U);
@@ -445,7 +445,7 @@ int main(void)
     CHECK(strcmp(drawn_lines[1],
         "Have an amazing ride! Remember, safety first.") == 0);
     CHECK(drawn_x[1] == 122 && drawn_y[1] == 39U);
-    CHECK(strcmp(drawn_lines[2], "REAR: DECEL") == 0);
+    CHECK(strcmp(drawn_lines[2], "N2: DECEL") == 0);
     CHECK(clear_rect_count == 0U);
     CHECK(inverted_rect_count == 10U);
 
@@ -453,7 +453,7 @@ int main(void)
     CHECK(display_service_show_button_message(3U, MSG_STOP_REQUEST));
     fake_tick = 2800U;
     display_service_process();
-    CHECK(strcmp(drawn_lines[2], "CENTER: STOP") == 0);
+    CHECK(strcmp(drawn_lines[2], "N3: STOP") == 0);
     CHECK(!display_service_is_ready());
     uint32_t retry_start = 2800U;
 
@@ -472,7 +472,7 @@ int main(void)
     fake_tick += 200U;
     display_service_process();
     CHECK(drawn_count == 3U);
-    CHECK(strcmp(drawn_lines[2], "ESP32 READY") == 0);
+    CHECK(strcmp(drawn_lines[2], "UART LINK") == 0);
     CHECK(drawn_y[2] == 55U);
 
     puts("display_service tests passed");

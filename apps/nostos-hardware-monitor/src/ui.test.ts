@@ -12,6 +12,7 @@ test("dashboard renders the hardware signals and controls", async () => {
       {
         id: "connected-stm32-no-mpu-dht",
         serial: "066DFF485277504867161930",
+        firmwareVariant: "node1-base",
         deviceType: "STM32F411xC_xE",
       },
       250,
@@ -22,10 +23,13 @@ test("dashboard renders the hardware signals and controls", async () => {
     const frame = setup.captureCharFrame();
 
     expect(frame).toContain("NOSTOS Hardware Monitor");
+    expect(frame).toContain("firmware  node1-base");
     expect(frame).toContain("Buttons (raw / debounced / armed)");
     expect(frame).toContain("FreeRTOS + Queues");
-    expect(frame).toContain("UART + Protocol v2");
-    expect(frame).toContain("NOT_READY (15)");
+    expect(frame).toContain("UART + Protocol");
+    expect(frame).toContain("NOT_READY (1)");
+    expect(frame).toContain("STOP ACK       rx 0  matched 0  ignored 0");
+    expect(frame).toContain("protocol TX    total 0  failed 0");
     expect(frame).toContain("q/Esc quit");
   } finally {
     setup.renderer.destroy();

@@ -11,7 +11,7 @@ bash firmware/tools/fw test
 bash firmware/tools/fw release-build all
 bash firmware/tools/fw package --version X.Y.Z
 bash firmware/tools/fw verify --release nostos-vX.Y.Z
-bash firmware/tools/fw flash --release nostos-vX.Y.Z --target esp32 --node rider-1 --dry-run
+bash firmware/tools/fw flash --release nostos-vX.Y.Z --target esp32 --node node1 --dry-run
 ```
 
 Package는 clean source commit, 그 HEAD의 annotated `nostos-vX.Y.Z` tag, `approved` profile과 같은

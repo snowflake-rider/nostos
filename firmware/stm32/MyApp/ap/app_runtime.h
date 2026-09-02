@@ -9,10 +9,8 @@
 message_type_t app_runtime_poll_button(
     bool *reset_requested,
     bool *calibration_button_pressed);
-bool app_runtime_poll_remote(message_type_t *message);
 void app_runtime_set_calibration_button_pressed(bool pressed);
 void app_runtime_dispatch_local(message_type_t message);
-void app_runtime_dispatch_remote(message_type_t message);
 void app_runtime_reset(void);
 void app_runtime_process_services(void);
 

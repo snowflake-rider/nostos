@@ -23,10 +23,10 @@ STM32 NUCLEO-F411RE, 로직 전압은 3.3V, 모든 모듈은 공통 GND를 기�
 | 구분 | 회로도에 표시된 장치 |
 |---|---|
 | 공통 | ESP32-S3 UART 브리지, SSD1306, VS1003B, 버튼 4개, RGB LED, 부저 |
-| Rider Mid 활성 | DHT11 ON (`PA1/A1`) |
-| Rider Tail 활성 | MPU6050 ON (`I2C1`, 주소 `0x68` 또는 `0x69`) |
+| Rider Node 2 활성 | DHT11 ON (`PA1/A1`) |
+| Rider Node 3 활성 | MPU6050 ON (`I2C1`, 주소 `0x68` 또는 `0x69`) |
 
-회로도는 두 역할의 센서를 ON 상태로 표시한다. 현재 `firmware/stm32/CMakeLists.txt`의
+회로도는 두 장비 profile의 센서를 ON 상태로 표시한다. 현재 `firmware/stm32/CMakeLists.txt`의
 기본 옵션은 `DHT11_SENSOR=OFF`, `MPU6050_SENSOR=OFF`이며 펌웨어 활성화는 별도 작업이다.
 
 Button 4는 로컬 전용이며 현재 `MSG_NONE`이다. Buzzer Off 동작은 목표로만 표시했고

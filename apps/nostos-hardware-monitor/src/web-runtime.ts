@@ -1,7 +1,7 @@
-import type { ToolPaths } from "./config.js";
+import type { BoardFirmware, ToolPaths } from "./config.js";
 import { createDemoSnapshot } from "./demo.js";
 import { HardwareMonitor } from "./monitor.js";
-import type { Board, MonitorLayout, TelemetrySnapshot } from "./model.js";
+import type { Board, TelemetrySnapshot } from "./model.js";
 import { detectTelemetryEvents } from "./telemetry-events.js";
 import type {
   EventLevel,
@@ -22,8 +22,7 @@ export interface WebRuntimeOptions {
   intervalMs: number;
   demo: boolean;
   tools?: ToolPaths;
-  layout?: MonitorLayout;
-  expectedFlashPrefix?: Uint8Array;
+  firmwareByBoardId?: ReadonlyMap<string, BoardFirmware>;
 }
 
 export class WebMonitorRuntime {
@@ -80,21 +79,24 @@ export class WebMonitorRuntime {
       return;
     }
 
-    if (!this.options.tools || !this.options.layout) {
-      throw new Error("hardware runtime requires debugger tools and monitor layout");
+    if (!this.options.tools || !this.options.firmwareByBoardId) {
+      throw new Error("hardware runtime requires debugger tools and per-board firmware");
     }
     this.boards.forEach((entry, index) => {
+      const firmware = this.options.firmwareByBoardId!.get(entry.board.id);
+      if (!firmware) {
+        throw new Error(`firmware metadata is missing for ${entry.board.id}`);
+      }
       const monitor = new HardwareMonitor(
         entry.board,
         this.options.tools!,
-        this.options.layout!,
+        firmware,
         this.intervalMs,
         {
           onState: (phase, detail) => this.acceptPhase(entry, phase, detail),
           onSnapshot: (snapshot) => this.acceptSnapshot(entry, snapshot),
         },
         45100 + index,
-        this.options.expectedFlashPrefix,
       );
       entry.monitor = monitor;
       monitor.start();

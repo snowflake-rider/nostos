@@ -6,17 +6,20 @@ nostos/
 ├── README.md
 ├── STRUCTURE.md
 ├── REQUIREMENT.md
+├── CONTEXT.md
 ├── DEVICES.md
 ├── PINS.md
-├── RIDER-HEAD.md
-├── RIDER-MID.md
-├── RIDER-TAIL.md
+├── RIDER-1.md
+├── RIDER-2.md
+├── RIDER-3.md
 ├── apps/
 │   ├── mesh-console/
 │   └── nostos-hardware-monitor/
 ├── docs/
 │   ├── bluetooth-setting/
+│   ├── adr/
 │   ├── media/
+│   ├── study/
 │   └── schematics/
 │       └── nostos/
 ├── firmware/
@@ -34,10 +37,9 @@ nostos/
 │   │   └── boards.example.json
 │   ├── protocol/
 │   │   ├── README.md
-│   │   ├── V2.md
 │   │   ├── CMakeLists.txt
-│   │   ├── *.c
-│   │   ├── *.h
+│   │   ├── nostos_protocol.[ch]
+│   │   ├── nostos_uart.[ch]
 │   │   └── tests/
 │   ├── stm32/
 │   │   ├── CMakeLists.txt

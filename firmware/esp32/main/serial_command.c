@@ -7,14 +7,9 @@ static serial_command_t parse_line(const char *line) {
     const char *text;
     serial_command_t command;
   } commands[] = {
-      {"on", SERIAL_COMMAND_ON},
-      {"off", SERIAL_COMMAND_OFF},
-      {"on-unack", SERIAL_COMMAND_ON_UNACK},
-      {"off-unack", SERIAL_COMMAND_OFF_UNACK},
       {"tx-low", SERIAL_COMMAND_TX_LOW},
       {"tx-normal", SERIAL_COMMAND_TX_NORMAL},
       {"status", SERIAL_COMMAND_STATUS},
-      {"factory-reset", SERIAL_COMMAND_FACTORY_RESET},
   };
 
   if (line[0] == '\0') {
@@ -77,22 +72,12 @@ bool serial_command_parser_feed(serial_command_parser_t *parser, uint8_t byte,
 
 const char *serial_command_name(serial_command_t command) {
   switch (command) {
-  case SERIAL_COMMAND_ON:
-    return "on";
-  case SERIAL_COMMAND_OFF:
-    return "off";
-  case SERIAL_COMMAND_ON_UNACK:
-    return "on-unack";
-  case SERIAL_COMMAND_OFF_UNACK:
-    return "off-unack";
   case SERIAL_COMMAND_TX_LOW:
     return "tx-low";
   case SERIAL_COMMAND_TX_NORMAL:
     return "tx-normal";
   case SERIAL_COMMAND_STATUS:
     return "status";
-  case SERIAL_COMMAND_FACTORY_RESET:
-    return "factory-reset";
   case SERIAL_COMMAND_EMPTY:
     return "empty";
   case SERIAL_COMMAND_OVERFLOW:

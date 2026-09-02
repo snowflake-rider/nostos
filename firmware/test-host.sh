@@ -33,4 +33,8 @@ cmake -S "$FIRMWARE_DIR/protocol" -B "$protocol_build" -DENABLE_SANITIZERS="$pro
 cmake --build "$protocol_build" --parallel
 ctest --test-dir "$protocol_build" --output-on-failure
 
+if [[ "$fast" -eq 0 ]]; then
+    python3 "$FIRMWARE_DIR/tools/test_release.py"
+fi
+
 printf '%s\n' 'NOSTOS_HOST_TESTS=PASS; PHYSICAL_HARDWARE=NOT_TESTED_BY_THIS_SCRIPT'

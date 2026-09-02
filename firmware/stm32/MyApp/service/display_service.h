@@ -18,7 +18,7 @@ typedef enum {
 void display_service_init(I2C_HandleTypeDef *i2c);
 void display_service_process(void);
 bool display_service_is_ready(void);
-/* Shows paired ESP32 readiness on the dashboard after READY is accepted. */
+/* Shows that the local framed UART service has initialized. */
 void display_service_set_link_ready(bool ready);
 /* Clears only ESP-commanded/output mirror presentation state. */
 void display_service_reset_outputs(void);

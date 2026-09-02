@@ -7,7 +7,11 @@ import { BoardPanel } from "./BoardPanel";
 
 test("renders one board with buttons, RTOS, output, and transport telemetry", () => {
   const state: WebBoardState = {
-    board: { id: "connected-stm32-no-mpu-dht", serial: "066DFF485277504867161930" },
+    board: {
+      id: "connected-stm32-no-mpu-dht",
+      serial: "066DFF485277504867161930",
+      firmwareVariant: "node1-base",
+    },
     label: "Board 1",
     phase: "live",
     detail: "test fixture",
@@ -22,15 +26,23 @@ test("renders one board with buttons, RTOS, output, and transport telemetry", ()
     <BoardPanel state={state} reconnecting={false} onReconnect={() => undefined} />,
   );
   expect(html).toContain("Board 1");
+  expect(html).toContain("node1-base");
   expect(html).toContain("BTN4");
   expect(html).toContain("FreeRTOS");
-  expect(html).toContain("Protocol v2");
+  expect(html).toContain("Protocol");
+  expect(html).toContain("STOP Requests");
+  expect(html).toContain("STOP ACK matched");
+  expect(html).toContain("Protocol TX failed");
   expect(html).toContain("BTN1 pressed");
 });
 
 test("renders an actionable firmware mismatch without a flash control", () => {
   const state: WebBoardState = {
-    board: { id: "connected-stm32-2-no-mpu-dht", serial: "066EFF3134584B3043121635" },
+    board: {
+      id: "connected-stm32-2-no-mpu-dht",
+      serial: "066EFF3134584B3043121635",
+      firmwareVariant: "node1-base",
+    },
     label: "Board 2",
     phase: "error",
     detail: "ELF symbol address does not match target flash image (layout version 2 expected)",

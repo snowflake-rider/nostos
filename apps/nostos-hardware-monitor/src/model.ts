@@ -1,6 +1,12 @@
+export type Stm32FirmwareVariant =
+  | "node1-base"
+  | "node2-dht11"
+  | "node3-mpu6050";
+
 export interface Board {
   id: string;
   serial: string;
+  firmwareVariant: Stm32FirmwareVariant;
   chipId?: string;
   deviceType?: string;
 }
@@ -60,13 +66,19 @@ export interface TelemetrySnapshot {
     rx: number;
     invalid: number;
     dropped: number;
-    lastReceived: number;
     localRouted: number;
-    remoteRouted: number;
     protocolReceived: number;
     protocolDuplicates: number;
     protocolRejected: number;
     protocolOverflows: number;
+    protocolStateUpdates: number;
+    protocolPaceRequests: number;
+    protocolStopRequests: number;
+    protocolStopAcks: number;
+    protocolStopAckMatches: number;
+    protocolStopAckIgnored: number;
+    protocolTransmitted: number;
+    protocolTransmitFailures: number;
     protocolLastResult: number;
   };
   outputs: {
@@ -91,6 +103,25 @@ const BUTTON_META = [
   ["BTN4", "PC7"],
   ["TEST", "PB6"],
 ] as const;
+
+// message_protocol_stats_t in firmware/stm32/MyApp/service/message_protocol_service.h.
+// The monitor deliberately rejects a different size instead of guessing an ABI.
+const PROTOCOL_STATS_LAYOUT = {
+  size: 52,
+  received: 0,
+  rejected: 4,
+  duplicates: 8,
+  overflows: 12,
+  stateUpdates: 16,
+  paceRequests: 20,
+  stopRequests: 24,
+  stopAcks: 28,
+  stopAckMatches: 32,
+  stopAckIgnored: 36,
+  transmitted: 40,
+  transmitFailures: 44,
+  lastResult: 48,
+} as const;
 
 export class MemoryImage {
   constructor(private readonly blocks: MemoryBlock[]) {}
@@ -159,9 +190,19 @@ export function createMonitorLayout(symbols: Map<string, SymbolInfo[]>): Monitor
   const appStats = stats.find(
     (entry) => entry.size === 20 && entry.address + entry.size === serviceHeartbeat.address,
   );
-  const protocolStats = stats.find((entry) => entry !== appStats && entry.size >= 20);
-  if (!appStats || !protocolStats) {
-    throw new Error("could not distinguish app and protocol stats symbols");
+  const protocolStatsCandidates = stats.filter(
+    (entry) => entry !== appStats && entry.size === PROTOCOL_STATS_LAYOUT.size,
+  );
+  const protocolStats = protocolStatsCandidates.length === 1
+    ? protocolStatsCandidates[0]
+    : undefined;
+  if (!appStats) {
+    throw new Error("could not identify the 20-byte app stats symbol");
+  }
+  if (!protocolStats) {
+    throw new Error(
+      `expected exactly one ${PROTOCOL_STATS_LAYOUT.size}-byte message protocol stats symbol`,
+    );
   }
 
   const debugNames = [
@@ -170,9 +211,7 @@ export function createMonitorLayout(symbols: Map<string, SymbolInfo[]>): Monitor
     "protocol_debug_boot_status",
     "buttons",
     "environment_debug_failure_count",
-    "message_router_debug_remote_count",
     "message_router_debug_local_count",
-    "uart_debug_last_received",
     "uart_debug_dropped_count",
     "uart_debug_invalid_count",
     "uart_debug_rx_count",
@@ -262,14 +301,22 @@ export function decodeTelemetry(
       rx: memory.u32(address(layout, "uart_debug_rx_count")),
       invalid: memory.u32(address(layout, "uart_debug_invalid_count")),
       dropped: memory.u32(address(layout, "uart_debug_dropped_count")),
-      lastReceived: memory.u8(address(layout, "uart_debug_last_received")),
       localRouted: memory.u32(address(layout, "message_router_debug_local_count")),
-      remoteRouted: memory.u32(address(layout, "message_router_debug_remote_count")),
-      protocolReceived: memory.u32(protocolStats),
-      protocolDuplicates: memory.u32(protocolStats + 4),
-      protocolRejected: memory.u32(protocolStats + 8),
-      protocolOverflows: memory.u32(protocolStats + 12),
-      protocolLastResult: memory.u8(protocolStats + layout.protocolStats.size - 4),
+      protocolReceived: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.received),
+      protocolRejected: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.rejected),
+      protocolDuplicates: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.duplicates),
+      protocolOverflows: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.overflows),
+      protocolStateUpdates: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.stateUpdates),
+      protocolPaceRequests: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.paceRequests),
+      protocolStopRequests: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.stopRequests),
+      protocolStopAcks: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.stopAcks),
+      protocolStopAckMatches: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.stopAckMatches),
+      protocolStopAckIgnored: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.stopAckIgnored),
+      protocolTransmitted: memory.u32(protocolStats + PROTOCOL_STATS_LAYOUT.transmitted),
+      protocolTransmitFailures: memory.u32(
+        protocolStats + PROTOCOL_STATS_LAYOUT.transmitFailures,
+      ),
+      protocolLastResult: memory.u8(protocolStats + PROTOCOL_STATS_LAYOUT.lastResult),
     },
     outputs: {
       audioStatus: memory.u8(address(layout, "vs1003b_debug_status")),
@@ -296,26 +343,23 @@ export const MESSAGE_NAMES: Record<number, string> = {
   0xff: "UNKNOWN",
 };
 
-export const RESULT_NAMES = [
+export const NOSTOS_RESULT_NAMES = [
   "OK",
   "EMPTY",
   "BAD_ARGUMENT",
   "BAD_LENGTH",
   "BAD_VALUE",
   "TOO_LARGE",
-  "UNSUPPORTED_VERSION",
   "UNSUPPORTED_TYPE",
   "BAD_CRC",
   "TIMEOUT",
-  "UNAUTHORIZED",
-  "SESSION_REQUIRED",
-  "STALE",
-  "DUPLICATE",
-  "FULL",
+] as const;
+
+export const MESSAGE_PROTOCOL_RESULT_NAMES = [
+  "OK",
   "NOT_READY",
-  "EXPIRED",
-  "EXHAUSTED",
-  "CONFLICT",
+  "BAD_ARGUMENT",
+  "BAD_VALUE",
   "IO_ERROR",
 ] as const;
 

@@ -1,4 +1,5 @@
 #include "speed_sensor.h"
+#include "../main/xoss_ble.h"
 
 #include <limits.h>
 #include <stdio.h>
@@ -261,6 +262,47 @@ static bool test_uint32_transport_boundary_remains_visible(void)
     return true;
 }
 
+static bool test_xoss_advertising_requires_exact_complete_name(void)
+{
+    static const uint8_t exact_name_and_csc[] = {
+        0x02U, 0x01U, 0x06U,
+        0x05U, XOSS_BLE_AD_TYPE_COMPLETE_NAME, 'X', 'O', 'S', 'S',
+        0x03U, 0x03U, 0x16U, 0x18U,
+    };
+    static const uint8_t shortened_name[] = {
+        0x05U, 0x08U, 'X', 'O', 'S', 'S',
+    };
+    static const uint8_t csc_only[] = {
+        0x03U, 0x03U, 0x16U, 0x18U,
+    };
+    static const uint8_t mismatched_name[] = {
+        0x05U, XOSS_BLE_AD_TYPE_COMPLETE_NAME, 'X', 'O', 'S', 'X',
+    };
+    static const uint8_t name_with_suffix[] = {
+        0x06U, XOSS_BLE_AD_TYPE_COMPLETE_NAME, 'X', 'O', 'S', 'S', '+',
+    };
+    static const uint8_t malformed[] = {
+        0x06U, XOSS_BLE_AD_TYPE_COMPLETE_NAME, 'X', 'O',
+    };
+
+    CHECK(xoss_ble_complete_name_matches(
+        exact_name_and_csc, sizeof(exact_name_and_csc), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        shortened_name, sizeof(shortened_name), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        csc_only, sizeof(csc_only), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        mismatched_name, sizeof(mismatched_name), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        name_with_suffix, sizeof(name_with_suffix), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        malformed, sizeof(malformed), "XOSS"));
+    CHECK(!xoss_ble_complete_name_matches(
+        exact_name_and_csc, sizeof(exact_name_and_csc), ""));
+    CHECK(!xoss_ble_complete_name_matches(NULL, 0U, "XOSS"));
+    return true;
+}
+
 int main(void)
 {
     static const struct {
@@ -276,7 +318,9 @@ int main(void)
         {"decreasing revolutions", test_decreasing_revolutions_rebaseline},
         {"reset and arguments", test_reset_and_bad_arguments},
         {"out of range", test_out_of_range_is_invalid},
-        {"uint32 transport boundary", test_uint32_transport_boundary_remains_visible}
+        {"uint32 transport boundary", test_uint32_transport_boundary_remains_visible},
+        {"XOSS exact complete advertising name",
+         test_xoss_advertising_requires_exact_complete_name}
     };
 
     for (size_t i = 0U; i < sizeof(tests) / sizeof(tests[0]); ++i) {

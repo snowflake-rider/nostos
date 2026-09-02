@@ -143,7 +143,12 @@ td { background: rgba(16,29,48,.74); }
 
 ESP32-S3 3대의 Bluetooth Mesh + XOSS BLE 연결 구조
 
-<div class="snapshot">기준: 2026-08-31 로컬 working tree · 발표용 요약</div>
+<div class="snapshot">기준: 2026-08-31 로컬 working tree · 설계 변경 전 역사 스냅샷</div>
+
+<div class="band" style="margin-top:20px">
+현행 single-protocol·최대 10-node 설계는 <code>REQUIREMENT.md</code>와
+<code>firmware/protocol/README.md</code>를 기준으로 합니다. 아래 3-node/v2 내용은 당시 구조 기록입니다.
+</div>
 
 ---
 
@@ -413,4 +418,4 @@ ESP32-S3 3대의 Bluetooth Mesh + XOSS BLE 연결 구조
 다음 성공 기준: <strong>실측 2100 mm 확인 → XOSS Notify → STM32 RIDE → C001 수신 → 원격 출력</strong>
 </div>
 
-<p class="small muted" style="margin-top:24px">근거 파일: firmware/esp32/sdkconfig.defaults · sdkconfig · main/{main,mesh_node,xoss_ble,bridge_runtime_v2}.c · firmware/protocol/V2.md · DEVICES.md</p>
+<p class="small muted" style="margin-top:24px">현행 근거 파일: REQUIREMENT.md · firmware/protocol/README.md · firmware/esp32/main/{main,mesh_node,xoss_ble,bridge_runtime}.c · DEVICES.md</p>

@@ -22,17 +22,10 @@
 #define APP_SERVICE_STACK_WORDS 1024U
 #define APP_WATCHDOG_STACK_WORDS 160U
 
-typedef enum
-{
-    APP_EVENT_LOCAL_MESSAGE,
-    APP_EVENT_REMOTE_MESSAGE,
-} app_event_kind_t;
-
 typedef struct
 {
     uint32_t received_ms;
     message_type_t message;
-    app_event_kind_t kind;
 } app_event_t;
 
 static StaticQueue_t urgent_queue_control;
@@ -63,7 +56,7 @@ static bool event_is_urgent(const app_event_t *event)
         (event->message == MSG_FALL_DETECTED);
 }
 
-static void enqueue_event(app_event_kind_t kind, message_type_t message)
+static void enqueue_event(message_type_t message)
 {
     if ((message == MSG_NONE) || (message == MSG_UNKNOWN))
     {
@@ -73,7 +66,6 @@ static void enqueue_event(app_event_kind_t kind, message_type_t message)
     const app_event_t event = {
         .received_ms = HAL_GetTick(),
         .message = message,
-        .kind = kind,
     };
     QueueHandle_t queue = event_is_urgent(&event) ? urgent_queue : normal_queue;
     if (xQueueSend(queue, &event, 0U) == pdPASS)
@@ -123,16 +115,8 @@ static void input_task(void *argument)
         }
         else
         {
-            enqueue_event(APP_EVENT_LOCAL_MESSAGE, message);
+            enqueue_event(message);
         }
-
-#if !NOSTOS_PROTOCOL_V2
-        message_type_t remote_message = MSG_NONE;
-        if (app_runtime_poll_remote(&remote_message))
-        {
-            enqueue_event(APP_EVENT_REMOTE_MESSAGE, remote_message);
-        }
-#endif
 
         ++input_heartbeat;
         vTaskDelayUntil(&last_wake, pdMS_TO_TICKS(APP_INPUT_PERIOD_MS));
@@ -212,14 +196,7 @@ static void service_task(void *argument)
             }
             else
             {
-                if (event.kind == APP_EVENT_LOCAL_MESSAGE)
-                {
-                    app_runtime_dispatch_local(event.message);
-                }
-                else
-                {
-                    app_runtime_dispatch_remote(event.message);
-                }
+                app_runtime_dispatch_local(event.message);
                 ++stats.dispatched;
             }
         }

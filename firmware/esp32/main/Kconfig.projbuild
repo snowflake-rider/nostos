@@ -1,26 +1,56 @@
 menu "NOSTOS message protocol"
-config NOSTOS_PROTOCOL_V2
-    bool "Use framed v2 protocol (all connected STM32/ESP32 must use v2)"
-    default y
 config NOSTOS_SOURCE1_ADDRESS
-    hex "Provisioned Mesh primary for source1 (76)"
+    hex "Provisioned Mesh primary for source1"
     range 0x0 0x7fff
     default 0x0003
-    depends on NOSTOS_PROTOCOL_V2
 config NOSTOS_SOURCE2_ADDRESS
-    hex "Provisioned Mesh primary for source2 (D6)"
+    hex "Provisioned Mesh primary for source2"
     range 0x0 0x7fff
     default 0x0005
-    depends on NOSTOS_PROTOCOL_V2
 config NOSTOS_SOURCE3_ADDRESS
-    hex "Provisioned Mesh primary for source3 (B6)"
+    hex "Provisioned Mesh primary for source3"
     range 0x0 0x7fff
     default 0x0006
-    depends on NOSTOS_PROTOCOL_V2
+config NOSTOS_SOURCE4_ADDRESS
+    hex "Provisioned Mesh primary for source4 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE5_ADDRESS
+    hex "Provisioned Mesh primary for source5 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE6_ADDRESS
+    hex "Provisioned Mesh primary for source6 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE7_ADDRESS
+    hex "Provisioned Mesh primary for source7 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE8_ADDRESS
+    hex "Provisioned Mesh primary for source8 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE9_ADDRESS
+    hex "Provisioned Mesh primary for source9 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_SOURCE10_ADDRESS
+    hex "Provisioned Mesh primary for source10 (optional)"
+    range 0x0 0x7fff
+    default 0x0000
+config NOSTOS_RIDE_PUBLISHER_SOURCE
+    int "Active RIDE publisher source node"
+    range 1 10
+    default 1
+config NOSTOS_ENVIRONMENT_PUBLISHER_SOURCE
+    int "Active ENVIRONMENT publisher source node"
+    range 1 10
+    default 2
 config NOSTOS_XOSS_SPEED_SENSOR
     bool "Enable XOSS CSC speed-sensor GATT client"
     default y
-    depends on NOSTOS_PROTOCOL_V2 && BT_GATTC_ENABLE
+    depends on BT_GATTC_ENABLE
 config NOSTOS_XOSS_DEVICE_NAME
     string "Exact BLE advertising name for the XOSS sensor"
     default "XOSS S-26518"

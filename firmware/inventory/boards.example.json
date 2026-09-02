@@ -2,17 +2,64 @@
   "schemaVersion": 1,
   "devices": [
     {
-      "id": "replace-with-local-name",
+      "id": "node1",
       "target": "stm32",
       "transport": "stlink",
-      "serial": "REPLACE_WITH_LOCAL_STLINK_SERIAL",
+      "serial": "REPLACE_WITH_NODE1_STLINK_SERIAL",
+      "hardwareProfile": {
+        "ssd1306Display": true,
+        "mpu6050Sensor": false,
+        "dht11Sensor": false
+      },
       "enabled": false
     },
     {
-      "id": "replace-with-local-name",
+      "id": "node2",
+      "target": "stm32",
+      "transport": "stlink",
+      "serial": "REPLACE_WITH_NODE2_STLINK_SERIAL",
+      "hardwareProfile": {
+        "ssd1306Display": true,
+        "mpu6050Sensor": false,
+        "dht11Sensor": true
+      },
+      "enabled": false
+    },
+    {
+      "id": "node3",
+      "target": "stm32",
+      "transport": "stlink",
+      "serial": "REPLACE_WITH_NODE3_STLINK_SERIAL",
+      "hardwareProfile": {
+        "ssd1306Display": true,
+        "mpu6050Sensor": true,
+        "dht11Sensor": false
+      },
+      "enabled": false
+    },
+    {
+      "id": "node1",
       "target": "esp32",
       "transport": "serial",
-      "port": "REPLACE_WITH_LOCAL_SERIAL_PORT",
+      "port": "REPLACE_WITH_NODE1_ESP32_SERIAL_PORT",
+      "partitionLayout": "single-factory-v1",
+      "partitionTableSha256": "REPLACE_WITH_VERIFIED_PARTITION_TABLE_SHA256",
+      "enabled": false
+    },
+    {
+      "id": "node2",
+      "target": "esp32",
+      "transport": "serial",
+      "port": "REPLACE_WITH_NODE2_ESP32_SERIAL_PORT",
+      "partitionLayout": "single-factory-v1",
+      "partitionTableSha256": "REPLACE_WITH_VERIFIED_PARTITION_TABLE_SHA256",
+      "enabled": false
+    },
+    {
+      "id": "node3",
+      "target": "esp32",
+      "transport": "serial",
+      "port": "REPLACE_WITH_NODE3_ESP32_SERIAL_PORT",
       "partitionLayout": "single-factory-v1",
       "partitionTableSha256": "REPLACE_WITH_VERIFIED_PARTITION_TABLE_SHA256",
       "enabled": false

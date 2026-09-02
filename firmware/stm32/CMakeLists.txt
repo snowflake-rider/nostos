@@ -26,30 +26,14 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS TRUE)
 
 # Core project settings
 project(${CMAKE_PROJECT_NAME})
-option(NOSTOS_PROTOCOL_V2 "Use the thin STM32-to-ESP32 sensor/output link" ON)
 option(NOSTOS_FREERTOS "Run the STM32 application on FreeRTOS" ON)
-option(BUTTON_OUTPUT_TEST "Diagnostic button -> RGB -> VS1003B output mode" OFF)
 option(SSD1306_DISPLAY "Enable SSD1306 display on I2C1 PB8/PB9" ON)
 option(MPU6050_SENSOR "Enable MPU6050 fall detection on I2C1 PB8/PB9" OFF)
 option(DHT11_SENSOR "Enable local DHT11 sampling on PA1" OFF)
-if(BUTTON_OUTPUT_TEST AND NOSTOS_PROTOCOL_V2)
-    message(FATAL_ERROR "BUTTON_OUTPUT_TEST currently exercises the legacy button message path; disable NOSTOS_PROTOCOL_V2")
-endif()
-if(NOSTOS_PROTOCOL_V2)
-    add_compile_definitions(NOSTOS_PROTOCOL_V2=1)
-endif()
 if(NOSTOS_FREERTOS)
     add_compile_definitions(NOSTOS_FREERTOS=1)
 else()
     add_compile_definitions(NOSTOS_FREERTOS=0)
-endif()
-if(BUTTON_OUTPUT_TEST)
-    set(SSD1306_DISPLAY OFF)
-    set(MPU6050_SENSOR OFF)
-    set(DHT11_SENSOR OFF)
-    add_compile_definitions(
-        FEATURE_BUTTON_OUTPUT_TEST=1
-    )
 endif()
 if(SSD1306_DISPLAY)
     add_compile_definitions(FEATURE_SSD1306_DISPLAY=1)
@@ -101,10 +85,10 @@ target_link_directories(${CMAKE_PROJECT_NAME} PRIVATE
 file(GLOB_RECURSE MYAPP_SOURCES CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/MyApp/*.c"
 )
-
 target_sources(${CMAKE_PROJECT_NAME} PRIVATE
     ${MYAPP_SOURCES}
-    ../protocol/sensor_link.c
+    ../protocol/nostos_protocol.c
+    ../protocol/nostos_uart.c
 )
 
 # Add include paths

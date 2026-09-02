@@ -2,9 +2,8 @@ import { join, normalize } from "node:path";
 
 import {
   discoverTools,
+  loadBoardFirmware,
   loadBoards,
-  loadFirmwareFlashPrefix,
-  loadMonitorLayout,
   REPO_ROOT,
 } from "./config.js";
 import type { MonitorControl, WebMonitorState } from "./web-contract.js";
@@ -47,19 +46,27 @@ function json(value: unknown, status = 200): Response {
 
 async function main(): Promise<void> {
   const options = parseOptions(Bun.argv.slice(2));
-  const boards = await loadBoards();
+  const boards = options.demo
+    ? [
+        { id: "demo-node1", serial: "DEMO1", firmwareVariant: "node1-base" as const },
+        { id: "demo-node2", serial: "DEMO2", firmwareVariant: "node2-dht11" as const },
+        { id: "demo-node3", serial: "DEMO3", firmwareVariant: "node3-mpu6050" as const },
+      ]
+    : await loadBoards();
   const tools = options.demo ? undefined : await discoverTools();
-  const layout = tools ? await loadMonitorLayout(tools.nm) : undefined;
-  const expectedFlashPrefix = tools
-    ? await loadFirmwareFlashPrefix(tools.objcopy)
+  const firmwareByBoardId = tools
+    ? new Map(
+        await Promise.all(
+          boards.map(async (board) => [board.id, await loadBoardFirmware(tools, board)] as const),
+        ),
+      )
     : undefined;
   const runtime = new WebMonitorRuntime({
     boards,
     intervalMs: options.intervalMs,
     demo: options.demo,
     tools,
-    layout,
-    expectedFlashPrefix,
+    firmwareByBoardId,
   });
   const subscribers = new Set<ReadableStreamDefaultController<Uint8Array>>();
   const encoder = new TextEncoder();

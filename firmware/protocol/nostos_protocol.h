@@ -1,105 +1,121 @@
 #ifndef NOSTOS_PROTOCOL_H
 #define NOSTOS_PROTOCOL_H
+
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 
-#define NOSTOS_VERSION 2U
-#define NOSTOS_NODE_COUNT 3U
-#define NOSTOS_HEADER_SIZE 9U
-#define NOSTOS_WIRE_MAX 64U
-#define NOSTOS_TYPE_COUNT 10U
+#define NOSTOS_LOCAL_SOURCE_NODE_ID 0U
+#define NOSTOS_NODE_ID_MIN 1U
+#define NOSTOS_NODE_ID_MAX 10U
+#define NOSTOS_APPLICATION_HEADER_SIZE 2U
+#define NOSTOS_APPLICATION_MIN_SIZE 6U
+#define NOSTOS_APPLICATION_MAX_SIZE 11U
+#define NOSTOS_STATE_SCHEMA_REV 1U
 
 typedef enum {
-    NOSTOS_OK = 0, NOSTOS_EMPTY, NOSTOS_BAD_ARGUMENT, NOSTOS_BAD_LENGTH,
-    NOSTOS_BAD_VALUE, NOSTOS_TOO_LARGE, NOSTOS_UNSUPPORTED_VERSION,
-    NOSTOS_UNSUPPORTED_TYPE, NOSTOS_BAD_CRC, NOSTOS_TIMEOUT,
-    NOSTOS_UNAUTHORIZED, NOSTOS_SESSION_REQUIRED, NOSTOS_STALE,
-    NOSTOS_DUPLICATE, NOSTOS_FULL, NOSTOS_NOT_READY, NOSTOS_EXPIRED,
-    NOSTOS_EXHAUSTED, NOSTOS_CONFLICT, NOSTOS_IO_ERROR
+    NOSTOS_OK = 0,
+    NOSTOS_EMPTY,
+    NOSTOS_BAD_ARGUMENT,
+    NOSTOS_BAD_LENGTH,
+    NOSTOS_BAD_VALUE,
+    NOSTOS_TOO_LARGE,
+    NOSTOS_UNSUPPORTED_TYPE,
+    NOSTOS_BAD_CRC,
+    NOSTOS_TIMEOUT
 } nostos_result_t;
 
 typedef enum {
-    NOSTOS_SPEED_DOWN = 0x10, NOSTOS_SPEED_UP = 0x11,
-    NOSTOS_STOP = 0x13,
-    NOSTOS_FALL = 0x30,
-    NOSTOS_ENVIRONMENT = 0x41, NOSTOS_FALL_CLEAR = 0x42,
-    NOSTOS_RIDE = 0x44, NOSTOS_SHARED_DATA_REQUEST = 0x46,
-    NOSTOS_HEARTBEAT = 0x50, NOSTOS_ACK = 0x51
-} nostos_type_t;
+    NOSTOS_MESSAGE_STATE_UPDATE = 0x01,
+    NOSTOS_MESSAGE_PACE_REQUEST = 0x02,
+    NOSTOS_MESSAGE_STOP_REQUEST = 0x03,
+    NOSTOS_MESSAGE_STOP_ACK = 0x04
+} nostos_message_type_t;
 
-enum {
-    NOSTOS_SHARED_DATA_RIDE = 1U << 0,
-    NOSTOS_SHARED_DATA_ENVIRONMENT = 1U << 1,
-    NOSTOS_SHARED_DATA_MASK =
-        NOSTOS_SHARED_DATA_RIDE | NOSTOS_SHARED_DATA_ENVIRONMENT
-};
-
-/* Zero-initialized state is unknown, never a successful measurement. */
 typedef enum {
-    NOSTOS_UNMEASURED = 0, NOSTOS_VALID, NOSTOS_BELOW_RANGE,
-    NOSTOS_ABOVE_RANGE, NOSTOS_SENSOR_ERROR
-} nostos_quality_t;
-enum {
-    NOSTOS_STATUS_SENSOR_FAULT = 1U << 0,
-    NOSTOS_STATUS_OUTPUT_FAULT = 1U << 1,
-    NOSTOS_STATUS_INPUT_OVERFLOW = 1U << 2,
-    NOSTOS_STATUS_MASK = 7U
-};
-typedef struct { uint32_t session_id; uint16_t incident_id; } nostos_incident_ref_t;
+    NOSTOS_TOPIC_RIDE = 0x01,
+    NOSTOS_TOPIC_ENVIRONMENT = 0x02
+} nostos_topic_t;
+
+typedef enum {
+    NOSTOS_PACE_ACCELERATE = 0x01,
+    NOSTOS_PACE_DECELERATE = 0x02
+} nostos_pace_action_t;
+
+typedef enum {
+    NOSTOS_STOP_REASON_BUTTON = 0x01,
+    NOSTOS_STOP_REASON_FALL = 0x02
+} nostos_stop_reason_t;
+
 typedef struct {
-    int16_t temperature_c_x10;
-    uint16_t humidity_pct_x10;
-    nostos_quality_t temperature_quality, humidity_quality;
-} nostos_environment_t;
+    uint16_t speed_x10_kmh;
+    uint32_t trip_distance_m;
+} nostos_ride_state_t;
+
 typedef struct {
-    bool valid;
-    uint16_t kmh_x10;
-    uint32_t distance_mm; /* Cumulative wheel travel distance. */
-} nostos_ride_t;
-typedef struct { uint8_t mask; } nostos_shared_data_request_t;
-/* ACK confirms application acceptance, not audible output or network delivery.
- * It is never automatically ACKed and never causes an actuator change. */
+    int16_t temperature_x10_c;
+    uint16_t humidity_x10_pct;
+} nostos_environment_state_t;
+
 typedef struct {
-    uint8_t source_id, type;
-    uint32_t session_id;
-    uint16_t sequence;
-    uint8_t result; /* 0=applied/queued, 1=duplicate, 2=unsupported, 3=rejected */
-} nostos_ack_t;
-typedef struct nostos_message {
-    uint8_t type, source_id;
-    uint32_t session_id;
-    uint16_t sequence;
+    uint8_t topic_id;
+    uint8_t schema_rev;
+    bool sensor_valid;
     union {
-        nostos_environment_t environment;
-        nostos_ride_t ride;
-        nostos_shared_data_request_t shared_data_request;
-        nostos_incident_ref_t incident;
-        uint8_t status;
-        nostos_ack_t ack;
+        nostos_ride_state_t ride;
+        nostos_environment_state_t environment;
+    } value;
+} nostos_state_update_t;
+
+typedef struct { uint32_t request_id; uint8_t action; } nostos_pace_request_t;
+typedef struct { uint32_t request_id; uint8_t reason; } nostos_stop_request_t;
+typedef struct { uint32_t request_id; } nostos_stop_ack_t;
+
+typedef struct {
+    uint8_t type;
+    uint8_t source_node_id;
+    union {
+        nostos_state_update_t state_update;
+        nostos_pace_request_t pace_request;
+        nostos_stop_request_t stop_request;
+        nostos_stop_ack_t stop_ack;
     } payload;
 } nostos_message_t;
-typedef nostos_result_t (*nostos_payload_encode_fn)(const nostos_message_t *message,
-    uint8_t *payload);
-typedef nostos_result_t (*nostos_payload_decode_fn)(const uint8_t *payload,
-    nostos_message_t *message);
-typedef struct {
-    uint8_t type, payload_size;
-    const char *name;
-    nostos_payload_encode_fn encode_payload;
-    nostos_payload_decode_fn decode_payload;
-} nostos_type_info_t;
-extern const nostos_type_info_t nostos_types[NOSTOS_TYPE_COUNT];
-const nostos_type_info_t *nostos_type_info(uint8_t type);
+
 const char *nostos_result_name(nostos_result_t result);
+const char *nostos_message_type_name(uint8_t type);
+bool nostos_node_id_valid(uint8_t source_node_id);
+bool nostos_request_id_valid(uint32_t request_id);
+
+/* Normal application/Mesh codec: source_node_id must be 1..10. */
 nostos_result_t nostos_message_encode(const nostos_message_t *message,
     uint8_t *wire, size_t capacity, size_t *length);
 nostos_result_t nostos_message_decode(const uint8_t *wire, size_t length,
     nostos_message_t *message);
-/* Validate envelope even when type is new. Never infer a v2 header for v1. */
-nostos_result_t nostos_envelope_validate(const uint8_t *wire, size_t length);
-/* Explicit session/sequence ownership; no silent 16-bit wrap. */
-typedef struct { uint8_t source_id; uint32_t session_id, next_sequence; } nostos_sender_t;
-nostos_result_t nostos_sender_init(nostos_sender_t *sender, uint8_t source, uint32_t session);
-nostos_result_t nostos_sender_stamp(nostos_sender_t *sender, nostos_message_t *message);
+
+/* Local UART codec: additionally accepts source_node_id=0 from the paired
+ * STM32.  ESP32 stamps its provisioned 1..10 ID before sending requests over
+ * Mesh.  A local STOP_ACK with source 0 means only that the paired STM32
+ * accepted the request; it must never be forwarded unchanged over Mesh. */
+nostos_result_t nostos_local_message_encode(const nostos_message_t *message,
+    uint8_t *wire, size_t capacity, size_t *length);
+nostos_result_t nostos_local_message_decode(const uint8_t *wire, size_t length,
+    nostos_message_t *message);
+
+/* Constructors validate type-specific values and accept local source 0 for the
+ * shared STM32 image.  Normal encode remains the boundary that rejects 0 for
+ * Mesh.  Invalid sensor values are normalized to numeric zero. */
+nostos_result_t nostos_message_make_ride(nostos_message_t *message,
+    uint8_t source_node_id, bool sensor_valid, uint16_t speed_x10_kmh,
+    uint32_t trip_distance_m);
+nostos_result_t nostos_message_make_environment(nostos_message_t *message,
+    uint8_t source_node_id, bool sensor_valid, int16_t temperature_x10_c,
+    uint16_t humidity_x10_pct);
+nostos_result_t nostos_message_make_pace(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id, uint8_t action);
+nostos_result_t nostos_message_make_stop(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id, uint8_t reason);
+nostos_result_t nostos_message_make_stop_ack(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id);
+
 #endif

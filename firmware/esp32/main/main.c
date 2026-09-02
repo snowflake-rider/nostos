@@ -22,26 +22,25 @@ static void xoss_role_init_task(void *argument)
 {
     (void)argument;
     for (;;) {
-        uint16_t primary = mesh_node_primary();
-        if (primary == 0U) {
+        uint8_t source = bridge_runtime_local_source_node_id();
+        if (source == 0U) {
             vTaskDelay(pdMS_TO_TICKS(XOSS_ROLE_POLL_MS));
             continue;
         }
-        if (primary != CONFIG_NOSTOS_SOURCE1_ADDRESS) {
-            ESP_LOGI("XOSS_ROLE", "DISABLED primary=0x%04x owner=0x%04x",
-                     (unsigned)primary,
-                     (unsigned)CONFIG_NOSTOS_SOURCE1_ADDRESS);
+        if (source != CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE) {
+            ESP_LOGI("XOSS_ROLE", "DISABLED source=%u owner=%u",
+                     (unsigned)source,
+                     (unsigned)CONFIG_NOSTOS_RIDE_PUBLISHER_SOURCE);
             vTaskDelete(NULL);
             return;
         }
 
         esp_err_t err = xoss_ble_init();
         if (err != ESP_OK) {
-            ESP_LOGE("XOSS_ROLE", "INIT_FAILED primary=0x%04x err=%s",
-                     (unsigned)primary, esp_err_to_name(err));
+            ESP_LOGE("XOSS_ROLE", "INIT_FAILED source=%u err=%s",
+                     (unsigned)source, esp_err_to_name(err));
         } else {
-            ESP_LOGI("XOSS_ROLE", "ENABLED primary=0x%04x",
-                     (unsigned)primary);
+            ESP_LOGI("XOSS_ROLE", "ENABLED source=%u", (unsigned)source);
         }
         vTaskDelete(NULL);
         return;
@@ -56,7 +55,7 @@ static void console_task(void *argument)
     serial_command_t command;
     serial_command_parser_init(&parser);
     setvbuf(stdin, NULL, _IONBF, 0);
-    ESP_LOGI("LAYER_8_CONSOLE", "commands=status,on,off,on-unack,off-unack,tx-low,tx-normal; factory-reset DISABLED");
+    ESP_LOGI("LAYER_8_CONSOLE", "commands=status,tx-low,tx-normal");
     for (;;) {
         int byte = getchar();
         if (byte == EOF) {
@@ -74,10 +73,6 @@ static void console_task(void *argument)
             xoss_ble_log_status();
 #endif
             break;
-        case SERIAL_COMMAND_ON: err = mesh_node_send_onoff(true, true); break;
-        case SERIAL_COMMAND_OFF: err = mesh_node_send_onoff(false, true); break;
-        case SERIAL_COMMAND_ON_UNACK: err = mesh_node_send_onoff(true, false); break;
-        case SERIAL_COMMAND_OFF_UNACK: err = mesh_node_send_onoff(false, false); break;
         case SERIAL_COMMAND_TX_LOW: err = mesh_node_set_low_tx_power(true); break;
         case SERIAL_COMMAND_TX_NORMAL: err = mesh_node_set_low_tx_power(false); break;
         case SERIAL_COMMAND_EMPTY: break;

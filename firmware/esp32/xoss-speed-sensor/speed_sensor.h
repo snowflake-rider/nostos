@@ -42,7 +42,7 @@ typedef struct {
     bool valid;
     uint16_t kmh_x10;
     uint32_t delta_revolutions;
-    /* Session distance since the first baseline; retained on rebaseline. */
+    /* Boot-local trip distance since first baseline; retained on rebaseline. */
     uint64_t distance_mm;
 } speed_sensor_sample_t;
 
@@ -53,7 +53,7 @@ speed_sensor_result_t speed_sensor_decode_csc(
     speed_sensor_measurement_t *measurement);
 
 /*
- * Convert consecutive wheel measurements to km/h x10 and session distance
+ * Convert consecutive wheel measurements to km/h x10 and trip distance
  * using integer math. The first sample establishes a baseline at distance 0
  * and does not produce a speed.
  */
@@ -64,7 +64,7 @@ speed_sensor_result_t speed_sensor_update(
     speed_sensor_sample_t *sample);
 
 void speed_sensor_reset(speed_sensor_state_t *state);
-/* Start a new wheel-event baseline while retaining session distance. */
+/* Start a new wheel-event baseline while retaining trip distance. */
 void speed_sensor_rebaseline(speed_sensor_state_t *state);
 const char *speed_sensor_result_name(speed_sensor_result_t result);
 

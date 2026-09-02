@@ -1,6 +1,6 @@
 import { createCliRenderer, type KeyEvent } from "@opentui/core";
 
-import { discoverTools, loadBoards, loadMonitorLayout } from "./config.js";
+import { discoverTools, loadBoardFirmware, loadBoards } from "./config.js";
 import { createDemoSnapshot } from "./demo.js";
 import type { Board } from "./model.js";
 import { HardwareMonitor } from "./monitor.js";
@@ -68,14 +68,20 @@ async function main(): Promise<void> {
     return;
   }
 
-  const boards = await loadBoards();
   if (options.list) {
+    const boards = await loadBoards();
     for (const board of boards) console.log(`${board.id}\t${board.serial}`);
     return;
   }
 
+  const boards = options.demo ? [] : await loadBoards();
   const board: Board = options.demo
-    ? { id: "demo-stm32", serial: "DEMO", deviceType: "STM32F411xC_xE" }
+    ? {
+        id: "demo-stm32",
+        serial: "DEMO",
+        firmwareVariant: "node1-base",
+        deviceType: "STM32F411xC_xE",
+      }
     : (boards.find((candidate) => candidate.id === options.node) ?? boards[0]!);
   if (!options.demo && options.node && board.id !== options.node) {
     throw new Error(`STM32 node is not registered: ${options.node}`);
@@ -123,8 +129,8 @@ async function main(): Promise<void> {
   } else {
     try {
       const tools = await discoverTools();
-      const layout = await loadMonitorLayout(tools.nm);
-      monitor = new HardwareMonitor(board, tools, layout, options.intervalMs, {
+      const firmware = await loadBoardFirmware(tools, board);
+      monitor = new HardwareMonitor(board, tools, firmware, options.intervalMs, {
         onState: (phase, detail) => dashboard.setPhase(phase, detail),
         onSnapshot: (snapshot) => dashboard.update(snapshot),
       });

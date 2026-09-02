@@ -2,7 +2,8 @@
 
 STM32F411RE는 sensor/button producer와 OLED·RGB·audio actuator를 담당하고, ESP32-S3가 공식 message
 생성·검증·상태·task scheduling과 Bluetooth Mesh를 단일 소유합니다. 이 디렉터리는 현재 활성 소스 한
-벌이며 기본 wire protocol은 v2입니다. 구조·버전 정책은 [STRUCTURE.md](../STRUCTURE.md)를 따릅니다.
+벌이며 v1/v2 선택 없이 [단일 application protocol](protocol/README.md)을 사용합니다. 구조·버전 정책은
+[STRUCTURE.md](../STRUCTURE.md)를 따릅니다.
 
 ## 명령
 
@@ -16,21 +17,29 @@ bash firmware/tools/fw test
 bash firmware/tools/fw release-build all
 bash firmware/tools/fw package --version X.Y.Z
 bash firmware/tools/fw verify --release nostos-vX.Y.Z
-bash firmware/tools/fw flash --release nostos-vX.Y.Z --target stm32 --node rider-1 --dry-run
+bash firmware/tools/fw flash --release nostos-vX.Y.Z --target stm32 --node node1 --dry-run
 ```
 
 `check`와 `build`는 캐시를 재사용하며 장비나 release receipt를 변경하지 않습니다. ESP32 build와 Flash에는
-ESP-IDF v5.5.5가 필요합니다. 전체 회귀는 `test`, 공식 package용 receipt는 `release-build`에서만 만듭니다.
+ESP-IDF v5.5.5가 필요합니다. `NOSTOS_IDF_EXPORT`를 먼저 사용하고, 없으면
+`~/esp/esp-idf-v5.5.5/export.sh`를 자동으로 찾습니다. 전체 회귀는 `test`, 공식 package용 receipt는
+`release-build`에서만 만듭니다.
+ESP32의 Mesh composition은 표준 Config Server·Health Server와 NOSTOS Vendor Model 하나만 포함합니다.
+사용하지 않는 Generic Model과 Mesh 1.1 preview 기능은 빌드에서 제외합니다.
+`fw check esp32`는 이 composition과 PB-ADV·PB-GATT·Proxy·Relay·Settings 설정이 유지되는지도 검사합니다.
+Node ID는 별도 NVS 값이 아니라 provisioned primary address와 `CONFIG_NOSTOS_SOURCE1..10_ADDRESS` map으로
+결정합니다. 아직 배정하지 않은 Node 4..10은 `0`으로 두고 실제 primary address가 정해진 뒤 동일 이미지의
+map을 갱신합니다.
 Package 절차와 제약은 [릴리스 기록](../releases/README.md)을 따르며 `fw flash`는 검증된 계획만 출력하고
 장비에 쓰지 않습니다.
 
 ## 단일 보드 개발 Flash
 
 ```sh
-bash firmware/tools/fw dev --target stm32 --node rider-1 --dry-run
-bash firmware/tools/fw dev --target stm32 --node rider-1 --execute
-bash firmware/tools/fw dev --target esp32 --node rider-1 --dry-run
-bash firmware/tools/fw dev --target esp32 --node rider-1 --execute
+bash firmware/tools/fw dev --target stm32 --node node1 --dry-run
+bash firmware/tools/fw dev --target stm32 --node node1 --execute
+bash firmware/tools/fw dev --target esp32 --node node1 --dry-run
+bash firmware/tools/fw dev --target esp32 --node node1 --execute
 ```
 
 장비 선택 정보는 Git에서 제외되는 `firmware/inventory/boards.local.json`에 둡니다. `--execute`는 선택한

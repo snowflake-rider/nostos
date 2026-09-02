@@ -1,8 +1,8 @@
-import { decodeTelemetry, type Board, type MemoryBlock, type MonitorLayout, type TelemetrySnapshot } from "./model.js";
-import { REPO_ROOT, STM32_ELF_PATH, type ToolPaths } from "./config.js";
+import { decodeTelemetry, type Board, type MemoryBlock, type TelemetrySnapshot } from "./model.js";
+import { REPO_ROOT, type BoardFirmware, type ToolPaths } from "./config.js";
 
 const STM32_FLASH_BASE = 0x08000000;
-const FLASH_READ_CHUNK_LENGTH = 1024;
+const FLASH_READ_CHUNK_LENGTH = 4096;
 
 export interface ByteMismatch {
   offset: number;
@@ -231,9 +231,8 @@ export class DebugSession {
   constructor(
     readonly board: Board,
     private readonly tools: ToolPaths,
-    private readonly layout: MonitorLayout,
+    private readonly firmware: BoardFirmware,
     private readonly requestedPort?: number,
-    private readonly expectedFlashPrefix?: Uint8Array,
   ) {}
 
   async start(): Promise<void> {
@@ -272,7 +271,7 @@ export class DebugSession {
 
     try {
       await withTimeout(ready, 5000, `st-util for ${this.board.id}`);
-      this.mi = new MiClient(this.tools.gdb, STM32_ELF_PATH);
+      this.mi = new MiClient(this.tools.gdb, this.firmware.elfPath);
       await this.mi.start();
       await this.mi.connect(this.port);
       await this.verifyFirmware();
@@ -285,7 +284,7 @@ export class DebugSession {
   }
 
   private async verifyFirmware(): Promise<void> {
-    const expected = this.expectedFlashPrefix;
+    const expected = this.firmware.expectedFlashImage;
     const mi = this.mi;
     if (!expected || !mi) return;
 
@@ -302,7 +301,8 @@ export class DebugSession {
     const byte = (value: number | undefined) =>
       value === undefined ? "missing" : `0x${value.toString(16).padStart(2, "0")}`;
     throw new Error(
-      `firmware verification failed for ${this.board.id}: target flash differs from current ELF ` +
+      `firmware verification failed for ${this.board.id}: target flash differs from ` +
+        `${this.board.firmwareVariant} ELF ` +
         `at 0x${address.toString(16).padStart(8, "0")} ` +
         `(expected ${byte(mismatch.expected)}, got ${byte(mismatch.actual)}); telemetry rejected`,
     );
@@ -310,11 +310,12 @@ export class DebugSession {
 
   async sample(): Promise<TelemetrySnapshot> {
     const mi = this.mi;
+    const layout = this.firmware.layout;
     if (!mi) throw new Error("debug session is not connected");
     await mi.interrupt();
     try {
       const symbol = (name: string) => {
-        const entries = this.layout.symbols.get(name) ?? [];
+        const entries = layout.symbols.get(name) ?? [];
         if (entries.length !== 1) throw new Error(`missing unique symbol ${name}`);
         return entries[0]!;
       };
@@ -323,16 +324,16 @@ export class DebugSession {
       const queueEnd = symbol("urgent_queue").address + symbol("urgent_queue").size;
 
       const blocks = await Promise.all([
-        mi.readMemory(this.layout.debugStart, this.layout.debugLength),
-        mi.readMemory(this.layout.appStats.address, appEnd - this.layout.appStats.address),
-        mi.readMemory(this.layout.protocolStats.address, this.layout.protocolStats.size),
+        mi.readMemory(layout.debugStart, layout.debugLength),
+        mi.readMemory(layout.appStats.address, appEnd - layout.appStats.address),
+        mi.readMemory(layout.protocolStats.address, layout.protocolStats.size),
         mi.readMemory(queueStart, queueEnd - queueStart),
         mi.readMemory(symbol("xSchedulerRunning").address, 4),
         mi.readMemory(0x40020010, 8),
         mi.readMemory(0x40020410, 8),
         mi.readMemory(0x40020810, 8),
       ]);
-      return decodeTelemetry(this.layout, blocks);
+      return decodeTelemetry(layout, blocks);
     } finally {
       await mi.resume();
     }

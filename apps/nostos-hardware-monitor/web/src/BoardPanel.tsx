@@ -1,21 +1,15 @@
 import type { WebBoardState } from "../../src/web-contract";
+import {
+  MESSAGE_PROTOCOL_RESULT_NAMES,
+  NOSTOS_RESULT_NAMES,
+  enumName,
+} from "../../src/model";
 import { RefreshIcon } from "./icons";
-
-const RESULT_NAMES = [
-  "OK", "EMPTY", "BAD_ARGUMENT", "BAD_LENGTH", "BAD_VALUE", "TOO_LARGE",
-  "UNSUPPORTED_VERSION", "UNSUPPORTED_TYPE", "BAD_CRC", "TIMEOUT", "UNAUTHORIZED",
-  "SESSION_REQUIRED", "STALE", "DUPLICATE", "FULL", "NOT_READY", "EXPIRED",
-  "EXHAUSTED", "CONFLICT", "IO_ERROR",
-] as const;
 
 const AUDIO_NAMES = [
   "OK", "INVALID_ARGUMENT", "DREQ_TIMEOUT", "SPI_ERROR", "MODE_MISMATCH",
   "REGISTER_MISMATCH", "BUSY",
 ] as const;
-
-function enumName(values: readonly string[], value: number): string {
-  return values[value] ?? `UNKNOWN ${value}`;
-}
 
 function formatNumber(value: number): string {
   return new Intl.NumberFormat("en-US").format(value);
@@ -69,7 +63,9 @@ export function BoardPanel({ state, reconnecting, onReconnect }: BoardPanelProps
       <header className="board-header">
         <div>
           <h2>{state.label}</h2>
-          <p title={state.board.id}>{state.board.id}</p>
+          <p title={`${state.board.id} · ${state.board.firmwareVariant}`}>
+            {state.board.id} · {state.board.firmwareVariant}
+          </p>
         </div>
         <div className="board-actions">
           <span className={`phase ${phaseTone}`}><i />{state.phase.toUpperCase()}</span>
@@ -190,12 +186,19 @@ export function BoardPanel({ state, reconnecting, onReconnect }: BoardPanelProps
               <Metric label="UART TX" value={formatNumber(snapshot.transport.tx)} />
               <Metric label="UART RX" value={formatNumber(snapshot.transport.rx)} />
               <Metric
-                label="Protocol v2"
-                value={enumName(RESULT_NAMES, snapshot.protocolStatus)}
-                tone={snapshot.protocolStatus === 0 ? "healthy" : snapshot.protocolStatus === 15 ? "warning" : "danger"}
+                label="Protocol"
+                value={enumName(MESSAGE_PROTOCOL_RESULT_NAMES, snapshot.protocolStatus)}
+                tone={snapshot.protocolStatus === 0 ? "healthy" : snapshot.protocolStatus === 1 ? "warning" : "danger"}
               />
+              <Metric label="STOP Requests" value={formatNumber(snapshot.transport.protocolStopRequests)} tone={snapshot.transport.protocolStopRequests ? "warning" : ""} />
+              <Metric label="STOP ACK matched" value={formatNumber(snapshot.transport.protocolStopAckMatches)} tone={snapshot.transport.protocolStopAckMatches ? "healthy" : ""} />
+              <Metric label="Protocol TX failed" value={formatNumber(snapshot.transport.protocolTransmitFailures)} tone={snapshot.transport.protocolTransmitFailures ? "danger" : ""} />
             </div>
-            <p className="transport-detail">Local {snapshot.transport.localRouted} · Remote {snapshot.transport.remoteRouted} · Dropped {snapshot.transport.dropped}</p>
+            <p className="transport-detail">
+              Local {snapshot.transport.localRouted} · Dropped {snapshot.transport.dropped}
+              {" · "}ACK RX {snapshot.transport.protocolStopAcks} / ignored {snapshot.transport.protocolStopAckIgnored}
+              {" · "}Last {enumName(NOSTOS_RESULT_NAMES, snapshot.transport.protocolLastResult)}
+            </p>
           </section>
 
           <section className="monitor-section events-section">

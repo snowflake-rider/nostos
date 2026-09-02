@@ -6,11 +6,6 @@
 #define FEATURE_FALL_DETECTION 0
 #endif
 
-/* 1: 버튼→RGB→오디오 코덱 독립 진단. 제품 빌드 기본값은 반드시 0입니다. */
-#ifndef FEATURE_BUTTON_OUTPUT_TEST
-#define FEATURE_BUTTON_OUTPUT_TEST 0
-#endif
-
 /* VS1003B 제품 출력 볼륨: 각 바이트는 채널별 0.5 dB 감쇠값입니다. */
 #ifndef VS1003B_VOLUME
 #define VS1003B_VOLUME 0x1818U

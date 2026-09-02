@@ -18,22 +18,23 @@
 | Button 1 | PB5 (`D4`) | 내부 Pull-up, Low=Speed Up |
 | Button 2 | PB10 (`D6`) | 내부 Pull-up, Low=Speed Down |
 | Button 3 | PA8 (`D7`) | 내부 Pull-up, Low=Stop Request |
-| Button 4 | PC7 (`D9`) | 내부 Pull-up; `MSG_NONE`, Buzzer Off 미구현 |
+| Button 4 | PC7 (`D9`) | 내부 Pull-up; 메시지를 보내지 않고 로컬 alert·buzzer·audio·display 출력 상태 reset |
 | RGB Red | PA4 (`A2`) | 출력 |
 | RGB Green | PB0 (`A3`) | 출력 |
 | RGB Blue | PC1 (`A4`) | 출력 |
 | Buzzer | PB4 (`D5`) | 출력 |
-| MPU6050 SCL | PB8 (`D15`) | 선택 장치, `I2C1_SCL` |
-| MPU6050 SDA | PB9 (`D14`) | 선택 장치, `I2C1_SDA`; 주소 `0x68`/`0x69` |
-| DHT11 Data | PA1 (`A1`) | 선택 장치, 단일 데이터 신호 |
-| DHT11 VCC/GND | `3.3V`/GND | 선택 장치 전원 |
+| MPU6050 SCL | PB8 (`D15`) | Node 3 선택 장치, `I2C1_SCL` |
+| MPU6050 SDA | PB9 (`D14`) | Node 3 선택 장치, `I2C1_SDA`; 주소 `0x68`/`0x69` |
+| DHT11 Data | PA1 (`A1`) | Node 2 선택 장치, 단일 데이터 신호 |
+| DHT11 VCC/GND | `3.3V`/GND | Node 2 선택 장치 전원 |
 
 UART는 TX/RX 교차 연결, `115200 baud`, `8N1`, Hardware Flow Control 비활성화입니다. VS1003B는
 NUCLEO `D4/D5/D6/D7/D14/D15`가 아니라 표의 실제 MCU 핀과 `CN10` 위치로 연결합니다.
 
-PB8/PB9는 SSD1306과 선택형 MPU6050이 공유하는 `I2C1`이며 다른 핀 중복은 없습니다. 현재
-STM32F411xC/xE(`chip ID 0x431`) 보드에는 VS1003B·SSD1306만 장착되어 있고
-`MPU6050_SENSOR=OFF`, `DHT11_SENSOR=OFF`입니다. ST-LINK serial은 Git에 두지 않고
+PB8/PB9는 SSD1306과 Node 3의 MPU6050이 공유하는 `I2C1`이며 다른 핀 중복은 없습니다. 세 STM32는
+VS1003B·SSD1306을 공통으로 사용하고, release variant는 Node 1 `node1-base`(두 로컬 센서 OFF), Node 2
+`node2-dht11`, Node 3 `node3-mpu6050`으로 분리됩니다. 이 구성은 빌드로 검증됐지만 세 보드의 센서·출력
+실물 동작은 아직 검증되지 않았습니다. ST-LINK serial은 Git에 두지 않고
 `firmware/inventory/boards.local.json`에서만 관리합니다.
 
 ## 근거

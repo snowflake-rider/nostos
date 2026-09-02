@@ -1,214 +1,368 @@
 #include "nostos_protocol.h"
+
 #include <string.h>
 
-const char *nostos_result_name(nostos_result_t r)
+static void put_u16_le(uint8_t *bytes, uint16_t value)
 {
-    static const char *const names[] = {"OK","EMPTY","BAD_ARGUMENT","BAD_LENGTH",
-        "BAD_VALUE","TOO_LARGE","UNSUPPORTED_VERSION","UNSUPPORTED_TYPE",
-        "BAD_CRC","TIMEOUT","UNAUTHORIZED","SESSION_REQUIRED","STALE",
-        "DUPLICATE","FULL","NOT_READY","EXPIRED","EXHAUSTED","CONFLICT","IO_ERROR"};
-    return (unsigned)r < sizeof(names)/sizeof(names[0]) ? names[r] : "UNKNOWN";
+    bytes[0] = (uint8_t)value;
+    bytes[1] = (uint8_t)(value >> 8U);
 }
-static void put16(uint8_t *p, uint16_t n) { p[0]=(uint8_t)n; p[1]=(uint8_t)(n>>8); }
-static void put32(uint8_t *p, uint32_t n) { put16(p,(uint16_t)n); put16(p+2,(uint16_t)(n>>16)); }
-static uint16_t get16(const uint8_t *p) { return (uint16_t)((uint16_t)p[0] | (uint16_t)((uint16_t)p[1]<<8)); }
-static uint32_t get32(const uint8_t *p) { return (uint32_t)get16(p) | ((uint32_t)get16(p+2)<<16); }
-static bool source_valid(uint8_t n) { return n>=1 && n<=NOSTOS_NODE_COUNT; }
-static nostos_result_t quality_code(nostos_quality_t q, uint8_t *code)
+
+static void put_u32_le(uint8_t *bytes, uint32_t value)
 {
-    switch (q) {
-    case NOSTOS_UNMEASURED: *code=254; break;
-    case NOSTOS_BELOW_RANGE: *code=251; break;
-    case NOSTOS_ABOVE_RANGE: *code=252; break;
-    case NOSTOS_SENSOR_ERROR: *code=253; break;
-    default: return NOSTOS_BAD_VALUE;
+    put_u16_le(bytes, (uint16_t)value);
+    put_u16_le(bytes + 2, (uint16_t)(value >> 16U));
+}
+
+static uint16_t get_u16_le(const uint8_t *bytes)
+{
+    return (uint16_t)((uint16_t)bytes[0] |
+        (uint16_t)((uint16_t)bytes[1] << 8U));
+}
+
+static uint32_t get_u32_le(const uint8_t *bytes)
+{
+    return (uint32_t)get_u16_le(bytes) |
+        ((uint32_t)get_u16_le(bytes + 2) << 16U);
+}
+
+const char *nostos_result_name(nostos_result_t result)
+{
+    static const char *const names[] = {
+        "OK", "EMPTY", "BAD_ARGUMENT", "BAD_LENGTH", "BAD_VALUE",
+        "TOO_LARGE", "UNSUPPORTED_TYPE", "BAD_CRC", "TIMEOUT"
+    };
+    size_t index = (size_t)result;
+    return index < sizeof(names) / sizeof(names[0]) ? names[index] : "UNKNOWN";
+}
+
+const char *nostos_message_type_name(uint8_t type)
+{
+    switch (type) {
+    case NOSTOS_MESSAGE_STATE_UPDATE: return "STATE_UPDATE";
+    case NOSTOS_MESSAGE_PACE_REQUEST: return "PACE_REQUEST";
+    case NOSTOS_MESSAGE_STOP_REQUEST: return "STOP_REQUEST";
+    case NOSTOS_MESSAGE_STOP_ACK: return "STOP_ACK";
+    default: return "UNKNOWN";
     }
-    return NOSTOS_OK;
 }
-static nostos_result_t read_quality(uint8_t code, uint8_t maximum, nostos_quality_t *q)
+
+bool nostos_node_id_valid(uint8_t source_node_id)
 {
-    if (code<=maximum) { *q=NOSTOS_VALID; return NOSTOS_OK; }
-    switch (code) {
-    case 251: *q=NOSTOS_BELOW_RANGE; break;
-    case 252: *q=NOSTOS_ABOVE_RANGE; break;
-    case 253: *q=NOSTOS_SENSOR_ERROR; break;
-    case 254: *q=NOSTOS_UNMEASURED; break;
-    default: return NOSTOS_BAD_VALUE;
+    return source_node_id >= NOSTOS_NODE_ID_MIN &&
+        source_node_id <= NOSTOS_NODE_ID_MAX;
+}
+
+bool nostos_request_id_valid(uint32_t request_id)
+{
+    return request_id != 0U;
+}
+
+static bool local_or_node_id_valid(uint8_t source_node_id)
+{
+    return source_node_id == NOSTOS_LOCAL_SOURCE_NODE_ID ||
+        nostos_node_id_valid(source_node_id);
+}
+
+static bool pace_action_valid(uint8_t action)
+{
+    return action == NOSTOS_PACE_ACCELERATE ||
+        action == NOSTOS_PACE_DECELERATE;
+}
+
+static bool stop_reason_valid(uint8_t reason)
+{
+    return reason == NOSTOS_STOP_REASON_BUTTON ||
+        reason == NOSTOS_STOP_REASON_FALL;
+}
+
+static nostos_result_t encoded_size(const nostos_message_t *message,
+    bool allow_local_source, size_t *size)
+{
+    bool source_ok = allow_local_source ?
+        local_or_node_id_valid(message->source_node_id) :
+        nostos_node_id_valid(message->source_node_id);
+    if (!source_ok) return NOSTOS_BAD_VALUE;
+
+    switch (message->type) {
+    case NOSTOS_MESSAGE_STATE_UPDATE: {
+        const nostos_state_update_t *state = &message->payload.state_update;
+        if (state->schema_rev != NOSTOS_STATE_SCHEMA_REV) return NOSTOS_BAD_VALUE;
+        if (state->topic_id == NOSTOS_TOPIC_RIDE) {
+            *size = 11U;
+            return NOSTOS_OK;
+        }
+        if (state->topic_id == NOSTOS_TOPIC_ENVIRONMENT) {
+            *size = 9U;
+            return NOSTOS_OK;
+        }
+        return NOSTOS_BAD_VALUE;
     }
-    return NOSTOS_OK;
+    case NOSTOS_MESSAGE_PACE_REQUEST:
+        if (!nostos_request_id_valid(message->payload.pace_request.request_id) ||
+            !pace_action_valid(message->payload.pace_request.action)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        *size = 7U;
+        return NOSTOS_OK;
+    case NOSTOS_MESSAGE_STOP_REQUEST:
+        if (!nostos_request_id_valid(message->payload.stop_request.request_id) ||
+            !stop_reason_valid(message->payload.stop_request.reason)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        *size = 7U;
+        return NOSTOS_OK;
+    case NOSTOS_MESSAGE_STOP_ACK:
+        if (!nostos_request_id_valid(message->payload.stop_ack.request_id)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        *size = 6U;
+        return NOSTOS_OK;
+    default:
+        return NOSTOS_UNSUPPORTED_TYPE;
+    }
 }
-static nostos_result_t encode_empty(const nostos_message_t *m, uint8_t *p)
+
+static nostos_result_t message_encode_policy(const nostos_message_t *message,
+    bool allow_local_source, uint8_t *wire, size_t capacity, size_t *length)
 {
-    (void)m; (void)p; return NOSTOS_OK;
-}
-static nostos_result_t decode_empty(const uint8_t *p, nostos_message_t *m)
-{
-    (void)p; (void)m; return NOSTOS_OK;
-}
-static nostos_result_t encode_incident(const nostos_message_t *m, uint8_t *p)
-{
-    put32(p,m->payload.incident.session_id); put16(p+4,m->payload.incident.incident_id);
-    return NOSTOS_OK;
-}
-static nostos_result_t decode_incident(const uint8_t *p, nostos_message_t *m)
-{
-    m->payload.incident=(nostos_incident_ref_t){get32(p),get16(p+4)};
-    return m->payload.incident.session_id && m->payload.incident.incident_id?NOSTOS_OK:NOSTOS_BAD_VALUE;
-}
-static nostos_result_t encode_ride(const nostos_message_t *m, uint8_t *p)
-{
-    const nostos_ride_t *ride=&m->payload.ride;
-    if (!ride->valid && (ride->kmh_x10!=0U || ride->distance_mm!=0U))
-        return NOSTOS_BAD_VALUE;
-    p[0]=(uint8_t)ride->valid;
-    put16(p+1,ride->kmh_x10);
-    put32(p+3,ride->distance_mm);
-    return NOSTOS_OK;
-}
-static nostos_result_t decode_ride(const uint8_t *p, nostos_message_t *m)
-{
-    uint16_t kmh_x10=get16(p+1);
-    uint32_t distance_mm=get32(p+3);
-    if (p[0]>1U || (p[0]==0U && (kmh_x10!=0U || distance_mm!=0U)))
-        return NOSTOS_BAD_VALUE;
-    m->payload.ride=(nostos_ride_t){p[0]!=0U,kmh_x10,distance_mm};
-    return NOSTOS_OK;
-}
-static nostos_result_t encode_shared_data_request(
-    const nostos_message_t *m,
-    uint8_t *p)
-{
-    uint8_t mask=m->payload.shared_data_request.mask;
-    if (!mask || (mask&(uint8_t)~NOSTOS_SHARED_DATA_MASK))
-        return NOSTOS_BAD_VALUE;
-    p[0]=mask;
-    return NOSTOS_OK;
-}
-static nostos_result_t decode_shared_data_request(
-    const uint8_t *p,
-    nostos_message_t *m)
-{
-    if (!p[0] || (p[0]&(uint8_t)~NOSTOS_SHARED_DATA_MASK))
-        return NOSTOS_BAD_VALUE;
-    m->payload.shared_data_request.mask=p[0];
-    return NOSTOS_OK;
-}
-static nostos_result_t encode_environment(const nostos_message_t *m, uint8_t *p)
-{
-    const nostos_environment_t *e=&m->payload.environment;
-    if (e->temperature_quality==NOSTOS_VALID) {
-        int temperature=e->temperature_c_x10;
-        p[0]=temperature<225?251U:temperature>475?252U:(uint8_t)(temperature-225);
-    } else if (quality_code(e->temperature_quality,p)!=NOSTOS_OK) return NOSTOS_BAD_VALUE;
-    if (e->humidity_quality==NOSTOS_VALID) {
-        unsigned humidity=e->humidity_pct_x10;
-        p[1]=humidity>1000U?252U:(uint8_t)((humidity+2U)/5U);
-    } else if (quality_code(e->humidity_quality,p+1)!=NOSTOS_OK) return NOSTOS_BAD_VALUE;
-    return NOSTOS_OK;
-}
-static nostos_result_t decode_environment(const uint8_t *p, nostos_message_t *m)
-{
-    nostos_environment_t *e=&m->payload.environment;
-    if (read_quality(p[0],250U,&e->temperature_quality)!=NOSTOS_OK ||
-        read_quality(p[1],200U,&e->humidity_quality)!=NOSTOS_OK) return NOSTOS_BAD_VALUE;
-    if (e->temperature_quality==NOSTOS_VALID) e->temperature_c_x10=(int16_t)(225U+p[0]);
-    if (e->humidity_quality==NOSTOS_VALID) e->humidity_pct_x10=(uint16_t)((uint16_t)p[1]*5U);
-    return NOSTOS_OK;
-}
-static nostos_result_t encode_heartbeat(const nostos_message_t *m, uint8_t *p)
-{
-    p[0]=m->payload.status; return NOSTOS_OK;
-}
-static nostos_result_t decode_heartbeat(const uint8_t *p, nostos_message_t *m)
-{
-    if (p[0]&(uint8_t)~NOSTOS_STATUS_MASK) return NOSTOS_BAD_VALUE;
-    m->payload.status=p[0]; return NOSTOS_OK;
-}
-static nostos_result_t encode_ack(const nostos_message_t *m, uint8_t *p)
-{
-    const nostos_ack_t *ack=&m->payload.ack;
-    p[0]=ack->source_id; put32(p+1,ack->session_id); put16(p+5,ack->sequence);
-    p[7]=ack->type; p[8]=ack->result; return NOSTOS_OK;
-}
-static nostos_result_t decode_ack(const uint8_t *p, nostos_message_t *m)
-{
-    m->payload.ack=(nostos_ack_t){.source_id=p[0],.type=p[7],.session_id=get32(p+1),
-        .sequence=get16(p+5),.result=p[8]};
-    if (!source_valid(p[0]) || p[0]==m->source_id || !m->payload.ack.session_id ||
-        p[7]==NOSTOS_ACK || p[8]>3U || (p[8]<2U && !nostos_type_info(p[7]))) return NOSTOS_BAD_VALUE;
+    if (!message || !wire || !length) return NOSTOS_BAD_ARGUMENT;
+    size_t required = 0U;
+    nostos_result_t result = encoded_size(message, allow_local_source, &required);
+    if (result != NOSTOS_OK) return result;
+    if (capacity < required) return NOSTOS_BAD_LENGTH;
+
+    uint8_t encoded[NOSTOS_APPLICATION_MAX_SIZE] = {0};
+    encoded[0] = message->type;
+    encoded[1] = message->source_node_id;
+    switch (message->type) {
+    case NOSTOS_MESSAGE_STATE_UPDATE: {
+        const nostos_state_update_t *state = &message->payload.state_update;
+        encoded[2] = state->topic_id;
+        encoded[3] = state->schema_rev;
+        encoded[4] = state->sensor_valid ? 1U : 0U;
+        if (state->sensor_valid && state->topic_id == NOSTOS_TOPIC_RIDE) {
+            put_u16_le(encoded + 5, state->value.ride.speed_x10_kmh);
+            put_u32_le(encoded + 7, state->value.ride.trip_distance_m);
+        } else if (state->sensor_valid &&
+                   state->topic_id == NOSTOS_TOPIC_ENVIRONMENT) {
+            put_u16_le(encoded + 5,
+                (uint16_t)state->value.environment.temperature_x10_c);
+            put_u16_le(encoded + 7,
+                state->value.environment.humidity_x10_pct);
+        }
+        break;
+    }
+    case NOSTOS_MESSAGE_PACE_REQUEST:
+        put_u32_le(encoded + 2, message->payload.pace_request.request_id);
+        encoded[6] = message->payload.pace_request.action;
+        break;
+    case NOSTOS_MESSAGE_STOP_REQUEST:
+        put_u32_le(encoded + 2, message->payload.stop_request.request_id);
+        encoded[6] = message->payload.stop_request.reason;
+        break;
+    case NOSTOS_MESSAGE_STOP_ACK:
+        put_u32_le(encoded + 2, message->payload.stop_ack.request_id);
+        break;
+    default:
+        return NOSTOS_UNSUPPORTED_TYPE;
+    }
+    memcpy(wire, encoded, required);
+    *length = required;
     return NOSTOS_OK;
 }
 
-const nostos_type_info_t nostos_types[NOSTOS_TYPE_COUNT] = {
-    {NOSTOS_SPEED_DOWN,0U,"SPEED_DOWN",encode_empty,decode_empty},
-    {NOSTOS_SPEED_UP,0U,"SPEED_UP",encode_empty,decode_empty},
-    {NOSTOS_STOP,0U,"STOP",encode_empty,decode_empty},
-    {NOSTOS_FALL,6U,"FALL",encode_incident,decode_incident},
-    {NOSTOS_ENVIRONMENT,2U,"ENVIRONMENT",encode_environment,decode_environment},
-    {NOSTOS_FALL_CLEAR,6U,"FALL_CLEAR",encode_incident,decode_incident},
-    {NOSTOS_RIDE,7U,"RIDE",encode_ride,decode_ride},
-    {NOSTOS_SHARED_DATA_REQUEST,1U,"SHARED_DATA_REQUEST",
-        encode_shared_data_request,decode_shared_data_request},
-    {NOSTOS_HEARTBEAT,1U,"HEARTBEAT",encode_heartbeat,decode_heartbeat},
-    {NOSTOS_ACK,9U,"ACK",encode_ack,decode_ack}
-};
-const nostos_type_info_t *nostos_type_info(uint8_t type)
+nostos_result_t nostos_message_encode(const nostos_message_t *message,
+    uint8_t *wire, size_t capacity, size_t *length)
 {
-    for (size_t i=0; i<NOSTOS_TYPE_COUNT; ++i)
-        if (nostos_types[i].type==type) return &nostos_types[i];
-    return NULL;
+    return message_encode_policy(message, false, wire, capacity, length);
 }
-nostos_result_t nostos_envelope_validate(const uint8_t *w, size_t n)
+
+nostos_result_t nostos_local_message_encode(const nostos_message_t *message,
+    uint8_t *wire, size_t capacity, size_t *length)
 {
-    if (!w) return NOSTOS_BAD_ARGUMENT;
-    if (n>NOSTOS_WIRE_MAX) return NOSTOS_TOO_LARGE;
-    if (!n) return NOSTOS_BAD_LENGTH;
-    if (w[0]!=NOSTOS_VERSION) return NOSTOS_UNSUPPORTED_VERSION;
-    if (n<NOSTOS_HEADER_SIZE) return NOSTOS_BAD_LENGTH;
-    if (!source_valid(w[2]) || !get32(w+3)) return NOSTOS_BAD_VALUE;
+    return message_encode_policy(message, true, wire, capacity, length);
+}
+
+static nostos_result_t message_decode_policy(const uint8_t *wire, size_t length,
+    bool allow_local_source, nostos_message_t *message)
+{
+    if (!wire || !message) return NOSTOS_BAD_ARGUMENT;
+    if (length > NOSTOS_APPLICATION_MAX_SIZE) return NOSTOS_TOO_LARGE;
+    if (length < NOSTOS_APPLICATION_MIN_SIZE) return NOSTOS_BAD_LENGTH;
+    bool source_ok = allow_local_source ? local_or_node_id_valid(wire[1]) :
+        nostos_node_id_valid(wire[1]);
+    if (!source_ok) return NOSTOS_BAD_VALUE;
+
+    nostos_message_t decoded = {0};
+    decoded.type = wire[0];
+    decoded.source_node_id = wire[1];
+    switch (wire[0]) {
+    case NOSTOS_MESSAGE_STATE_UPDATE: {
+        uint8_t topic = wire[2];
+        size_t expected = topic == NOSTOS_TOPIC_RIDE ? 11U :
+            topic == NOSTOS_TOPIC_ENVIRONMENT ? 9U : 0U;
+        if (expected == 0U) return NOSTOS_BAD_VALUE;
+        if (length != expected) return NOSTOS_BAD_LENGTH;
+        if (wire[3] != NOSTOS_STATE_SCHEMA_REV || wire[4] > 1U) {
+            return NOSTOS_BAD_VALUE;
+        }
+        decoded.payload.state_update.topic_id = topic;
+        decoded.payload.state_update.schema_rev = wire[3];
+        decoded.payload.state_update.sensor_valid = wire[4] != 0U;
+        if (topic == NOSTOS_TOPIC_RIDE) {
+            uint16_t speed = get_u16_le(wire + 5);
+            uint32_t distance = get_u32_le(wire + 7);
+            if (wire[4] == 0U && (speed != 0U || distance != 0U)) {
+                return NOSTOS_BAD_VALUE;
+            }
+            decoded.payload.state_update.value.ride =
+                (nostos_ride_state_t){speed, distance};
+        } else {
+            int16_t temperature = (int16_t)get_u16_le(wire + 5);
+            uint16_t humidity = get_u16_le(wire + 7);
+            if (wire[4] == 0U && (temperature != 0 || humidity != 0U)) {
+                return NOSTOS_BAD_VALUE;
+            }
+            decoded.payload.state_update.value.environment =
+                (nostos_environment_state_t){temperature, humidity};
+        }
+        break;
+    }
+    case NOSTOS_MESSAGE_PACE_REQUEST:
+        if (length != 7U) return NOSTOS_BAD_LENGTH;
+        decoded.payload.pace_request.request_id = get_u32_le(wire + 2);
+        decoded.payload.pace_request.action = wire[6];
+        if (!nostos_request_id_valid(decoded.payload.pace_request.request_id) ||
+            !pace_action_valid(decoded.payload.pace_request.action)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        break;
+    case NOSTOS_MESSAGE_STOP_REQUEST:
+        if (length != 7U) return NOSTOS_BAD_LENGTH;
+        decoded.payload.stop_request.request_id = get_u32_le(wire + 2);
+        decoded.payload.stop_request.reason = wire[6];
+        if (!nostos_request_id_valid(decoded.payload.stop_request.request_id) ||
+            !stop_reason_valid(decoded.payload.stop_request.reason)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        break;
+    case NOSTOS_MESSAGE_STOP_ACK:
+        if (length != 6U) return NOSTOS_BAD_LENGTH;
+        decoded.payload.stop_ack.request_id = get_u32_le(wire + 2);
+        if (!nostos_request_id_valid(decoded.payload.stop_ack.request_id)) {
+            return NOSTOS_BAD_VALUE;
+        }
+        break;
+    default:
+        return NOSTOS_UNSUPPORTED_TYPE;
+    }
+    *message = decoded;
     return NOSTOS_OK;
 }
-nostos_result_t nostos_message_decode(const uint8_t *w, size_t n, nostos_message_t *out)
+
+nostos_result_t nostos_message_decode(const uint8_t *wire, size_t length,
+    nostos_message_t *message)
 {
-    if (!out) return NOSTOS_BAD_ARGUMENT;
-    nostos_result_t r=nostos_envelope_validate(w,n);
-    if (r!=NOSTOS_OK) return r;
-    const nostos_type_info_t *info=nostos_type_info(w[1]);
-    if (!info) return NOSTOS_UNSUPPORTED_TYPE;
-    if (n!=NOSTOS_HEADER_SIZE+info->payload_size) return NOSTOS_BAD_LENGTH;
-    nostos_message_t m={0};
-    m.type=w[1]; m.source_id=w[2]; m.session_id=get32(w+3); m.sequence=get16(w+7);
-    r=info->decode_payload(w+NOSTOS_HEADER_SIZE,&m);
-    if (r!=NOSTOS_OK) return r;
-    *out=m; /* No observable partial output on any error. */
+    return message_decode_policy(wire, length, false, message);
+}
+
+nostos_result_t nostos_local_message_decode(const uint8_t *wire, size_t length,
+    nostos_message_t *message)
+{
+    return message_decode_policy(wire, length, true, message);
+}
+
+static bool constructor_source_valid(uint8_t source_node_id)
+{
+    return local_or_node_id_valid(source_node_id);
+}
+
+nostos_result_t nostos_message_make_ride(nostos_message_t *message,
+    uint8_t source_node_id, bool sensor_valid, uint16_t speed_x10_kmh,
+    uint32_t trip_distance_m)
+{
+    if (!message) return NOSTOS_BAD_ARGUMENT;
+    if (!constructor_source_valid(source_node_id)) return NOSTOS_BAD_VALUE;
+    *message = (nostos_message_t){
+        .type = NOSTOS_MESSAGE_STATE_UPDATE,
+        .source_node_id = source_node_id,
+        .payload.state_update = {
+            .topic_id = NOSTOS_TOPIC_RIDE,
+            .schema_rev = NOSTOS_STATE_SCHEMA_REV,
+            .sensor_valid = sensor_valid,
+            .value.ride = sensor_valid ?
+                (nostos_ride_state_t){speed_x10_kmh, trip_distance_m} :
+                (nostos_ride_state_t){0U, 0U}
+        }
+    };
     return NOSTOS_OK;
 }
-nostos_result_t nostos_message_encode(const nostos_message_t *m, uint8_t *out, size_t cap, size_t *length)
+
+nostos_result_t nostos_message_make_environment(nostos_message_t *message,
+    uint8_t source_node_id, bool sensor_valid, int16_t temperature_x10_c,
+    uint16_t humidity_x10_pct)
 {
-    if (!m || !out || !length) return NOSTOS_BAD_ARGUMENT;
-    const nostos_type_info_t *info=nostos_type_info(m->type);
-    if (!info) return NOSTOS_UNSUPPORTED_TYPE;
-    size_t n=NOSTOS_HEADER_SIZE+info->payload_size;
-    if (cap<n) return NOSTOS_BAD_LENGTH;
-    uint8_t w[NOSTOS_WIRE_MAX]={NOSTOS_VERSION};
-    w[1]=m->type; w[2]=m->source_id; put32(w+3,m->session_id); put16(w+7,m->sequence);
-    nostos_result_t r=info->encode_payload(m,w+NOSTOS_HEADER_SIZE);
-    if (r!=NOSTOS_OK) return r;
-    nostos_message_t validated;
-    r=nostos_message_decode(w,n,&validated);
-    if (r!=NOSTOS_OK) return r;
-    memcpy(out,w,n); *length=n;
+    if (!message) return NOSTOS_BAD_ARGUMENT;
+    if (!constructor_source_valid(source_node_id)) return NOSTOS_BAD_VALUE;
+    *message = (nostos_message_t){
+        .type = NOSTOS_MESSAGE_STATE_UPDATE,
+        .source_node_id = source_node_id,
+        .payload.state_update = {
+            .topic_id = NOSTOS_TOPIC_ENVIRONMENT,
+            .schema_rev = NOSTOS_STATE_SCHEMA_REV,
+            .sensor_valid = sensor_valid,
+            .value.environment = sensor_valid ?
+                (nostos_environment_state_t){temperature_x10_c,
+                    humidity_x10_pct} :
+                (nostos_environment_state_t){0, 0U}
+        }
+    };
     return NOSTOS_OK;
 }
-nostos_result_t nostos_sender_init(nostos_sender_t *s, uint8_t source, uint32_t session)
+
+nostos_result_t nostos_message_make_pace(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id, uint8_t action)
 {
-    if (!s || !source_valid(source) || !session) return NOSTOS_BAD_ARGUMENT;
-    *s=(nostos_sender_t){source,session,0}; return NOSTOS_OK;
+    if (!message) return NOSTOS_BAD_ARGUMENT;
+    if (!constructor_source_valid(source_node_id) ||
+        !nostos_request_id_valid(request_id) || !pace_action_valid(action)) {
+        return NOSTOS_BAD_VALUE;
+    }
+    *message = (nostos_message_t){
+        .type = NOSTOS_MESSAGE_PACE_REQUEST,
+        .source_node_id = source_node_id,
+        .payload.pace_request = {request_id, action}
+    };
+    return NOSTOS_OK;
 }
-nostos_result_t nostos_sender_stamp(nostos_sender_t *s, nostos_message_t *m)
+
+nostos_result_t nostos_message_make_stop(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id, uint8_t reason)
 {
-    if (!s || !m || !source_valid(s->source_id) || !s->session_id) return NOSTOS_BAD_ARGUMENT;
-    if (s->next_sequence>UINT16_MAX) return NOSTOS_EXHAUSTED;
-    m->source_id=s->source_id; m->session_id=s->session_id; m->sequence=(uint16_t)s->next_sequence++;
+    if (!message) return NOSTOS_BAD_ARGUMENT;
+    if (!constructor_source_valid(source_node_id) ||
+        !nostos_request_id_valid(request_id) || !stop_reason_valid(reason)) {
+        return NOSTOS_BAD_VALUE;
+    }
+    *message = (nostos_message_t){
+        .type = NOSTOS_MESSAGE_STOP_REQUEST,
+        .source_node_id = source_node_id,
+        .payload.stop_request = {request_id, reason}
+    };
+    return NOSTOS_OK;
+}
+
+nostos_result_t nostos_message_make_stop_ack(nostos_message_t *message,
+    uint8_t source_node_id, uint32_t request_id)
+{
+    if (!message) return NOSTOS_BAD_ARGUMENT;
+    if (!constructor_source_valid(source_node_id) ||
+        !nostos_request_id_valid(request_id)) return NOSTOS_BAD_VALUE;
+    *message = (nostos_message_t){
+        .type = NOSTOS_MESSAGE_STOP_ACK,
+        .source_node_id = source_node_id,
+        .payload.stop_ack = {request_id}
+    };
     return NOSTOS_OK;
 }

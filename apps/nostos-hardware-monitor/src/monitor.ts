@@ -1,6 +1,6 @@
-import type { ToolPaths } from "./config.js";
+import type { BoardFirmware, ToolPaths } from "./config.js";
 import { DebugSession } from "./debug-session.js";
-import type { Board, MonitorLayout, TelemetrySnapshot } from "./model.js";
+import type { Board, TelemetrySnapshot } from "./model.js";
 
 function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
@@ -20,11 +20,10 @@ export class HardwareMonitor {
   constructor(
     private readonly board: Board,
     private readonly tools: ToolPaths,
-    private readonly layout: MonitorLayout,
+    private readonly firmware: BoardFirmware,
     private intervalMs: number,
     private readonly callbacks: MonitorCallbacks,
     private readonly debugPort?: number,
-    private readonly expectedFlashPrefix?: Uint8Array,
   ) {}
 
   start(): void {
@@ -73,9 +72,8 @@ export class HardwareMonitor {
     const session = new DebugSession(
       this.board,
       this.tools,
-      this.layout,
+      this.firmware,
       this.debugPort,
-      this.expectedFlashPrefix,
     );
     this.session = session;
     try {

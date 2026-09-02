@@ -24,21 +24,18 @@ int main(void) {
     const char *input;
     serial_command_t expected;
   } cases[] = {
-      {"on-unack\n", SERIAL_COMMAND_ON_UNACK},
-      {"off-unack\n", SERIAL_COMMAND_OFF_UNACK},
       {"tx-low\n", SERIAL_COMMAND_TX_LOW},
       {"tx-normal\n", SERIAL_COMMAND_TX_NORMAL},
       {"status\n", SERIAL_COMMAND_STATUS},
-      {"factory-reset\n", SERIAL_COMMAND_FACTORY_RESET},
       {"\n", SERIAL_COMMAND_EMPTY},
       {"ON\n", SERIAL_COMMAND_UNKNOWN},
       {"factory-reset-now\n", SERIAL_COMMAND_UNKNOWN},
   };
 
-  CHECK(parse_one("on\n", &emit_count) == SERIAL_COMMAND_ON);
+  CHECK(parse_one("on\n", &emit_count) == SERIAL_COMMAND_UNKNOWN);
   CHECK(emit_count == 1U);
 
-  CHECK(parse_one("off\r\n", &emit_count) == SERIAL_COMMAND_OFF);
+  CHECK(parse_one("off\r\n", &emit_count) == SERIAL_COMMAND_UNKNOWN);
   CHECK(emit_count == 1U);
 
   for (size_t index = 0; index < sizeof(cases) / sizeof(cases[0]); index++) {
@@ -69,18 +66,19 @@ int main(void) {
   }
 
   serial_command_parser_init(&parser);
-  static const char repeated[] = "on\noff\n";
+  static const char repeated[] = "status\ntx-low\n";
   size_t repeated_emits = 0U;
   for (size_t index = 0; index < sizeof(repeated) - 1U; index++) {
     if (serial_command_parser_feed(&parser, (uint8_t)repeated[index],
                                    &command)) {
       CHECK(command ==
-             (repeated_emits == 0U ? SERIAL_COMMAND_ON : SERIAL_COMMAND_OFF));
+             (repeated_emits == 0U ? SERIAL_COMMAND_STATUS :
+              SERIAL_COMMAND_TX_LOW));
       repeated_emits++;
     }
   }
   CHECK(repeated_emits == 2U);
 
-  puts("PASS console parser: inherited commands (parser only; reset action is disabled in firmware)");
+  puts("PASS console parser: status and TX power diagnostics only");
   return 0;
 }

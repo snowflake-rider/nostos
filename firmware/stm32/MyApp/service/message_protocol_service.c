@@ -5,24 +5,65 @@
 #include "buzzer.h"
 #include "display_service.h"
 #include "message_type.h"
+#include "nostos_uart.h"
 #include "sensor_view_service.h"
 
+#include <limits.h>
 #include <stddef.h>
 
 #define RX_CAPACITY 512U
 #define RX_PROCESS_BUDGET 64U
-#define HELLO_PERIOD_MS 1000U
 #define UART_TX_TIMEOUT_MS 20U
+#define STOP_RETRY_MS 200U
+#define RECENT_REQUEST_CAPACITY 16U
+#define LOCAL_PACE_REQUEST_ID_PLACEHOLDER 1U
+#define LOCAL_STOP_REQUEST_ID_INITIAL 1U
+
+/* The hardware monitor reads this static struct from the ELF. Fail the build
+ * instead of silently changing that observable ABI. */
+_Static_assert(sizeof(message_protocol_stats_t) == 52U,
+    "message_protocol_stats_t monitor ABI size changed");
+_Static_assert(offsetof(message_protocol_stats_t, received) == 0U,
+    "message protocol received offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, rejected) == 4U,
+    "message protocol rejected offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, duplicates) == 8U,
+    "message protocol duplicates offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, stop_requests) == 24U,
+    "message protocol STOP request offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, stop_acks) == 28U,
+    "message protocol STOP ACK offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, stop_ack_matches) == 32U,
+    "message protocol STOP ACK match offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, stop_ack_ignored) == 36U,
+    "message protocol STOP ACK ignored offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, transmitted) == 40U,
+    "message protocol transmitted offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, transmit_failures) == 44U,
+    "message protocol transmit failure offset changed");
+_Static_assert(offsetof(message_protocol_stats_t, last_protocol_result) == 48U,
+    "message protocol result offset changed");
+
+typedef struct {
+    uint32_t request_id;
+    uint8_t source_node_id;
+    uint8_t type;
+} recent_request_t;
+
+typedef struct {
+    bool active;
+    nostos_message_t request;
+    uint32_t retry_at_ms;
+} pending_stop_t;
 
 static UART_HandleTypeDef *data_uart;
 static vs1003b_status_t audio_status;
 static bool booted;
-static volatile bool link_ready;
-static bool local_failsafe_active;
-static uint8_t pending_safety_event;
-static sensor_link_parser_t parser;
+static bool fall_failsafe_active;
+static pending_stop_t pending_stop;
+static uint32_t next_local_request_id;
+static nostos_uart_parser_t parser;
 static message_protocol_stats_t stats;
-static uint32_t last_hello_ms;
 
 static volatile uint8_t rx_bytes[RX_CAPACITY];
 static volatile uint32_t rx_times[RX_CAPACITY];
@@ -30,8 +71,28 @@ static volatile unsigned rx_head;
 static volatile unsigned rx_tail;
 static volatile bool rx_overflow;
 
-static uint32_t command_epoch;
-static uint32_t last_command_id;
+static recent_request_t recent_requests[RECENT_REQUEST_CAPACITY];
+static size_t recent_request_next;
+
+static bool due(uint32_t now_ms, uint32_t deadline_ms)
+{
+    return (int32_t)(now_ms - deadline_ms) >= 0;
+}
+
+static uint32_t take_local_request_id(void)
+{
+    uint32_t request_id = next_local_request_id;
+    ++next_local_request_id;
+    if (next_local_request_id == 0U) {
+        next_local_request_id = LOCAL_STOP_REQUEST_ID_INITIAL;
+    }
+    return request_id;
+}
+
+static void clear_pending_stop(void)
+{
+    pending_stop = (pending_stop_t){0};
+}
 
 static void reset_rx(void)
 {
@@ -41,65 +102,30 @@ static void reset_rx(void)
     rx_tail = 0U;
     rx_overflow = false;
     __set_PRIMASK(mask);
-    sensor_link_reset(&parser);
+    nostos_uart_reset(&parser);
 }
 
-static bool transmit_frame(const uint8_t *frame, size_t length)
+static message_protocol_result_t transmit_message(
+    const nostos_message_t *message)
 {
-    if (data_uart == NULL || frame == NULL || length == 0U ||
-        length > SENSOR_LINK_FRAME_SIZE) {
-        return false;
-    }
+    if (!booted || data_uart == NULL) return MESSAGE_PROTOCOL_NOT_READY;
+    if (message == NULL) return MESSAGE_PROTOCOL_BAD_ARGUMENT;
 
-    /* At 115200/8N1 the largest 19-byte frame is under 2 ms. Main-loop only. */
-    return HAL_UART_Transmit(data_uart, (uint8_t *)frame, (uint16_t)length,
-        UART_TX_TIMEOUT_MS) == HAL_OK;
-}
+    uint8_t frame[NOSTOS_UART_FRAME_MAX];
+    size_t frame_length = 0U;
+    nostos_result_t result = nostos_uart_encode_local_message(
+        message, frame, sizeof(frame), &frame_length);
+    stats.last_protocol_result = result;
+    if (result == NOSTOS_BAD_ARGUMENT) return MESSAGE_PROTOCOL_BAD_ARGUMENT;
+    if (result != NOSTOS_OK) return MESSAGE_PROTOCOL_BAD_VALUE;
 
-static message_protocol_result_t send_encoded(
-    sensor_link_result_t encoded,
-    const uint8_t *frame,
-    size_t length)
-{
-    stats.last_link_result = encoded;
-    if (encoded == SENSOR_LINK_BAD_ARGUMENT) {
-        return MESSAGE_PROTOCOL_BAD_ARGUMENT;
+    if (HAL_UART_Transmit(data_uart, frame, (uint16_t)frame_length,
+            UART_TX_TIMEOUT_MS) != HAL_OK) {
+        ++stats.transmit_failures;
+        return MESSAGE_PROTOCOL_IO_ERROR;
     }
-    if (encoded != SENSOR_LINK_OK) {
-        return MESSAGE_PROTOCOL_BAD_VALUE;
-    }
-    return transmit_frame(frame, length) ?
-        MESSAGE_PROTOCOL_OK : MESSAGE_PROTOCOL_IO_ERROR;
-}
-
-static message_protocol_result_t send_hello(uint32_t now_ms)
-{
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t encoded = sensor_link_encode_hello(frame, &length);
-    last_hello_ms = now_ms;
-    message_protocol_result_t result = send_encoded(encoded, frame, length);
-    if (result == MESSAGE_PROTOCOL_OK) {
-        ++stats.hello_sent;
-    } else {
-        ++stats.hello_failures;
-    }
-    return result;
-}
-
-static bool send_output_result(uint32_t command_id, uint8_t status)
-{
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t encoded = sensor_link_encode_output_result(
-        command_id, status, frame, &length);
-    if (encoded != SENSOR_LINK_OK || !transmit_frame(frame, length)) {
-        ++stats.result_failures;
-        stats.last_link_result = encoded;
-        return false;
-    }
-    ++stats.result_sent;
-    return true;
+    ++stats.transmitted;
+    return MESSAGE_PROTOCOL_OK;
 }
 
 static bool stop_audio(void)
@@ -114,190 +140,206 @@ static bool play_audio(message_type_t message)
     return audio_status == VS1003B_STATUS_OK;
 }
 
-static void clear_emergency_output(void)
-{
-    alert_reset();
-    buzzer_stop();
-    display_service_set_fall(false);
-}
-
 static void start_fall_failsafe(void)
 {
-    local_failsafe_active = true;
+    fall_failsafe_active = true;
     alert_show(MSG_FALL_DETECTED);
     buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
     display_service_set_fall(true);
+    (void)stop_audio();
+    (void)play_audio(MSG_FALL_DETECTED);
 }
 
-static uint8_t execute_output_event(const sensor_link_output_event_t *output)
+static uint32_t request_id(const nostos_message_t *message)
 {
-    if (output == NULL || output->command_id == 0U ||
-        output->source_id < SENSOR_LINK_SOURCE_ID_MIN ||
-        output->source_id > SENSOR_LINK_SOURCE_ID_MAX) {
-        return SENSOR_LINK_OUTPUT_REJECTED;
+    if (message->type == NOSTOS_MESSAGE_PACE_REQUEST) {
+        return message->payload.pace_request.request_id;
     }
-
-    /* ESP32 commands are authoritative once they arrive. */
-    local_failsafe_active = false;
-    pending_safety_event = 0U;
-    if (output->event_type == SENSOR_LINK_EVENT_FALL) {
-        alert_show(MSG_FALL_DETECTED);
-        buzzer_play_pattern(BUZZER_PATTERN_EMERGENCY);
-        display_service_set_fall(true);
-        return stop_audio() && play_audio(MSG_FALL_DETECTED) ?
-            SENSOR_LINK_OUTPUT_ACCEPTED : SENSOR_LINK_OUTPUT_HARDWARE_ERROR;
-    }
-
-    clear_emergency_output();
-    if (output->event_type == SENSOR_LINK_EVENT_FALL_CLEAR) {
-        return stop_audio() ?
-            SENSOR_LINK_OUTPUT_ACCEPTED : SENSOR_LINK_OUTPUT_HARDWARE_ERROR;
-    }
-
-    message_type_t message = MSG_UNKNOWN;
-    if (output->event_type == SENSOR_LINK_EVENT_SPEED_UP) {
-        message = MSG_SPEED_UP_REQUEST;
-    } else if (output->event_type == SENSOR_LINK_EVENT_SPEED_DOWN) {
-        message = MSG_SPEED_DOWN_REQUEST;
-    } else if (output->event_type == SENSOR_LINK_EVENT_STOP) {
-        message = MSG_STOP_REQUEST;
-    } else {
-        return SENSOR_LINK_OUTPUT_REJECTED;
-    }
-
-    bool display_ok = display_service_show_button_message(
-        output->source_id, (uint8_t)message);
-    alert_show_local_button(message);
-    bool audio_ok = stop_audio() && play_audio(message);
-    return display_ok && audio_ok ?
-        SENSOR_LINK_OUTPUT_ACCEPTED : SENSOR_LINK_OUTPUT_HARDWARE_ERROR;
-}
-
-static uint8_t execute_output(const sensor_link_message_t *message)
-{
-    if (message == NULL) {
-        return SENSOR_LINK_OUTPUT_REJECTED;
-    }
-    if (message->type == SENSOR_LINK_OUTPUT_EVENT) {
-        return execute_output_event(&message->output_event);
-    }
-    if (message->type == SENSOR_LINK_OUTPUT_RIDE) {
-        const sensor_link_output_ride_t *output = &message->output_ride;
-        return sensor_view_service_apply_output_ride(
-            output->source_id,
-            output->valid,
-            output->kmh_x10,
-            output->distance_mm,
-            HAL_GetTick()) ?
-                SENSOR_LINK_OUTPUT_ACCEPTED : SENSOR_LINK_OUTPUT_REJECTED;
-    }
-    if (message->type == SENSOR_LINK_OUTPUT_ENVIRONMENT) {
-        const sensor_link_output_environment_t *output =
-            &message->output_environment;
-        return sensor_view_service_apply_output_environment(
-            output->source_id,
-            output->temperature_c_x10,
-            output->humidity_pct_x10,
-            output->temperature_quality,
-            output->humidity_quality,
-            HAL_GetTick()) ?
-                SENSOR_LINK_OUTPUT_ACCEPTED : SENSOR_LINK_OUTPUT_REJECTED;
-    }
-    return SENSOR_LINK_OUTPUT_REJECTED;
-}
-
-static uint32_t output_command_id(const sensor_link_message_t *message)
-{
-    if (message->type == SENSOR_LINK_OUTPUT_EVENT) {
-        return message->output_event.command_id;
-    }
-    if (message->type == SENSOR_LINK_OUTPUT_RIDE) {
-        return message->output_ride.command_id;
-    }
-    if (message->type == SENSOR_LINK_OUTPUT_ENVIRONMENT) {
-        return message->output_environment.command_id;
+    if (message->type == NOSTOS_MESSAGE_STOP_REQUEST) {
+        return message->payload.stop_request.request_id;
     }
     return 0U;
 }
 
-static void handle_message(const sensor_link_message_t *message)
+static bool request_seen(const nostos_message_t *message)
+{
+    uint32_t id = request_id(message);
+    if (id == 0U) return false;
+
+    for (size_t index = 0U; index < RECENT_REQUEST_CAPACITY; ++index) {
+        if (recent_requests[index].request_id == id &&
+            recent_requests[index].source_node_id == message->source_node_id &&
+            recent_requests[index].type == message->type) {
+            return true;
+        }
+    }
+    return false;
+}
+
+static void remember_request(const nostos_message_t *message)
+{
+    recent_requests[recent_request_next] = (recent_request_t){
+        .request_id = request_id(message),
+        .source_node_id = message->source_node_id,
+        .type = message->type,
+    };
+    recent_request_next =
+        (recent_request_next + 1U) % RECENT_REQUEST_CAPACITY;
+}
+
+static bool execute_state_update(const nostos_message_t *message)
+{
+    const nostos_state_update_t *state = &message->payload.state_update;
+    if (state->topic_id == NOSTOS_TOPIC_RIDE) {
+        if (state->value.ride.trip_distance_m > UINT32_MAX / 1000U) {
+            return false;
+        }
+        return sensor_view_service_apply_output_ride(
+            message->source_node_id,
+            state->sensor_valid,
+            state->value.ride.speed_x10_kmh,
+            state->value.ride.trip_distance_m * 1000U,
+            HAL_GetTick());
+    }
+    if (state->topic_id == NOSTOS_TOPIC_ENVIRONMENT) {
+        return sensor_view_service_apply_output_environment(
+            message->source_node_id,
+            state->sensor_valid,
+            state->value.environment.temperature_x10_c,
+            state->value.environment.humidity_x10_pct,
+            HAL_GetTick());
+    }
+    return false;
+}
+
+static bool execute_pace_request(const nostos_message_t *message)
+{
+    message_type_t output = MSG_UNKNOWN;
+    if (message->payload.pace_request.action == NOSTOS_PACE_ACCELERATE) {
+        output = MSG_SPEED_UP_REQUEST;
+    } else if (message->payload.pace_request.action == NOSTOS_PACE_DECELERATE) {
+        output = MSG_SPEED_DOWN_REQUEST;
+    } else {
+        return false;
+    }
+    bool display_ok = display_service_show_button_message(
+        message->source_node_id, (uint8_t)output);
+    alert_show_local_button(output);
+    bool audio_ok = stop_audio() && play_audio(output);
+    return display_ok && audio_ok;
+}
+
+static bool execute_stop_request(const nostos_message_t *message)
+{
+    if (message->payload.stop_request.reason == NOSTOS_STOP_REASON_FALL) {
+        start_fall_failsafe();
+        return audio_status == VS1003B_STATUS_OK;
+    }
+    if (message->payload.stop_request.reason != NOSTOS_STOP_REASON_BUTTON) {
+        return false;
+    }
+    bool display_ok = display_service_show_button_message(
+        message->source_node_id, (uint8_t)MSG_STOP_REQUEST);
+    alert_show_local_button(MSG_STOP_REQUEST);
+    bool audio_ok = stop_audio() && play_audio(MSG_STOP_REQUEST);
+    return display_ok && audio_ok;
+}
+
+static bool accept_stop_ack(const nostos_message_t *message)
+{
+    if (!pending_stop.active ||
+        message->payload.stop_ack.request_id !=
+            pending_stop.request.payload.stop_request.request_id) {
+        return false;
+    }
+    clear_pending_stop();
+    return true;
+}
+
+static message_protocol_result_t send_local_stop_ack(uint32_t request_id)
+{
+    nostos_message_t ack;
+    if (nostos_message_make_stop_ack(&ack, NOSTOS_LOCAL_SOURCE_NODE_ID,
+            request_id) != NOSTOS_OK) {
+        return MESSAGE_PROTOCOL_BAD_VALUE;
+    }
+    return transmit_message(&ack);
+}
+
+static void handle_message(const nostos_message_t *message)
 {
     ++stats.received;
-    if (message->type == SENSOR_LINK_READY) {
-        bool epoch_changed = message->ready.command_epoch != command_epoch;
-        if (!link_ready || message->ready.command_epoch != command_epoch) {
-            ++stats.ready_received;
-        }
-        if (epoch_changed) {
-            command_epoch = message->ready.command_epoch;
-            last_command_id = 0U;
-            if (local_failsafe_active) {
-                pending_safety_event = SENSOR_LINK_EVENT_FALL;
-            }
-        }
-        link_ready = true;
-        display_service_set_link_ready(true);
-        return;
-    }
-
-    uint32_t command_id = output_command_id(message);
-    if (command_id == 0U) {
+    if (!nostos_node_id_valid(message->source_node_id)) {
         ++stats.rejected;
-        ++stats.output_rejected;
         return;
     }
-    if (!link_ready) {
-        ++stats.output_rejected;
-        (void)send_output_result(command_id, SENSOR_LINK_OUTPUT_REJECTED);
-        return;
+    bool accepted = false;
+    if (message->type == NOSTOS_MESSAGE_STATE_UPDATE) {
+        accepted = execute_state_update(message);
+        if (accepted) ++stats.state_updates;
+    } else if (message->type == NOSTOS_MESSAGE_PACE_REQUEST) {
+        if (request_seen(message)) {
+            ++stats.duplicates;
+            return;
+        }
+        remember_request(message);
+        accepted = execute_pace_request(message);
+        if (accepted) ++stats.pace_requests;
+    } else if (message->type == NOSTOS_MESSAGE_STOP_REQUEST) {
+        if (request_seen(message)) {
+            ++stats.duplicates;
+            (void)send_local_stop_ack(
+                message->payload.stop_request.request_id);
+            return;
+        }
+        /* A syntactically valid BUTTON/FALL request is accepted by the
+         * application even when a display/audio output reports failure. */
+        (void)execute_stop_request(message);
+        remember_request(message);
+        accepted = true;
+        ++stats.stop_requests;
+        (void)send_local_stop_ack(message->payload.stop_request.request_id);
+    } else if (message->type == NOSTOS_MESSAGE_STOP_ACK) {
+        accepted = true;
+        ++stats.stop_acks;
+        if (accept_stop_ack(message)) {
+            ++stats.stop_ack_matches;
+        } else {
+            ++stats.stop_ack_ignored;
+        }
     }
-    if (command_id <= last_command_id) {
-        ++stats.output_duplicates;
-        (void)send_output_result(command_id, SENSOR_LINK_OUTPUT_DUPLICATE);
-        return;
-    }
-
-    uint8_t status = execute_output(message);
-    last_command_id = command_id;
-    if (status == SENSOR_LINK_OUTPUT_ACCEPTED) {
-        ++stats.output_accepted;
-    } else if (status == SENSOR_LINK_OUTPUT_HARDWARE_ERROR) {
-        ++stats.output_hardware_errors;
-    } else {
-        ++stats.output_rejected;
-    }
-    (void)send_output_result(command_id, status);
+    if (!accepted) ++stats.rejected;
 }
 
 message_protocol_result_t message_protocol_service_boot(
     UART_HandleTypeDef *uart,
     vs1003b_status_t status)
 {
-    if (uart == NULL) {
-        return MESSAGE_PROTOCOL_BAD_ARGUMENT;
-    }
+    if (uart == NULL) return MESSAGE_PROTOCOL_BAD_ARGUMENT;
 
     data_uart = uart;
     audio_status = status;
     booted = true;
-    link_ready = false;
-    local_failsafe_active = false;
-    pending_safety_event = 0U;
+    fall_failsafe_active = false;
+    clear_pending_stop();
+    next_local_request_id = LOCAL_STOP_REQUEST_ID_INITIAL;
     stats = (message_protocol_stats_t){0};
-    command_epoch = 0U;
-    last_command_id = 0U;
+    recent_request_next = 0U;
+    for (size_t index = 0U; index < RECENT_REQUEST_CAPACITY; ++index) {
+        recent_requests[index] = (recent_request_t){0};
+    }
     reset_rx();
     alert_init();
     buzzer_init();
     sensor_view_service_clear_outputs();
     display_service_set_fall(false);
-    display_service_set_link_ready(false);
-    return send_hello(HAL_GetTick());
+    display_service_set_link_ready(true);
+    return MESSAGE_PROTOCOL_OK;
 }
 
 bool message_protocol_service_is_ready(void)
 {
-    return booted && link_ready;
+    return booted && data_uart != NULL;
 }
 
 const message_protocol_stats_t *message_protocol_service_stats(void)
@@ -310,7 +352,6 @@ void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms)
     unsigned next = (rx_head + 1U) % RX_CAPACITY;
     if (next == rx_tail) {
         rx_overflow = true;
-        link_ready = false;
         return;
     }
     rx_bytes[rx_head] = byte;
@@ -321,7 +362,6 @@ void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms)
 void message_protocol_service_rx_error_isr(void)
 {
     rx_overflow = true;
-    link_ready = false;
 }
 
 void message_protocol_service_clear_pending(void)
@@ -331,8 +371,12 @@ void message_protocol_service_clear_pending(void)
     rx_tail = rx_head;
     rx_overflow = false;
     __set_PRIMASK(mask);
-    sensor_link_reset(&parser);
-    local_failsafe_active = false;
+    nostos_uart_reset(&parser);
+    fall_failsafe_active = false;
+    recent_request_next = 0U;
+    for (size_t index = 0U; index < RECENT_REQUEST_CAPACITY; ++index) {
+        recent_requests[index] = (recent_request_t){0};
+    }
 }
 
 void message_protocol_service_process(void)
@@ -344,7 +388,7 @@ void message_protocol_service_process(void)
             rx_tail = rx_head;
             rx_overflow = false;
             __set_PRIMASK(mask);
-            sensor_link_reset(&parser);
+            nostos_uart_reset(&parser);
             ++stats.overflows;
             break;
         }
@@ -357,110 +401,118 @@ void message_protocol_service_process(void)
         rx_tail = (rx_tail + 1U) % RX_CAPACITY;
         __set_PRIMASK(mask);
 
-        sensor_link_message_t message;
-        sensor_link_result_t result = sensor_link_feed(
+        nostos_message_t message;
+        nostos_result_t result = nostos_uart_feed_message(
             &parser, byte, received_ms, &message);
-        if (result == SENSOR_LINK_OK) {
-            stats.last_link_result = result;
+        if (result == NOSTOS_OK) {
+            stats.last_protocol_result = result;
             handle_message(&message);
-        } else if (result != SENSOR_LINK_EMPTY) {
-            stats.last_link_result = result;
+        } else if (result != NOSTOS_EMPTY) {
+            stats.last_protocol_result = result;
             ++stats.rejected;
         }
     }
 
-    display_service_set_link_ready(link_ready);
-    if (link_ready && pending_safety_event != 0U) {
-        uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-        size_t length = 0U;
-        sensor_link_result_t encoded = sensor_link_encode_event(
-            pending_safety_event, frame, &length);
-        if (send_encoded(encoded, frame, length) == MESSAGE_PROTOCOL_OK) {
-            pending_safety_event = 0U;
-        }
-    }
-
     uint32_t now_ms = HAL_GetTick();
-    if (booted && !link_ready &&
-        (uint32_t)(now_ms - last_hello_ms) >= HELLO_PERIOD_MS) {
-        display_service_set_link_ready(false);
-        (void)send_hello(now_ms);
+    if (pending_stop.active && due(now_ms, pending_stop.retry_at_ms)) {
+        (void)transmit_message(&pending_stop.request);
+        pending_stop.retry_at_ms = now_ms + STOP_RETRY_MS;
     }
     if (audio_status == VS1003B_STATUS_OK) {
         audio_status = audio_service_process();
     }
     alert_process();
     buzzer_process();
-    if (local_failsafe_active) {
-        display_service_set_fall(true);
-    }
+    if (fall_failsafe_active) display_service_set_fall(true);
 }
 
 message_protocol_result_t message_protocol_service_publish_event(
     uint8_t event_type)
 {
-    if (event_type == SENSOR_LINK_EVENT_FALL) {
-        start_fall_failsafe();
-        pending_safety_event = event_type;
-    } else if (event_type == SENSOR_LINK_EVENT_FALL_CLEAR) {
-        local_failsafe_active = false;
-        clear_emergency_output();
-        (void)stop_audio();
-        pending_safety_event = event_type;
-    }
+    nostos_message_t message;
+    nostos_result_t made;
 
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t encoded = sensor_link_encode_event(
-        event_type, frame, &length);
-    if (encoded != SENSOR_LINK_OK) {
-        return send_encoded(encoded, frame, length);
+    if (event_type == (uint8_t)MSG_SPEED_UP_REQUEST) {
+        made = nostos_message_make_pace(&message, NOSTOS_LOCAL_SOURCE_NODE_ID,
+            LOCAL_PACE_REQUEST_ID_PLACEHOLDER, NOSTOS_PACE_ACCELERATE);
+    } else if (event_type == (uint8_t)MSG_SPEED_DOWN_REQUEST) {
+        made = nostos_message_make_pace(&message, NOSTOS_LOCAL_SOURCE_NODE_ID,
+            LOCAL_PACE_REQUEST_ID_PLACEHOLDER, NOSTOS_PACE_DECELERATE);
+    } else {
+        uint8_t reason = 0U;
+        if (event_type == (uint8_t)MSG_STOP_REQUEST) {
+            reason = NOSTOS_STOP_REASON_BUTTON;
+        } else if (event_type == (uint8_t)MSG_FALL_DETECTED) {
+            reason = NOSTOS_STOP_REASON_FALL;
+            start_fall_failsafe();
+        } else {
+            return MESSAGE_PROTOCOL_BAD_VALUE;
+        }
+
+        bool replace = !pending_stop.active;
+        if (pending_stop.active &&
+            pending_stop.request.payload.stop_request.reason ==
+                NOSTOS_STOP_REASON_BUTTON &&
+            reason == NOSTOS_STOP_REASON_FALL) {
+            replace = true;
+        }
+
+        if (replace) {
+            made = nostos_message_make_stop(&message,
+                NOSTOS_LOCAL_SOURCE_NODE_ID, take_local_request_id(), reason);
+            stats.last_protocol_result = made;
+            if (made != NOSTOS_OK) return MESSAGE_PROTOCOL_BAD_VALUE;
+            pending_stop = (pending_stop_t){
+                .active = true,
+                .request = message,
+                .retry_at_ms = HAL_GetTick() + STOP_RETRY_MS,
+            };
+        } else {
+            message = pending_stop.request;
+        }
+
+        message_protocol_result_t result = transmit_message(&message);
+        pending_stop.retry_at_ms = HAL_GetTick() + STOP_RETRY_MS;
+        return result;
     }
-    if (!message_protocol_service_is_ready()) {
-        return MESSAGE_PROTOCOL_NOT_READY;
-    }
-    message_protocol_result_t result = send_encoded(encoded, frame, length);
-    if (result == MESSAGE_PROTOCOL_OK &&
-        (event_type == SENSOR_LINK_EVENT_FALL ||
-         event_type == SENSOR_LINK_EVENT_FALL_CLEAR)) {
-        pending_safety_event = 0U;
-    }
-    return result;
+    stats.last_protocol_result = made;
+    if (made != NOSTOS_OK) return MESSAGE_PROTOCOL_BAD_VALUE;
+    return transmit_message(&message);
 }
 
-message_protocol_result_t message_protocol_service_publish_ride(
-    bool valid,
-    uint16_t kmh_x10,
-    uint32_t distance_mm)
+#if defined(MESSAGE_PROTOCOL_TEST_PLATFORM_H)
+void message_protocol_service_test_set_next_local_request_id(
+    uint32_t request_id)
 {
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t encoded = sensor_link_encode_ride(
-        valid, kmh_x10, distance_mm, frame, &length);
-    if (encoded != SENSOR_LINK_OK) {
-        return send_encoded(encoded, frame, length);
-    }
-    if (!message_protocol_service_is_ready()) {
-        return MESSAGE_PROTOCOL_NOT_READY;
-    }
-    return send_encoded(encoded, frame, length);
+    next_local_request_id = request_id == 0U ?
+        LOCAL_STOP_REQUEST_ID_INITIAL : request_id;
+}
+#endif
+
+message_protocol_result_t message_protocol_service_publish_ride(
+    bool sensor_valid,
+    uint16_t speed_x10_kmh,
+    uint32_t trip_distance_m)
+{
+    nostos_message_t message;
+    nostos_result_t result = nostos_message_make_ride(
+        &message, NOSTOS_LOCAL_SOURCE_NODE_ID, sensor_valid,
+        speed_x10_kmh, trip_distance_m);
+    stats.last_protocol_result = result;
+    if (result != NOSTOS_OK) return MESSAGE_PROTOCOL_BAD_VALUE;
+    return transmit_message(&message);
 }
 
 message_protocol_result_t message_protocol_service_publish_environment(
-    int16_t temperature_c_x10,
-    uint16_t humidity_pct_x10,
-    uint8_t quality)
+    bool sensor_valid,
+    int16_t temperature_x10_c,
+    uint16_t humidity_x10_pct)
 {
-    uint8_t frame[SENSOR_LINK_FRAME_SIZE];
-    size_t length = 0U;
-    sensor_link_result_t encoded = sensor_link_encode_environment(
-        temperature_c_x10, humidity_pct_x10, quality, quality,
-        frame, &length);
-    if (encoded != SENSOR_LINK_OK) {
-        return send_encoded(encoded, frame, length);
-    }
-    if (!message_protocol_service_is_ready()) {
-        return MESSAGE_PROTOCOL_NOT_READY;
-    }
-    return send_encoded(encoded, frame, length);
+    nostos_message_t message;
+    nostos_result_t result = nostos_message_make_environment(
+        &message, NOSTOS_LOCAL_SOURCE_NODE_ID, sensor_valid,
+        temperature_x10_c, humidity_x10_pct);
+    stats.last_protocol_result = result;
+    if (result != NOSTOS_OK) return MESSAGE_PROTOCOL_BAD_VALUE;
+    return transmit_message(&message);
 }

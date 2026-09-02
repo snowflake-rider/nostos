@@ -15,16 +15,16 @@ the ESP-IDF GATT producer remains under `firmware/esp32/main/xoss_ble.c`.
 The four captured notifications are preserved in `test_speed_sensor.c`. With
 the temporary arm-swing circumference of `5100 mm`, they produce `22.6`,
 `22.8`, and `22.8 km/h` after the first baseline sample. Their `16` detected
-rotations also produce a session distance of `81.6 m` (`16 * 5100 mm`). The
+rotations also produce a trip distance of `81.6 m` (`16 * 5100 mm`). The
 circumference is an input to `speed_sensor_update()` and is not fixed in the
 parser. Replace it with the measured wheel circumference for bicycle use.
 
 `speed_sensor_sample_t` returns the current rotation delta, instantaneous
 `kmh_x10`, and accumulated `distance_mm`. Distance starts at zero on the first
 baseline. A sensor reset or decreasing cumulative revolution count causes a
-rebaseline without adding a large false distance; the existing session
-distance is retained. Calling `speed_sensor_reset()` starts a new session and
-clears the distance.
+rebaseline without adding a large false distance; the existing trip
+distance is retained. Calling `speed_sensor_reset()` starts a new boot-local
+trip and clears the distance.
 
 The active BLE consumer forwards speed and cumulative wheel distance together
 as one atomic local `RIDE` sample. The parser retains `uint64_t` distance for

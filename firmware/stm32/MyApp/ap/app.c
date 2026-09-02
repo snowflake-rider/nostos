@@ -5,22 +5,20 @@
 #include "audio_service.h"
 #include "alert.h"
 #include "button.h"
+#include "buzzer.h"
 #include "display_service.h"
 #include "environment_service.h"
+#include "message_protocol_service.h"
 #include "message_router.h"
-#include "message_service.h"
 #include "safety_service.h"
 #include "sensor_store.h"
 #include "sensor_sync_service.h"
 #include "sensor_view_service.h"
 #include "uart_service.h"
 #include "vs1003b.h"
-#if NOSTOS_PROTOCOL_V2
-#include "message_protocol_service.h"
 volatile message_protocol_result_t protocol_debug_boot_status =
     MESSAGE_PROTOCOL_NOT_READY;
 volatile bool protocol_debug_link_ready = false;
-#endif
 
 #define VS1003B_SCI_CLOCKF_ADDRESS 0x03U
 
@@ -73,11 +71,7 @@ volatile uint32_t uart_debug_tx_count = 0U;
 volatile uint32_t uart_debug_rx_count = 0U;
 volatile uint32_t uart_debug_invalid_count = 0U;
 volatile uint32_t uart_debug_dropped_count = 0U;
-volatile message_type_t uart_debug_last_received = MSG_NONE;
-volatile message_type_t message_debug_inject = MSG_NONE;
-volatile uint32_t message_debug_inject_count = 0U;
 volatile uint32_t message_router_debug_local_count = 0U;
-volatile uint32_t message_router_debug_remote_count = 0U;
 volatile bool safety_debug_mpu_ready = false;
 volatile bool safety_debug_mpu_data_valid = false;
 volatile uint8_t safety_debug_mpu_address = 0U;
@@ -120,18 +114,15 @@ void app_init(
         vs1003b_debug_clockf = clockf;
     }
 
-#if NOSTOS_PROTOCOL_V2
     protocol_debug_link_ready = false;
     protocol_debug_boot_status = message_protocol_service_boot(
         message_uart, vs1003b_debug_status);
-#else
-    message_service_init(vs1003b_debug_status);
-#endif
     message_router_init();
     safety_service_init(sensor_i2c);
     environment_service_init();
     app_update_calibration_display(safety_service_get_status());
     display_service_init(sensor_i2c);
+    display_service_set_link_ready(message_protocol_service_is_ready());
     calibration_button_state_known = false;
     calibration_button_last_pressed = false;
 }
@@ -153,11 +144,6 @@ message_type_t app_runtime_poll_button(
     return reset ? MSG_NONE : message;
 }
 
-bool app_runtime_poll_remote(message_type_t *message)
-{
-    return uart_service_get_message(message);
-}
-
 void app_runtime_set_calibration_button_pressed(bool pressed)
 {
     safety_service_set_recalibration_button(pressed);
@@ -166,19 +152,13 @@ void app_runtime_set_calibration_button_pressed(bool pressed)
 void app_runtime_reset(void)
 {
     last_message = MSG_NONE;
-    message_debug_inject = MSG_NONE;
     uart_service_clear_pending();
     (void)safety_service_take_calibration_completed();
-#if NOSTOS_PROTOCOL_V2
     alert_reset();
     buzzer_stop();
     vs1003b_debug_status = audio_service_stop();
     sensor_view_service_clear_outputs();
     display_service_reset_outputs();
-#else
-    message_service_reset_outputs();
-    vs1003b_debug_status = message_service_get_status()->audio_status;
-#endif
 }
 
 void app_runtime_dispatch_local(message_type_t message)
@@ -191,28 +171,8 @@ void app_runtime_dispatch_local(message_type_t message)
     }
 }
 
-void app_runtime_dispatch_remote(message_type_t message)
-{
-    if ((message != MSG_NONE) && (message != MSG_UNKNOWN))
-    {
-        last_message = message;
-        uart_debug_last_received = message;
-        message_router_deliver_remote(message);
-    }
-}
-
 void app_runtime_process_services(void)
 {
-    /* 팀 장치 연결 전 외부 메시지 동작을 확인하기 위한 디버거 주입 지점입니다. */
-    message_type_t injected_message = message_debug_inject;
-    if (injected_message != MSG_NONE)
-    {
-        message_debug_inject = MSG_NONE;
-        ++message_debug_inject_count;
-        last_message = injected_message;
-        message_router_deliver_remote(injected_message);
-    }
-
     safety_service_process();
     environment_service_process();
     const safety_service_status_t *safety_status = safety_service_get_status();
@@ -222,7 +182,6 @@ void app_runtime_process_services(void)
     {
         vs1003b_debug_status = audio_service_play_calibration_completed();
     }
-#if NOSTOS_PROTOCOL_V2
     message_protocol_service_process();
     sensor_sync_service_process();
     protocol_debug_link_ready = message_protocol_service_is_ready();
@@ -232,18 +191,6 @@ void app_runtime_process_services(void)
     buzzer_debug_pattern=buzzer_get_pattern();
     alert_debug_state=alert_get_state();
     alert_debug_led_on=alert_is_led_on();
-#else
-    message_service_process();
-
-    const message_service_status_t *status = message_service_get_status();
-    vs1003b_debug_status = status->audio_status;
-    vs1003b_debug_audio_playing = status->audio_playing;
-    vs1003b_debug_audio_position = status->audio_position;
-    buzzer_debug_active = status->buzzer_active;
-    buzzer_debug_pattern = status->buzzer_pattern;
-    alert_debug_state = status->alert_state;
-    alert_debug_led_on = status->alert_led_on;
-#endif
     display_service_process();
 
     uart_debug_status = uart_service_get_status();
@@ -252,7 +199,6 @@ void app_runtime_process_services(void)
     uart_debug_invalid_count = uart_service_get_invalid_count();
     uart_debug_dropped_count = uart_service_get_dropped_count();
     message_router_debug_local_count = message_router_get_local_count();
-    message_router_debug_remote_count = message_router_get_remote_count();
 
     safety_debug_mpu_ready = safety_status->mpu_ready;
     safety_debug_mpu_data_valid = safety_status->mpu_data_valid;
@@ -294,12 +240,6 @@ void app_process(void)
     }
 
     app_runtime_dispatch_local(message);
-
-    message_type_t received_message = MSG_NONE;
-    if (app_runtime_poll_remote(&received_message))
-    {
-        app_runtime_dispatch_remote(received_message);
-    }
 
     app_runtime_process_services();
 }

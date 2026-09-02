@@ -18,7 +18,7 @@ static unsigned ride_failures;
 static uint32_t environment_calls;
 static int16_t last_temperature;
 static uint16_t last_humidity;
-static uint8_t last_environment_quality;
+static bool last_environment_valid;
 
 uint32_t HAL_GetTick(void)
 {
@@ -47,14 +47,14 @@ message_protocol_result_t message_protocol_service_publish_ride(
 }
 
 message_protocol_result_t message_protocol_service_publish_environment(
+    bool valid,
     int16_t temperature_c_x10,
-    uint16_t humidity_pct_x10,
-    uint8_t quality)
+    uint16_t humidity_pct_x10)
 {
     ++environment_calls;
+    last_environment_valid = valid;
     last_temperature = temperature_c_x10;
     last_humidity = humidity_pct_x10;
-    last_environment_quality = quality;
     return MESSAGE_PROTOCOL_OK;
 }
 
@@ -70,7 +70,7 @@ static void reset_fixture(void)
     environment_calls = 0U;
     last_temperature = 0;
     last_humidity = 0U;
-    last_environment_quality = SENSOR_LINK_QUALITY_UNMEASURED;
+    last_environment_valid = false;
     sensor_store_init();
     sensor_sync_service_init();
 }
@@ -89,42 +89,44 @@ int main(void)
     sensor_sync_service_process();
     CHECK(ride_calls == 1U);
     CHECK(last_ride_valid && last_speed == 228U);
-    CHECK(last_distance == 123456U);
+    CHECK(last_distance == 123U);
     CHECK(environment_calls == 1U);
     CHECK(last_temperature == 253 && last_humidity == 610U);
-    CHECK(last_environment_quality == SENSOR_LINK_QUALITY_VALID);
+    CHECK(last_environment_valid);
 
     tick = 1010U;
     sensor_sync_service_process();
     CHECK(ride_calls == 1U && environment_calls == 1U);
 
-    tick = 3010U;
+    tick = 2010U;
     sensor_sync_service_process();
     CHECK(ride_calls == 2U);
-    CHECK(!last_ride_valid && last_speed == 0U && last_distance == 0U);
-    CHECK(environment_calls == 1U);
+    CHECK(last_ride_valid && last_speed == 228U && last_distance == 123U);
+    CHECK(environment_calls == 2U && last_environment_valid);
 
     tick = 4010U;
     sensor_sync_service_process();
-    CHECK(environment_calls == 2U);
-    CHECK(last_environment_quality == SENSOR_LINK_QUALITY_UNMEASURED);
+    CHECK(ride_calls == 3U && environment_calls == 3U);
+    CHECK(!last_ride_valid && last_speed == 0U && last_distance == 0U);
+    CHECK(!last_environment_valid);
+    CHECK(last_temperature == 0 && last_humidity == 0U);
 
     ride_failures = 1U;
     CHECK(sensor_store_update_ride(true, 315U, 654321U, 5000U));
     CHECK(sensor_store_update_environment(true, 271, 580U, 5000U));
     tick = 5000U;
     sensor_sync_service_process();
-    CHECK(ride_calls == 3U);
-    CHECK(environment_calls == 2U);
+    CHECK(ride_calls == 4U);
+    CHECK(environment_calls == 3U);
     tick = 5199U;
     sensor_sync_service_process();
-    CHECK(ride_calls == 3U);
+    CHECK(ride_calls == 4U);
     tick = 5200U;
     sensor_sync_service_process();
-    CHECK(ride_calls == 4U && environment_calls == 3U);
-    CHECK(last_ride_valid && last_speed == 315U && last_distance == 654321U);
+    CHECK(ride_calls == 5U && environment_calls == 4U);
+    CHECK(last_ride_valid && last_speed == 315U && last_distance == 654U);
     CHECK(last_temperature == 271 && last_humidity == 580U);
 
-    puts("PASS sensor producers wait for READY, publish changes, and retry I/O");
+    puts("PASS sensor producers publish changes, repeat at 2s, and retry I/O");
     return 0;
 }

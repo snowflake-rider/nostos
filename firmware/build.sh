@@ -37,17 +37,21 @@ activate_stm32_tools() {
     fi
 
     local arm_gcc
+    local arm_gcc_dir
     local ninja_bin
+    local ninja_dir
     arm_gcc="$(discover_executable arm-none-eabi-gcc "$cached_compiler")"
     [[ -n "$arm_gcc" ]] || {
         printf '%s\n' 'error: arm-none-eabi-gcc not found; set PATH or install the NOSTOS ARM toolchain' >&2
         return 1
     }
-    export PATH="$(dirname -- "$arm_gcc"):$PATH"
+    arm_gcc_dir="$(dirname -- "$arm_gcc")"
+    export PATH="$arm_gcc_dir:$PATH"
 
     ninja_bin="$(discover_executable ninja "$cached_ninja")"
     if [[ -n "$ninja_bin" ]]; then
-        export PATH="$(dirname -- "$ninja_bin"):$PATH"
+        ninja_dir="$(dirname -- "$ninja_bin")"
+        export PATH="$ninja_dir:$PATH"
     elif [[ "${NOSTOS_RELEASE_BUILD:-0}" == 1 ]]; then
         printf '%s\n' 'error: release build requires Ninja; no build was started' >&2
         return 1
@@ -57,7 +61,11 @@ activate_stm32_tools() {
 activate_esp32_tools() {
     local search_root="${XDG_DATA_HOME:-${HOME}/.local/share}/nostos-toolchains"
     local export_script="${NOSTOS_IDF_EXPORT:-}"
+    local standard_export="${HOME}/esp/esp-idf-v5.5.5/export.sh"
     local env_cache="$FIRMWARE_DIR/out/idf-env-cache.sh"
+    if [[ -z "$export_script" && -f "$standard_export" ]]; then
+        export_script="$standard_export"
+    fi
     if [[ -z "$export_script" && -d "$search_root" ]]; then
         export_script="$(find "$search_root" -path '*/esp-idf-v5.5.5/export.sh' -type f -print -quit 2>/dev/null || true)"
     fi
@@ -82,6 +90,8 @@ activate_esp32_tools() {
                 IDF_TOOLS_EXPORT_CMD IDF_TOOLS_INSTALL_CMD OPENOCD_SCRIPTS; do
                 printf 'export %s=%q\n' "$variable_name" "${!variable_name:-}"
             done
+            # Keep $PATH literal so the cache extends the caller's future PATH.
+            # shellcheck disable=SC2016
             printf 'export PATH=%q:"$PATH"\n' "$idf_prefix"
         } > "$env_cache"
     fi
@@ -94,12 +104,14 @@ activate_esp32_tools() {
         cached_ninja="$(sed -n 's/^CMAKE_MAKE_PROGRAM:FILEPATH=//p' "$FIRMWARE_DIR/esp32/build/CMakeCache.txt" | head -1)"
     fi
     local ninja_bin
+    local ninja_dir
     ninja_bin="$(discover_executable ninja "$cached_ninja")"
     [[ -n "$ninja_bin" ]] || {
         printf '%s\n' 'error: Ninja not found; ESP32 build was not started' >&2
         return 1
     }
-    export PATH="$PATH:$(dirname -- "$ninja_bin")"
+    ninja_dir="$(dirname -- "$ninja_bin")"
+    export PATH="$PATH:$ninja_dir"
 }
 
 build_stm32() {
@@ -125,9 +137,7 @@ build_stm32() {
         cd "$FIRMWARE_DIR/stm32"
         cmake_args=(
             --preset Release
-            -DNOSTOS_PROTOCOL_V2=ON
             -DNOSTOS_FREERTOS=ON
-            -DBUTTON_OUTPUT_TEST=OFF
             -DSSD1306_DISPLAY="$stm32_ssd1306_display"
             -DMPU6050_SENSOR="$stm32_mpu6050_sensor"
             -DDHT11_SENSOR="$stm32_dht11_sensor"

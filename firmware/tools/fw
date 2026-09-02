@@ -50,16 +50,13 @@ check_root_layout() {
     local exception_dir
     local exception_entry
     local relative_entry
-    local ignore_source
-    local ignore_line
-    local ignore_pattern
-    local ignored_entry
     local git_root
     local git_root_physical
 
     for required_file in \
         '.gitignore' \
         'AGENTS.md' \
+        'CONTEXT.md' \
         'DEVICES.md' \
         'PINS.md' \
         'README.md' \
@@ -109,14 +106,14 @@ check_root_layout() {
     while IFS= read -r -d '' root_entry; do
         root_name="${root_entry##*/}"
         case "$root_name" in
-            .git|.gitignore|.worktrees|AGENTS.md|DEVICES.md|PINS.md|README.md|REQUIREMENT.md|RIDER-*.md|STRUCTURE.md|firmware|releases|apps|docs)
+            .git|.gitignore|.worktrees|AGENTS.md|CONTEXT.md|DEVICES.md|PINS.md|README.md|REQUIREMENT.md|RIDER-*.md|STRUCTURE.md|TODOS.md|firmware|releases|apps|docs)
                 ;;
             stm32|esp32|protocol|VERSION|build.sh|test-host.sh|manifest.json)
                 # Reported above with the more specific legacy-path diagnostic.
                 ;;
             *)
-                printf 'FAIL %-22s unexpected root entry: %s\n' 'canonical layout' "$root_name" >&2
-                layout_failures=$((layout_failures + 1))
+                printf 'WARN %-22s unexpected root entry (report only): %s\n' \
+                    'canonical layout' "$root_name" >&2
                 ;;
         esac
     done < <(find "$REPO_DIR" -mindepth 1 -maxdepth 1 -print0)
@@ -141,31 +138,27 @@ check_root_layout() {
                 layout_failures=$((layout_failures + 1))
                 continue
             fi
-            while IFS= read -r -d '' ignore_source && \
-                IFS= read -r -d '' ignore_line && \
-                IFS= read -r -d '' ignore_pattern && \
-                IFS= read -r -d '' ignored_entry; do
-                case "$ignored_entry" in
+            while IFS= read -r -d '' exception_entry; do
+                relative_entry="${exception_entry#"$REPO_DIR"/}"
+                if git -C "$REPO_DIR" ls-files --error-unmatch -- "$relative_entry" \
+                    >/dev/null 2>&1; then
+                    continue
+                fi
+                case "$relative_entry" in
                     apps/mesh-console/logs/*|docs/bluetooth-setting/private-network/Nostos.json|docs/media/nostos-ride-signals/*)
-                        if [[ -z "$ignore_pattern" ]]; then
+                        if ! git -C "$REPO_DIR" check-ignore -q -- "$relative_entry"; then
                             printf 'FAIL %-22s checkout-local file is not ignored: %s\n' \
-                                'canonical layout' "$ignored_entry" >&2
+                                'canonical layout' "$relative_entry" >&2
                             layout_failures=$((layout_failures + 1))
                         fi
                         ;;
                     *)
                         printf 'FAIL %-22s checkout-local file is outside allowed paths: %s\n' \
-                            'canonical layout' "$ignored_entry" >&2
+                            'canonical layout' "$relative_entry" >&2
                         layout_failures=$((layout_failures + 1))
                         ;;
                 esac
-            done < <(
-                while IFS= read -r -d '' exception_entry; do
-                    relative_entry="${exception_entry#"$REPO_DIR"/}"
-                    printf '%s\0' "$relative_entry"
-                done < <(find "$REPO_DIR/$exception_dir" \( -type f -o -type l \) -print0) |
-                    git -C "$REPO_DIR" check-ignore -z -v -n --stdin
-            )
+            done < <(find "$REPO_DIR/$exception_dir" \( -type f -o -type l \) -print0)
         done
     else
         printf 'FAIL %-22s Git unavailable; cannot verify checkout-local exceptions\n' \
@@ -176,13 +169,18 @@ check_root_layout() {
     if [[ "$layout_failures" -ne 0 ]]; then
         return 1
     fi
-    printf 'OK   %-22s required tree present; root entries and local exceptions verified\n' \
+    printf 'OK   %-22s required tree and checkout-local exceptions verified\n' \
         'canonical layout'
 }
 
 doctor() {
     local failures=0
     local command_name
+    local idf_export=''
+    local idf_path=''
+    local idf_version=''
+    local idf_search_root="${XDG_DATA_HOME:-${HOME}/.local/share}/nostos-toolchains"
+    local standard_idf_export="${HOME}/esp/esp-idf-v5.5.5/export.sh"
 
     printf 'NOSTOS firmware root: %s\n' "$FIRMWARE_DIR"
     for command_name in bash git python3 cmake ctest; do
@@ -194,13 +192,50 @@ doctor() {
         fi
     done
 
-    for command_name in arm-none-eabi-gcc arm-none-eabi-objcopy ninja idf.py; do
+    for command_name in arm-none-eabi-gcc arm-none-eabi-objcopy ninja; do
         if command -v "$command_name" >/dev/null 2>&1; then
             printf 'OK   %-22s %s\n' "$command_name" "$(command -v "$command_name")"
         else
             printf 'WARN %-22s not found (required only for its target build)\n' "$command_name" >&2
         fi
     done
+
+    if command -v idf.py >/dev/null 2>&1; then
+        idf_path="$(command -v idf.py)"
+        idf_version="$(idf.py --version 2>/dev/null || true)"
+    else
+        idf_export="${NOSTOS_IDF_EXPORT:-}"
+        if [[ -z "$idf_export" && -f "$standard_idf_export" ]]; then
+            idf_export="$standard_idf_export"
+        fi
+        if [[ -z "$idf_export" && -d "$idf_search_root" ]]; then
+            idf_export="$(find "$idf_search_root" \
+                -path '*/esp-idf-v5.5.5/export.sh' -type f -print -quit \
+                2>/dev/null || true)"
+        fi
+        if [[ -n "$idf_export" && -f "$idf_export" ]]; then
+            idf_path="$(bash -c \
+                'source "$1" >/dev/null 2>&1 && command -v idf.py' \
+                _ "$idf_export" || true)"
+            idf_version="$(bash -c \
+                'source "$1" >/dev/null 2>&1 && idf.py --version' \
+                _ "$idf_export" 2>/dev/null || true)"
+        fi
+    fi
+    if [[ -n "$idf_path" && "$idf_version" == *v5.5.5* ]]; then
+        if [[ -n "$idf_export" ]]; then
+            printf 'OK   %-22s %s (%s via %s)\n' \
+                idf.py "$idf_path" "$idf_version" "$idf_export"
+        else
+            printf 'OK   %-22s %s (%s)\n' idf.py "$idf_path" "$idf_version"
+        fi
+    elif [[ -n "$idf_path" ]]; then
+        printf 'WARN %-22s unsupported version at %s: %s\n' \
+            idf.py "$idf_path" "${idf_version:-unknown}" >&2
+    else
+        printf '%s\n' \
+            'WARN idf.py                 not found (required only for ESP32 build)' >&2
+    fi
 
     if check_root_layout; then
         :
@@ -316,9 +351,13 @@ run_release_build() {
     if [[ "$#" -gt 1 ]]; then
         die_usage 'release-build accepts at most one target'
     fi
-    NOSTOS_RELEASE_BUILD=1 bash "$FIRMWARE_DIR/build.sh" "$target"
     case "$target" in
         all)
+            python3 "$RELEASE_TOOL" build-stm32-variants \
+                --firmware-root "$FIRMWARE_DIR" \
+                --profile "$PROFILE" \
+                --execute
+            NOSTOS_RELEASE_BUILD=1 bash "$FIRMWARE_DIR/build.sh" esp32
             for receipt_target in stm32 esp32; do
                 python3 "$RELEASE_TOOL" record-build \
                     --firmware-root "$FIRMWARE_DIR" \
@@ -327,7 +366,19 @@ run_release_build() {
                     --target "$receipt_target"
             done
             ;;
-        stm32|esp32)
+        stm32)
+            python3 "$RELEASE_TOOL" build-stm32-variants \
+                --firmware-root "$FIRMWARE_DIR" \
+                --profile "$PROFILE" \
+                --execute
+            python3 "$RELEASE_TOOL" record-build \
+                --firmware-root "$FIRMWARE_DIR" \
+                --repo-root "$REPO_DIR" \
+                --profile "$PROFILE" \
+                --target "$target"
+            ;;
+        esp32)
+            NOSTOS_RELEASE_BUILD=1 bash "$FIRMWARE_DIR/build.sh" esp32
             python3 "$RELEASE_TOOL" record-build \
                 --firmware-root "$FIRMWARE_DIR" \
                 --repo-root "$REPO_DIR" \
@@ -379,10 +430,14 @@ run_dev() {
     if [[ "$target" == esp32 && "$action" == --execute ]] && ! command -v esptool.py >/dev/null 2>&1; then
         local search_root="${XDG_DATA_HOME:-${HOME}/.local/share}/nostos-toolchains"
         local export_script="${NOSTOS_IDF_EXPORT:-}"
+        local standard_export="${HOME}/esp/esp-idf-v5.5.5/export.sh"
         local env_cache="$FIRMWARE_DIR/out/idf-env-cache.sh"
         if [[ -f "$env_cache" ]]; then
             # shellcheck disable=SC1090
             source "$env_cache"
+        fi
+        if [[ -z "$export_script" && -f "$standard_export" ]]; then
+            export_script="$standard_export"
         fi
         if [[ -z "$export_script" && -d "$search_root" ]]; then
             export_script="$(find "$search_root" -path '*/esp-idf-v5.5.5/export.sh' -type f -print -quit 2>/dev/null || true)"

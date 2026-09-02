@@ -24,9 +24,6 @@
 #include "app.h"
 #include "app_config.h"
 #include "safety_service.h"
-#if FEATURE_BUTTON_OUTPUT_TEST
-#include "button_output_test.h"
-#endif
 #include "uart_service.h"
 #if NOSTOS_FREERTOS
 #include "app_rtos.h"
@@ -113,13 +110,9 @@ int main(void)
   MX_I2C1_Init();
   /* USER CODE BEGIN 2 */
   app_init(&hspi2, &huart1, &hi2c1);
-#if FEATURE_BUTTON_OUTPUT_TEST
-  button_output_test_init();
-#else
   /* USART1 D8/PA9 -> ESP32, USART2 -> ST-LINK USB 캘리브레이션 텍스트 로그. */
   safety_service_set_log_uart(&huart2);
-#endif
-#if NOSTOS_FREERTOS && !FEATURE_BUTTON_OUTPUT_TEST
+#if NOSTOS_FREERTOS
   if (!app_rtos_start())
   {
     Error_Handler();
@@ -136,9 +129,7 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
-#if FEATURE_BUTTON_OUTPUT_TEST
-    button_output_test_process();
-#elif !NOSTOS_FREERTOS
+#if !NOSTOS_FREERTOS
     app_process();
 #endif
   }

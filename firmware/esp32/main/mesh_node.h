@@ -12,8 +12,10 @@
 esp_err_t mesh_node_init(void);
 bool mesh_node_ready(void);
 uint16_t mesh_node_primary(void);
-esp_err_t mesh_node_send_event(const uint8_t *wire, size_t length);
-esp_err_t mesh_node_send_onoff(bool onoff, bool acknowledged);
+esp_err_t mesh_node_send_to(
+    uint16_t destination,
+    const uint8_t *wire,
+    size_t length);
 esp_err_t mesh_node_set_low_tx_power(bool enabled);
 void mesh_node_log_status(void);
 #endif

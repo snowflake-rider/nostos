@@ -1,5 +1,6 @@
 #include "button.h"
 #include "main.h"
+#include "message_protocol_service.h"
 #include "uart_service.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -11,14 +12,13 @@
 GPIO_TypeDef host_gpio_a, host_gpio_b, host_gpio_c;
 static uint32_t tick;
 static UART_HandleTypeDef uart1 = {1U};
-static UART_HandleTypeDef uart2 = {2U};
-static unsigned sent;
-static unsigned traced;
-static uint8_t last_byte;
-static uint8_t trace_byte;
-static HAL_StatusTypeDef transmit_result;
-static HAL_StatusTypeDef trace_result;
 static uint8_t *receive_target;
+static unsigned published;
+static uint8_t last_published;
+static message_protocol_result_t publish_result;
+static unsigned protocol_rx_count;
+static uint8_t protocol_rx_byte;
+static unsigned protocol_clear_count;
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart);
 
@@ -33,30 +33,30 @@ HAL_StatusTypeDef HAL_UART_Receive_IT(UART_HandleTypeDef *uart, uint8_t *data, u
     receive_target = data;
     return HAL_OK;
 }
-HAL_StatusTypeDef HAL_UART_Transmit(UART_HandleTypeDef *uart, const uint8_t *data,
-                                 uint16_t size, uint32_t timeout)
+message_protocol_result_t message_protocol_service_publish_event(uint8_t event)
 {
-    CHECK(data != NULL && size == 1U && timeout == 10U);
-    if (uart == &uart2) {
-        ++traced;
-        trace_byte = data[0];
-        return trace_result;
-    }
-    CHECK(uart == &uart1 && uart->instance == 1U);
-    ++sent;
-    last_byte = data[0];
-    return transmit_result;
+    ++published;
+    last_published = event;
+    return publish_result;
 }
+void message_protocol_service_rx_isr(uint8_t byte, uint32_t received_ms)
+{
+    CHECK(received_ms == tick);
+    ++protocol_rx_count;
+    protocol_rx_byte = byte;
+}
+void message_protocol_service_rx_error_isr(void) {}
+void message_protocol_service_clear_pending(void) { ++protocol_clear_count; }
 static void reset_at(uint32_t now)
 {
     host_gpio_a.input = host_gpio_b.input = host_gpio_c.input = UINT16_MAX;
     tick = now;
-    sent = 0;
-    traced = 0;
-    last_byte = 0;
-    trace_byte = 0;
-    transmit_result = HAL_OK;
-    trace_result = HAL_OK;
+    published = 0U;
+    last_published = MSG_NONE;
+    publish_result = MESSAGE_PROTOCOL_OK;
+    protocol_rx_count = 0U;
+    protocol_rx_byte = 0U;
+    protocol_clear_count = 0U;
     button_init();
     CHECK(uart_service_init(&uart1) == HAL_OK);
 }
@@ -75,15 +75,16 @@ static void pb6_press_once(void)
     CHECK(poll_after(0U) == MSG_NONE);
     CHECK(poll_after(29U) == MSG_NONE);
     CHECK(poll_after(1U) == MSG_STOP_REQUEST);
-    CHECK(sent == 1U && last_byte == 0x13U && uart_service_get_tx_count() == 1U);
-    CHECK(poll_after(1000U) == MSG_NONE && sent == 1U);
+    CHECK(published == 1U && last_published == MSG_STOP_REQUEST &&
+        uart_service_get_tx_count() == 1U);
+    CHECK(poll_after(1000U) == MSG_NONE && published == 1U);
     host_gpio_b.input |= GPIO_PIN_6;
     CHECK(poll_after(0U) == MSG_NONE);
     CHECK(poll_after(30U) == MSG_NONE);
     host_gpio_b.input &= (uint16_t)~GPIO_PIN_6;
     CHECK(poll_after(0U) == MSG_NONE);
     CHECK(poll_after(30U) == MSG_STOP_REQUEST);
-    CHECK(sent == 2U && last_byte == 0x13U);
+    CHECK(published == 2U && last_published == MSG_STOP_REQUEST);
 }
 static void bounce_and_boot_held(void)
 {
@@ -95,18 +96,18 @@ static void bounce_and_boot_held(void)
     host_gpio_b.input &= (uint16_t)~GPIO_PIN_6;
     CHECK(poll_after(10U) == MSG_NONE);
     CHECK(poll_after(29U) == MSG_NONE);
-    CHECK(poll_after(1U) == MSG_STOP_REQUEST && sent == 1U);
+    CHECK(poll_after(1U) == MSG_STOP_REQUEST && published == 1U);
 
     reset_at(0U);
     host_gpio_b.input &= (uint16_t)~GPIO_PIN_6;
     button_init(); /* Already held at boot: require release and a new press. */
-    CHECK(poll_after(1000U) == MSG_NONE && sent == 0U);
+    CHECK(poll_after(1000U) == MSG_NONE && published == 0U);
     host_gpio_b.input |= GPIO_PIN_6;
     CHECK(poll_after(0U) == MSG_NONE);
     CHECK(poll_after(30U) == MSG_NONE);
     host_gpio_b.input &= (uint16_t)~GPIO_PIN_6;
     CHECK(poll_after(0U) == MSG_NONE);
-    CHECK(poll_after(30U) == MSG_STOP_REQUEST && sent == 1U);
+    CHECK(poll_after(30U) == MSG_STOP_REQUEST && published == 1U);
 }
 static void wraparound_and_transport_failure(void)
 {
@@ -114,11 +115,11 @@ static void wraparound_and_transport_failure(void)
     host_gpio_b.input &= (uint16_t)~GPIO_PIN_6;
     CHECK(poll_after(0U) == MSG_NONE);
     CHECK(poll_after(29U) == MSG_NONE);
-    transmit_result = HAL_TIMEOUT;
+    publish_result = MESSAGE_PROTOCOL_IO_ERROR;
     CHECK(poll_after(1U) == MSG_STOP_REQUEST);
-    CHECK(sent == 1U && uart_service_get_tx_count() == 0U);
-    CHECK(uart_service_get_status() == HAL_TIMEOUT);
-    CHECK(poll_after(1000U) == MSG_NONE && sent == 1U);
+    CHECK(published == 1U && uart_service_get_tx_count() == 0U);
+    CHECK(uart_service_get_status() == HAL_ERROR);
+    CHECK(poll_after(1000U) == MSG_NONE && published == 1U);
 }
 static message_type_t press_and_release(GPIO_TypeDef *port, uint16_t pin)
 {
@@ -138,11 +139,10 @@ static void prototype_buttons_use_new_mapping(void)
     const message_type_t events[] = {MSG_SPEED_UP_REQUEST,
                                     MSG_SPEED_DOWN_REQUEST,
                                     MSG_STOP_REQUEST};
-    const uint8_t bytes[] = {0x11U, 0x10U, 0x13U};
     for (size_t i = 0U; i < 3U; ++i) {
         reset_at(100U);
         CHECK(press_and_release(ports[i], pins[i]) == events[i]);
-        CHECK(sent == 1U && last_byte == bytes[i]);
+        CHECK(published == 1U && last_published == (uint8_t)events[i]);
         CHECK(!button_take_output_reset_request());
     }
 }
@@ -177,7 +177,7 @@ static void btn4_requests_local_reset_once(void)
 {
     reset_at(100U);
     CHECK(press_and_release(GPIOC, GPIO_PIN_7) == MSG_NONE);
-    CHECK(sent == 0U);
+    CHECK(published == 0U);
     CHECK(button_take_output_reset_request());
     CHECK(!button_take_output_reset_request());
 }
@@ -191,45 +191,38 @@ static void btn4_reset_wins_over_simultaneous_message(void)
     tick += 30U;
     CHECK(button_get_message() == MSG_SPEED_UP_REQUEST);
     CHECK(button_take_output_reset_request());
-    CHECK(sent == 0U);
+    CHECK(published == 0U);
 }
 
-static void pending_uart_message_can_be_cleared(void)
+static void framed_uart_bytes_are_forwarded_and_can_be_cleared(void)
 {
     reset_at(100U);
     CHECK(receive_target != NULL);
 
     *receive_target = (uint8_t)MSG_SPEED_UP_REQUEST;
     HAL_UART_RxCpltCallback(&uart1);
+    CHECK(protocol_rx_count == 1U &&
+        protocol_rx_byte == (uint8_t)MSG_SPEED_UP_REQUEST);
     uart_service_clear_pending();
-
-    message_type_t message = MSG_NONE;
-    CHECK(!uart_service_get_message(&message));
+    CHECK(protocol_clear_count == 1U);
 
     *receive_target = (uint8_t)MSG_STOP_REQUEST;
     HAL_UART_RxCpltCallback(&uart1);
-    CHECK(uart_service_get_message(&message));
-    CHECK(message == MSG_STOP_REQUEST);
+    CHECK(protocol_rx_count == 2U &&
+        protocol_rx_byte == (uint8_t)MSG_STOP_REQUEST);
 }
-static void usb_trace_does_not_change_transport_result(void)
+static void framed_protocol_owns_transmit(void)
 {
     reset_at(0U);
-    uart_service_set_tx_trace(&uart2);
     CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_OK);
-    CHECK(sent == 1U && traced == 1U && last_byte == 0x13U && trace_byte == 0x13U);
+    CHECK(published == 1U);
     CHECK(uart_service_get_tx_count() == 1U);
-    trace_result = HAL_TIMEOUT;
+    publish_result = MESSAGE_PROTOCOL_IO_ERROR;
+    CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_ERROR);
+    CHECK(published == 2U && uart_service_get_tx_count() == 1U);
+    publish_result = MESSAGE_PROTOCOL_OK;
     CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_OK);
-    CHECK(sent == 2U && traced == 2U && uart_service_get_tx_count() == 2U);
-    transmit_result = HAL_TIMEOUT;
-    CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_TIMEOUT);
-    CHECK(sent == 3U && traced == 2U && uart_service_get_tx_count() == 2U);
-    reset_at(0U); /* init disables the optional trace */
-    CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_OK);
-    CHECK(sent == 1U && traced == 0U);
-    uart_service_set_tx_trace(&uart1); /* never duplicate on the data UART */
-    CHECK(uart_service_send_message(MSG_STOP_REQUEST) == HAL_OK);
-    CHECK(sent == 2U && traced == 0U);
+    CHECK(published == 3U && uart_service_get_tx_count() == 2U);
 }
 int main(void)
 {
@@ -240,10 +233,10 @@ int main(void)
     btn1_reports_debounced_stable_state();
     btn4_requests_local_reset_once();
     btn4_reset_wins_over_simultaneous_message();
-    pending_uart_message_can_be_cleared();
-    usb_trace_does_not_change_transport_result();
-    puts("PASS PB6 active-low: 29/30ms debounce, one 0x13 byte via selected UART, hold/release/repress");
-    puts("PASS BTN1=UP/0x11, BTN2=DOWN/0x10, BTN3=STOP/0x13, BTN4=local reset");
+    framed_uart_bytes_are_forwarded_and_can_be_cleared();
+    framed_protocol_owns_transmit();
+    puts("PASS PB6 active-low: 29/30ms debounce, one STOP request, hold/release/repress");
+    puts("PASS BTN1=UP, BTN2=DOWN, BTN3=STOP, BTN4 has no Mesh message");
     puts("PASS BTN1 debounced stable press/hold/release state and invalid button ID");
     puts("PASS BTN4 reset is one-shot, wins over a simultaneous message, and clears pending UART RX");
     puts("PASS bounce, boot-held, tick wrap, and transport failure");

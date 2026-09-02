@@ -43,7 +43,6 @@ add_executable(test_sensor_sync_service test_sensor_sync_service.c
     ../MyApp/service/sensor_sync_service.c)
 target_include_directories(test_sensor_sync_service PRIVATE fakes ../Core/Inc
     ../MyApp/service ../MyApp/hw ../../protocol)
-target_compile_definitions(test_sensor_sync_service PRIVATE NOSTOS_PROTOCOL_V2=1)
 target_compile_options(test_sensor_sync_service PRIVATE
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 target_link_libraries(test_sensor_sync_service PRIVATE sensor_store)
@@ -58,7 +57,8 @@ add_test(NAME sensor_sync_service COMMAND test_sensor_sync_service)
 add_executable(test_message_protocol_identity
     test_message_protocol_identity.c
     ../MyApp/service/message_protocol_service.c
-    ../../protocol/sensor_link.c)
+    ../../protocol/nostos_protocol.c
+    ../../protocol/nostos_uart.c)
 target_include_directories(test_message_protocol_identity PRIVATE
     fakes ../Core/Inc ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
 target_compile_options(test_message_protocol_identity PRIVATE
@@ -76,28 +76,13 @@ add_test(NAME thin_io_link COMMAND test_message_protocol_identity)
 add_executable(test_button_uart test_button_uart.c
     ../MyApp/hw/button.c ../MyApp/service/uart_service.c)
 target_include_directories(test_button_uart PRIVATE fakes ../Core/Inc
-    ../MyApp/hw ../MyApp/service ../../protocol)
+    ../MyApp/hw ../MyApp/service ../MyApp/common ../../protocol)
 target_compile_options(test_button_uart PRIVATE -Wall -Wextra -Wpedantic -Werror)
 if(ENABLE_SANITIZERS)
     target_compile_options(test_button_uart PRIVATE -fsanitize=address,undefined -fno-omit-frame-pointer)
     target_link_options(test_button_uart PRIVATE -fsanitize=address,undefined)
 endif()
 add_test(NAME button_uart COMMAND test_button_uart)
-
-add_executable(test_message_outputs test_message_outputs.c
-    ../MyApp/service/message_service.c ../MyApp/service/alert.c
-    ../MyApp/hw/rgb_led.c ../MyApp/hw/buzzer.c)
-target_include_directories(test_message_outputs PRIVATE fakes ../Core/Inc
-    ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
-target_compile_options(test_message_outputs PRIVATE
-    -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
-if(ENABLE_SANITIZERS)
-    target_compile_options(test_message_outputs PRIVATE
-        -fsanitize=address,undefined -fno-omit-frame-pointer)
-    target_link_options(test_message_outputs PRIVATE
-        -fsanitize=address,undefined)
-endif()
-add_test(NAME message_outputs COMMAND test_message_outputs)
 
 add_executable(test_calibration_audio_asset test_calibration_audio_asset.c
     ../MyApp/audio/calibration_completed_audio.c)
@@ -132,7 +117,7 @@ add_executable(test_safety_service test_safety_service.c
 target_include_directories(test_safety_service PRIVATE fakes ../Core/Inc
     ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
 target_compile_definitions(test_safety_service PRIVATE
-    FEATURE_FALL_DETECTION=1 NOSTOS_PROTOCOL_V2=0)
+    FEATURE_FALL_DETECTION=1)
 target_compile_options(test_safety_service PRIVATE
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 target_link_libraries(test_safety_service PRIVATE sensor_store m)
@@ -213,8 +198,7 @@ add_library(check_sensorless_services OBJECT
 target_include_directories(check_sensorless_services PRIVATE fakes ../Core/Inc
     ../MyApp/service ../MyApp/hw ../MyApp/common ../../protocol)
 target_compile_definitions(check_sensorless_services PRIVATE
-    FEATURE_DHT11_SENSOR=0 FEATURE_FALL_DETECTION=0
-    NOSTOS_PROTOCOL_V2=0)
+    FEATURE_DHT11_SENSOR=0 FEATURE_FALL_DETECTION=0)
 target_compile_options(check_sensorless_services PRIVATE
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)
 
@@ -223,7 +207,5 @@ add_library(check_calibration_app OBJECT ../MyApp/ap/app.c)
 target_include_directories(check_calibration_app PRIVATE fakes ../Core/Inc
     ../MyApp/ap ../MyApp/service ../MyApp/hw ../MyApp/audio ../MyApp/common
     ../../protocol)
-target_compile_definitions(check_calibration_app PRIVATE
-    NOSTOS_PROTOCOL_V2=0)
 target_compile_options(check_calibration_app PRIVATE
     -Wall -Wextra -Wpedantic -Wconversion -Wsign-conversion -Werror)

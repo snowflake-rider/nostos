@@ -144,16 +144,10 @@ static void render_button_message(void)
 {
     if (last_button_sender == 0U) {
         if (link_ready) {
-            ssd1306_draw_text(0U, DISPLAY_MESSAGE_Y, "ESP32 READY");
+            ssd1306_draw_text(0U, DISPLAY_MESSAGE_Y, "UART LINK");
         }
         return;
     }
-
-    const char *sender;
-    if (last_button_sender == 1U) sender = "FRONT";
-    else if (last_button_sender == 2U) sender = "REAR";
-    else if (last_button_sender == 3U) sender = "CENTER";
-    else return;
 
     const char *action;
     if (last_button_type == MSG_SPEED_UP_REQUEST) action = "ACCELERATE";
@@ -163,7 +157,8 @@ static void render_button_message(void)
 
     char line[24];
     char *out = line;
-    out = append_text(out, sender);
+    out = append_text(out, "N");
+    out = append_u32(out, last_button_sender);
     out = append_text(out, ": ");
     out = append_text(out, action);
     *out = '\0';
@@ -490,7 +485,7 @@ void display_service_set_calibration(
 
 bool display_service_show_button_message(uint8_t sender_id, uint8_t type)
 {
-    if (sender_id < 1U || sender_id > 3U ||
+    if (sender_id < 1U || sender_id > 10U ||
         (type != (uint8_t)MSG_SPEED_UP_REQUEST &&
          type != (uint8_t)MSG_SPEED_DOWN_REQUEST &&
          type != (uint8_t)MSG_STOP_REQUEST)) {
