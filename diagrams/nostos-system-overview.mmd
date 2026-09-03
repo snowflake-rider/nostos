@@ -1,0 +1,58 @@
+%%{init: {"theme":"base","themeVariables":{"fontFamily":"Apple SD Gothic Neo, Arial, sans-serif","fontSize":"17px","primaryTextColor":"#071A2B","lineColor":"#55C1E7","edgeLabelBackground":"#FFFFFF","secondaryColor":"#FFFFFF","tertiaryColor":"#F7FBFD","clusterBkg":"#F7FBFD","clusterBorder":"#B9DDEA"},"flowchart":{"htmlLabels":false,"curve":"basis","nodeSpacing":34,"rankSpacing":50}}}%%
+flowchart RL
+  subgraph RIDER_A["송신 라이더 노드"]
+    direction TB
+    INPUTS["센서·버튼<br/>DHT11 · MPU6050 · B1–B4"]
+    STM_A["STM32F411RE<br/>드라이버 · 서비스 · 낙상 판단"]
+    OUT_A["로컬 피드백<br/>OLED · RGB · 오디오 · 부저"]
+    PROTO_A["공통 프로토콜<br/>4개 메시지 · UART · CRC16"]
+    ESP_A["ESP32-S3 브리지<br/>우선순위 큐 · 최신 상태 · 재시도"]
+    XOSS["XOSS BLE 속도<br/>Node 1 경로"]
+
+    INPUTS -->|로컬 이벤트| STM_A
+    STM_A -->|즉시 반응| OUT_A
+    STM_A -->|TX| PROTO_A
+    PROTO_A -->|프레임 전달| ESP_A
+    XOSS -->|BLE ride state| ESP_A
+  end
+
+  RIDER_A -->|그룹 송신| MESH{{"Bluetooth Mesh<br/>그룹 0xC001"}}
+  MESH -->|Vendor Model RX| RIDER_B
+
+  subgraph RIDER_B["수신 라이더 노드"]
+    direction TB
+    ESP_B["ESP32-S3 브리지<br/>Mesh RX · UART 전달"]
+    PROTO_B["공통 프로토콜<br/>동일 계약 · 유효성 검사"]
+    STM_B["STM32F411RE<br/>라우팅 · 안전 · 환경 서비스"]
+    OUT_B["동료 알림<br/>OLED · RGB · 오디오 · 부저"]
+
+    ESP_B -->|프레임 전달| PROTO_B
+    PROTO_B -->|RX| STM_B
+    STM_B -->|표시·경보| OUT_B
+  end
+
+  RIDER_B -.->|STOP_ACK| MESH
+  MESH -.->|ACK 반환| RIDER_A
+
+  ACK["ACK 의미<br/>동료 STM32 앱이 요청을 수락함<br/>물리 출력 완료를 뜻하지 않음"]
+  VERIFY["검증 경계<br/>호스트·빌드 확인 ≠ 3노드 실물 E2E"]
+  RIDER_B -.-> ACK
+  MESH -.-> VERIFY
+
+  class INPUTS,XOSS input
+  class STM_A,STM_B stm
+  class PROTO_A,PROTO_B protocol
+  class ESP_A,ESP_B esp
+  class MESH mesh
+  class OUT_A,OUT_B output
+  class ACK critical
+  class VERIFY note
+
+  classDef input fill:#FFFFFF,stroke:#55C1E7,stroke-width:2px,color:#071A2B
+  classDef stm fill:#EAF7FB,stroke:#55C1E7,stroke-width:2px,color:#071A2B
+  classDef protocol fill:#F3F6F8,stroke:#8793A3,stroke-width:2px,color:#071A2B
+  classDef esp fill:#DDF7F2,stroke:#11A78E,stroke-width:2px,color:#071A2B
+  classDef mesh fill:#0D3456,stroke:#0D3456,stroke-width:2px,color:#FFFFFF
+  classDef output fill:#FFF6E8,stroke:#F4B860,stroke-width:2px,color:#071A2B
+  classDef critical fill:#FFF0F0,stroke:#FF6B6B,stroke-width:2px,color:#7A2530
+  classDef note fill:#FFFFFF,stroke:#8793A3,stroke-width:1.5px,stroke-dasharray:5 4,color:#415466
