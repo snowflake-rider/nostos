@@ -2,6 +2,8 @@
 
 # NOSTOS
 
+**한국어** | [English](README.en.md)
+
 ### 세 명의 라이더, 하나의 공유 상태
 
 STM32F411RE의 로컬 판단과 ESP32-S3 Bluetooth Mesh를 결합해<br>
